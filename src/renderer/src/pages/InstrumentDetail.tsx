@@ -1,0 +1,273 @@
+import { useMemo, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { Switch } from '@/components/ui/Switch'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { useAppStore } from '@/store/useAppStore'
+import { cn, formatTime, timeAgo } from '@/lib/utils'
+import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
+
+export function InstrumentDetail() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const inst = useAppStore((s) => s.instruments.find((i) => i.id === id))
+  const drivers = useAppStore((s) => s.drivers)
+  const monitor = useAppStore((s) => s.monitor.filter((m) => m.instrumentId === id))
+  const [logView, setLogView] = useState<'parsed' | 'raw'>('parsed')
+
+  // Distinct raw protocol frames (each message produces one frame shared across
+  // its analyte events), newest first, for the realtime raw data view.
+  const rawFrames = useMemo(() => {
+    const seen = new Set<string>()
+    const frames: { id: string; raw: string; timestamp: string; sampleId: string }[] = []
+    for (const m of monitor) {
+      if (!m.raw || seen.has(m.raw)) continue
+      seen.add(m.raw)
+      frames.push({ id: m.id, raw: m.raw, timestamp: m.timestamp, sampleId: m.sampleId })
+    }
+    return frames
+  }, [monitor])
+
+  if (!inst) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <p className="text-muted-foreground">Instrument not found.</p>
+        <Button variant="outline" onClick={() => navigate('/instruments')}>
+          Back to Instruments
+        </Button>
+      </div>
+    )
+  }
+
+  const driver = drivers.find((d) => d.id === inst.driverId)
+  const running = inst.status === 'online' || inst.status === 'listening'
+
+  const setHostQuery = async (v: boolean): Promise<void> => {
+    await window.api.instruments.update(inst.id, {
+      connection: { ...inst.connection, hostQuery: v }
+    })
+  }
+
+  const emitSample = async (): Promise<void> => {
+    await window.api.simulator.emitOne(inst.id)
+  }
+
+  return (
+    <motion.div className="space-y-6" variants={staggerContainer} initial="hidden" animate="show">
+      <motion.div className="flex items-center justify-between" variants={fadeInUp}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/instruments')}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={emitSample} disabled={!running}>
+            <Beaker className="h-4 w-4" /> Emit Test Sample
+          </Button>
+          <Button
+            variant={running ? 'outline' : 'success'}
+            size="sm"
+            onClick={() => (running ? window.api.instruments.stop(inst.id) : window.api.instruments.start(inst.id))}
+          >
+            {running ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            {running ? 'Stop' : 'Start'}
+          </Button>
+        </div>
+      </motion.div>
+
+      <motion.div className="flex items-center gap-4" variants={fadeInUp}>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 text-primary">
+          <Cpu className="h-7 w-7" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-xl font-semibold">{inst.name}</h2>
+          <p className="text-sm text-muted-foreground">{driver?.name} - {driver?.vendor}</p>
+        </div>
+        <StatusDot status={inst.status} />
+      </motion.div>
+
+      <motion.div className="grid gap-6 lg:grid-cols-3" variants={staggerContainer}>
+        <motion.div variants={fadeInUp}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Connection</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <Row label="Transport" value={inst.connection.transport} />
+            <Row
+              label={inst.connection.transport === 'serial' ? 'COM Port' : 'Address'}
+              value={
+                inst.connection.transport === 'serial'
+                  ? `${inst.connection.serialPath} @ ${inst.connection.baudRate ?? 9600}`
+                  : `${inst.connection.host}:${inst.connection.port}`
+              }
+            />
+            <Row label="Protocol" value={inst.protocol.toUpperCase()} />
+            <Row label="Peer" value={inst.peer ?? '-'} />
+            <Row label="Last message" value={timeAgo(inst.lastMessageAt)} />
+          </CardContent>
+        </Card>
+        </motion.div>
+
+        <motion.div variants={fadeInUp}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Protocol Options</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Host Query</p>
+                <p className="text-xs text-muted-foreground">Query LIS by barcode</p>
+              </div>
+              <Switch
+                checked={!!inst.connection.hostQuery}
+                onChange={setHostQuery}
+                disabled={driver?.mode === 'unidirectional'}
+              />
+            </div>
+            <div className="rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <p className="text-xs uppercase text-muted-foreground">Driver mode</p>
+              <p className="mt-1 text-sm font-medium capitalize">{driver?.mode}</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <p className="text-xs uppercase text-muted-foreground">Maturity</p>
+              <Badge tone={driver?.maturity === 'stable' ? 'success' : driver?.maturity === 'beta' ? 'warning' : 'muted'}>
+                {driver?.maturity}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+        </motion.div>
+
+        <motion.div variants={fadeInUp}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Counters</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Counter label="Messages received" value={inst.messagesReceived} tone="text-foreground" />
+            <Counter label="Results processed" value={inst.resultsProcessed} tone="text-success" />
+            <Counter label="Errors" value={inst.errors} tone={inst.errors ? 'text-destructive' : 'text-foreground'} />
+          </CardContent>
+        </Card>
+        </motion.div>
+      </motion.div>
+
+      <motion.div variants={fadeInUp}>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Live Channel Log</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge tone={running ? 'success' : 'muted'}>{running ? 'Live' : 'Stopped'}</Badge>
+            <div className="flex rounded-lg border border-border p-0.5">
+              <button
+                onClick={() => setLogView('parsed')}
+                className={cn(
+                  'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  logView === 'parsed' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {logView === 'parsed' && (
+                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-md bg-secondary" />
+                )}
+                <List className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Parsed</span>
+              </button>
+              <button
+                onClick={() => setLogView('raw')}
+                className={cn(
+                  'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  logView === 'raw' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {logView === 'raw' && (
+                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-md bg-secondary" />
+                )}
+                <Code2 className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Raw</span>
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {logView === 'parsed' ? (
+            <div className="max-h-80 space-y-1 overflow-y-auto font-mono text-xs">
+              <AnimatePresence initial={false}>
+              {monitor.slice(0, 60).map((m) => (
+                <motion.div
+                  key={m.id}
+                  layout
+                  variants={listItem}
+                  initial="hidden"
+                  animate="show"
+                  exit="exit"
+                  className="flex gap-3 rounded px-2 py-1 hover:bg-secondary/40"
+                >
+                  <span className="text-muted-foreground">{formatTime(m.timestamp)}</span>
+                  <span
+                    className={cn(
+                      'w-16 shrink-0 uppercase',
+                      m.stage === 'written' ? 'text-success' : m.stage === 'error' ? 'text-destructive' : m.stage === 'skipped' ? 'text-warning' : 'text-accent'
+                    )}
+                  >
+                    {m.stage}
+                  </span>
+                  <span className="text-accent">{m.sampleId}</span>
+                  <span className="flex-1 text-foreground">
+                    {m.analyteCode}={m.value} {m.unit}
+                  </span>
+                </motion.div>
+              ))}
+              </AnimatePresence>
+              {monitor.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
+              )}
+            </div>
+          ) : (
+            <div className="max-h-[28rem] space-y-3 overflow-y-auto">
+              {rawFrames.slice(0, 40).map((f) => (
+                <div key={f.id} className="rounded-lg border border-border/50 bg-background/70">
+                  <div className="flex items-center justify-between border-b border-border/40 px-3 py-1.5 text-xs">
+                    <span className="font-mono text-accent">{f.sampleId}</span>
+                    <span className="text-muted-foreground">{formatTime(f.timestamp)}</span>
+                  </div>
+                  <pre className="overflow-x-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-all">
+                    {f.raw}
+                  </pre>
+                </div>
+              ))}
+              {rawFrames.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No raw frames received yet.
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  )
+}
+
+function Counter({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg bg-secondary/30 px-4 py-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={cn('text-2xl font-bold', tone)}>
+        <AnimatedNumber value={value} />
+      </span>
+    </div>
+  )
+}
