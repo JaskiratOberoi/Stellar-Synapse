@@ -2,8 +2,8 @@ import type { CanonicalResult, InstrumentDriverInfo } from '../../../shared/type
 import type { ProtocolMessage } from '../protocols/IProtocol'
 import type { ModelDefinition } from './catalog'
 import type { DriverAnalyte, IInstrumentDriver } from './IInstrumentDriver'
-import { parseAstm, parseHl7 } from './parsing'
-import { buildAstmSample, buildHl7Sample } from './sampleBuilders'
+import { parseAstm, parseHl7, parseSimple } from './parsing'
+import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
 
 /**
  * Data-driven instrument driver. One class powers every catalog model: it
@@ -24,14 +24,14 @@ export class DefinitionDriver implements IInstrumentDriver {
   }
 
   parse(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
-    return message.protocol === 'hl7'
-      ? parseHl7(message, instrumentId)
-      : parseAstm(message, instrumentId)
+    if (message.protocol === 'hl7') return parseHl7(message, instrumentId)
+    if (message.protocol === 'simple') return parseSimple(message, instrumentId)
+    return parseAstm(message, instrumentId)
   }
 
   buildSample(sampleId: string, analytes: DriverAnalyte[]): string {
-    return this.def.protocol === 'hl7'
-      ? buildHl7Sample(sampleId, this.def.name, analytes)
-      : buildAstmSample(sampleId, this.def.name, analytes)
+    if (this.def.protocol === 'hl7') return buildHl7Sample(sampleId, this.def.name, analytes)
+    if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)
+    return buildAstmSample(sampleId, this.def.name, analytes)
   }
 }

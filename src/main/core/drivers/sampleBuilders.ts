@@ -63,6 +63,30 @@ export function buildHl7Sample(
   return lines.join('\r')
 }
 
+/**
+ * Build a "Simple protocol" message for the Landwind LD-series simulator.
+ * Output is the same comma-delimited format the real LD-560 sends over TCP.
+ */
+export function buildSimpleSample(
+  sampleId: string,
+  analytes: DriverAnalyte[]
+): string {
+  const d = new Date()
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  const date = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+  const time = `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+
+  const lines: string[] = []
+  lines.push(`D,${sampleId},${date},${time}`)
+  for (const a of analytes) {
+    const { value, flag } = simValue(a)
+    const ref = a.sim?.ref ?? `${a.sim?.min ?? ''}-${a.sim?.max ?? ''}`
+    lines.push(`${a.code},${value},${a.unit ?? ''},${flag},${ref}`)
+  }
+  lines.push('END')
+  return lines.join('\r\n')
+}
+
 /** Generate a believable sample/accession barcode. */
 export function randomSampleId(prefix = 'S'): string {
   const n = Math.floor(100000 + Math.random() * 899999)

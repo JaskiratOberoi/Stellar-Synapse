@@ -281,6 +281,29 @@ const beckman = [
 ]
 
 // ---------------------------------------------------------------------------
+// Landwind - LD-series hematology (Simple protocol, TCP client mode)
+// ---------------------------------------------------------------------------
+const landwind = [
+  mk(
+    'landwind-ld-560',
+    'Landwind LD-560',
+    'Landwind Medical',
+    'Hematology (CBC)',
+    'LD-560 5-part differential blood cell analyzer (CBC + Diff). Proprietary "Simple protocol" over TCP. ' +
+      'The analyzer connects as a TCP client to the middleware server on port 8081. ' +
+      'Line-based comma-delimited format: D header + per-analyte rows + END terminator.',
+    CBC,
+    {
+      port: 8081,
+      protocol: 'simple',
+      mode: 'unidirectional',
+      transports: ['tcp-client'],
+      maturity: 'beta'
+    }
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Generic fallback (keeps id 'generic-astm')
 // ---------------------------------------------------------------------------
 const generic = [
@@ -300,5 +323,6 @@ export const CATALOG: ModelDefinition[] = [
   ...snibeOther,
   ...getein,
   ...beckman,
+  ...landwind,
   ...generic
 ]

@@ -10,6 +10,26 @@ import type { InstrumentDefinition } from '../shared/types'
 
 const isDev = !app.isPackaged
 
+/** Idempotently ensure the LD-560 instrument exists in the store. */
+function ensureLd560(): void {
+  const existing = persist.getInstruments()
+  if (existing.some((i) => i.driverId === 'landwind-ld-560')) return
+  const now = new Date().toISOString()
+  persist.setInstruments([
+    ...existing,
+    {
+      id: 'seed-ld-560',
+      name: 'Landwind LD-560 - Hematology',
+      driverId: 'landwind-ld-560',
+      protocol: 'simple',
+      connection: { transport: 'tcp-server', host: '0.0.0.0', port: 8081, hostQuery: false },
+      enabled: true,
+      createdAt: now
+    }
+  ])
+  logger.info('app', 'Added Landwind LD-560 instrument (port 8081, Simple protocol)')
+}
+
 /** On first run, seed a couple of instruments so the UI is immediately alive. */
 function seedDefaultInstruments(): void {
   if (persist.getInstruments().length > 0) return
@@ -81,6 +101,7 @@ function createWindow(): BrowserWindow {
 
 app.whenReady().then(async () => {
   seedDefaultInstruments()
+  ensureLd560()
 
   const lis = new MockLisRepository()
   const orchestrator = new Orchestrator(lis)

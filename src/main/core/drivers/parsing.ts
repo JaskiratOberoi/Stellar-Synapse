@@ -51,6 +51,46 @@ export function parseAstm(message: ProtocolMessage, instrumentId: string): Canon
   return results
 }
 
+/**
+ * Parse a "Simple protocol" message from Landwind LD-series hematology analyzers.
+ *
+ * Records layout (comma or tab delimited, auto-detected by SimpleProtocol):
+ *   rec[0] — type: "D"/"SID" (sample header), analyte code (WBC/RBC/…), or "END"
+ *   rec[1] — sample id (header) OR numeric value (result)
+ *   rec[2] — unit
+ *   rec[3] — flag  (N, H, L, HH, LL, A)
+ *   rec[4] — reference range
+ */
+export function parseSimple(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
+  const results: CanonicalResult[] = []
+  let sampleId = ''
+  const now = new Date().toISOString()
+
+  for (const rec of message.records) {
+    const type = (rec[0] || '').trim().toUpperCase()
+
+    if (type === 'D' || type === 'SID' || type === 'SAMPLE') {
+      sampleId = (rec[1] || '').trim()
+    } else if (type !== 'END' && type !== '') {
+      const value = (rec[1] || '').trim()
+      if (!value || isNaN(parseFloat(value))) continue
+      results.push({
+        id: randomUUID(),
+        instrumentId,
+        sampleId,
+        analyteCode: type,
+        value,
+        unit: (rec[2] || '').trim() || undefined,
+        flag: normFlag(rec[3]),
+        referenceRange: (rec[4] || '').trim() || undefined,
+        receivedAt: now
+      })
+    }
+  }
+
+  return results
+}
+
 /** Parse an HL7 v2.x message (MSH/OBR/OBX) into canonical results. */
 export function parseHl7(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
   const results: CanonicalResult[] = []
