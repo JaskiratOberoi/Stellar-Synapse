@@ -1,0 +1,47 @@
+appId: com.stellar.synapse
+productName: Stellar Synapse
+copyright: Copyright © 2026 Stellar Synapse
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - package.json
+  - node_modules/**/*
+  - '!node_modules/@types/**'
+  - '!node_modules/**/{CHANGELOG.md,README.md,readme.md,readme,*.md}'
+  - '!node_modules/**/{test,tests,__tests__,docs,example,examples}/**'
+
+asar: true
+asarUnpack:
+  - node_modules/serialport/**/*
+  - node_modules/@serialport/**/*
+  - node_modules/mssql/**/*
+  - node_modules/tedious/**/*
+
+npmRebuild: true
+buildDependenciesFromSource: false
+
+win:
+  icon: build/icon.png
+  executableName: Stellar Synapse
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Stellar Synapse
+  uninstallDisplayName: Stellar Synapse
+  artifactName: Stellar-Synapse-Setup-${version}.${ext}
+  deleteAppDataOnUninstall: false
+
+publish: null
