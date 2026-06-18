@@ -5,6 +5,7 @@ import {
   CBC,
   CHEMISTRY,
   COAGULATION,
+  EDAN_H60,
   ELECTROLYTES,
   FIA_PANEL,
   HBA1C_HPLC,
@@ -20,9 +21,10 @@ export type ModelDefinition = InstrumentDriverInfo & {
   analytes: DriverAnalyte[]
   /**
    * HL7 parsing dialect for `protocol: 'hl7'` models (default 'generic').
-   * 'getein' selects the Metis OBR-2 (barcode) / OBX-3 (item id) layout.
+   * 'getein' selects the Metis OBR-2 (barcode) / OBX-3 (item id) layout;
+   * 'edan' selects the H60 OBR-2 (sample id) / OBX-4 (analyte mnemonic) layout.
    */
-  hl7Dialect?: 'generic' | 'getein'
+  hl7Dialect?: 'generic' | 'getein' | 'edan'
 }
 
 interface MkOpts {
@@ -245,14 +247,15 @@ const edan = [
     ],
     'EDAN Instruments',
     'Hematology (CBC)',
-    'H60 / H60 Vet auto hematology analyzer (CBC/5-Diff). HL7 v2.x over MLLP. On the ' +
+    'H60 / H60 Vet auto hematology analyzer (CBC/5-Diff). HL7 v2.4 over MLLP. On the ' +
       'analyzer, set the remote LIS transfer mode to MLLP, enter this server\'s IP + port, ' +
       'tick "Auto-communication", click Communication to test, then Save (firmware H60/H60s ' +
       'APP V1.10+, H60 Vet V1.05+; instrument and LIS must share a subnet). The analyzer ' +
-      'connects as a TCP client to this server and uploads results. The OBX item-code map is ' +
-      'pending a captured sample, so this driver decodes generic MSH/PID/OBR/OBX for bring-up.',
-    CBC,
-    { port: 7999, protocol: 'hl7', mode: 'unidirectional', transports: ['tcp-server'], maturity: 'skeleton' }
+      'connects as a TCP client to this server and uploads results. Field map verified against ' +
+      'a captured H60 frame: sample id in OBR-2, analyte mnemonic in OBX-4 (OBX-3 is a constant ' +
+      '"0"), escaped units (10\\S\\9/L = 10^9/L), flag in OBX-13; "---"/"***" cells are skipped.',
+    EDAN_H60,
+    { port: 7999, protocol: 'hl7', hl7Dialect: 'edan', mode: 'unidirectional', transports: ['tcp-server'], maturity: 'beta' }
   )
 ]
 

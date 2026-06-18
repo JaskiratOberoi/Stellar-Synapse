@@ -3,6 +3,7 @@ import type { ProtocolMessage } from '../protocols/IProtocol'
 import type { ModelDefinition } from './catalog'
 import type { DriverAnalyte, IInstrumentDriver } from './IInstrumentDriver'
 import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
+import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
 import { parseAstm, parseHl7, parseSimple } from './parsing'
 import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
@@ -29,9 +30,9 @@ export class DefinitionDriver implements IInstrumentDriver {
     if (message.protocol === 'hl7') {
       // Getein Metis uses OBR-2 (barcode) / OBX-3 (item id) instead of the
       // generic OBR-3 / OBX-3-component layout — route to its own parser.
-      return this.def.hl7Dialect === 'getein'
-        ? parseGeteinHl7(message, instrumentId)
-        : parseHl7(message, instrumentId)
+      if (this.def.hl7Dialect === 'getein') return parseGeteinHl7(message, instrumentId)
+      if (this.def.hl7Dialect === 'edan') return parseEdanHl7(message, instrumentId)
+      return parseHl7(message, instrumentId)
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
     if (message.protocol === 'beckman-au') return parseBeckmanAu(message, instrumentId)
@@ -40,9 +41,9 @@ export class DefinitionDriver implements IInstrumentDriver {
 
   buildSample(sampleId: string, analytes: DriverAnalyte[]): string {
     if (this.def.protocol === 'hl7') {
-      return this.def.hl7Dialect === 'getein'
-        ? buildGeteinHl7Sample(sampleId, this.def.name, analytes)
-        : buildHl7Sample(sampleId, this.def.name, analytes)
+      if (this.def.hl7Dialect === 'getein') return buildGeteinHl7Sample(sampleId, this.def.name, analytes)
+      if (this.def.hl7Dialect === 'edan') return buildEdanHl7Sample(sampleId, this.def.name, analytes)
+      return buildHl7Sample(sampleId, this.def.name, analytes)
     }
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)
     if (this.def.protocol === 'beckman-au') return buildBeckmanAuSample(sampleId, analytes)

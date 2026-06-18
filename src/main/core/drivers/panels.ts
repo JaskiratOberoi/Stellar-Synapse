@@ -176,6 +176,47 @@ export const CBC: DriverAnalyte[] = [
   a('BAS', 'Basophils', '%', 0, 1, 1)
 ]
 
+/**
+ * EDAN H60 / H60 Vet 5-part-diff CBC menu — instrument codes exactly as the H60
+ * transmits them in OBX-4 (NEU#, NEU%, RDW_CV, …). Units mirror the analyzer
+ * (counts in 10^9/L, HGB/MCHC in g/L). Seeds the mapping screen + simulator.
+ */
+export const EDAN_H60: DriverAnalyte[] = [
+  a('WBC', 'White Blood Cell Count', '10^9/L', 3.5, 9.5, 2),
+  a('NEU#', 'Neutrophils (abs)', '10^9/L', 1.8, 6.3, 2),
+  a('NEU%', 'Neutrophils', '%', 40, 75, 1),
+  a('LYM#', 'Lymphocytes (abs)', '10^9/L', 1.1, 3.2, 2),
+  a('LYM%', 'Lymphocytes', '%', 20, 50, 1),
+  a('MON#', 'Monocytes (abs)', '10^9/L', 0.1, 0.6, 2),
+  a('MON%', 'Monocytes', '%', 3, 10, 1),
+  a('EOS#', 'Eosinophils (abs)', '10^9/L', 0.02, 0.52, 2),
+  a('EOS%', 'Eosinophils', '%', 0.5, 5, 1),
+  a('BAS#', 'Basophils (abs)', '10^9/L', 0, 0.06, 2),
+  a('BAS%', 'Basophils', '%', 0, 1, 1),
+  a('RBC', 'Red Blood Cell Count', '10^12/L', 4.3, 5.8, 2),
+  a('HGB', 'Hemoglobin', 'g/L', 130, 175, 0),
+  a('HCT', 'Hematocrit', '%', 40, 50, 1),
+  a('MCV', 'Mean Corpuscular Volume', 'fL', 82, 100, 1),
+  a('MCH', 'Mean Corpuscular Hemoglobin', 'pg', 27, 34, 1),
+  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/L', 316, 354, 0),
+  a('RDW_CV', 'RDW (CV)', '%', 11.5, 14.5, 1),
+  a('RDW_SD', 'RDW (SD)', 'fL', 35, 56, 1),
+  a('PLT', 'Platelet Count', '10^9/L', 125, 350, 0),
+  a('MPV', 'Mean Platelet Volume', 'fL', 6.5, 12, 1),
+  a('PDW', 'Platelet Distribution Width', 'fL', 9, 17, 1),
+  a('PCT', 'Plateletcrit', '%', 0.108, 0.282, 3),
+  a('P_LCR', 'Platelet Large Cell Ratio', '%', 13, 43, 1),
+  a('P_LCC', 'Platelet Large Cell Count', '10^9/L', 30, 90, 0),
+  a('NLR', 'Neutrophil/Lymphocyte Ratio', '', 0.78, 3.53, 2),
+  a('PLR', 'Platelet/Lymphocyte Ratio', '', 50, 180, 0),
+  a('NRBC#', 'Nucleated RBC (abs)', '10^9/L', 0, 0.01, 2),
+  a('NRBC%', 'Nucleated RBC', '%', 0, 0.2, 1),
+  a('ALY#', 'Atypical Lymphocytes (abs)', '10^9/L', 0, 0.1, 2),
+  a('ALY%', 'Atypical Lymphocytes', '%', 0, 2, 1),
+  a('LIC#', 'Large Immature Cells (abs)', '10^9/L', 0, 0.1, 2),
+  a('LIC%', 'Large Immature Cells', '%', 0, 2.5, 1)
+]
+
 export const URINALYSIS: DriverAnalyte[] = [
   a('UGLU', 'Urine Glucose', 'mg/dL', 0, 15, 0),
   a('UPRO', 'Urine Protein', 'mg/dL', 0, 10, 0),
