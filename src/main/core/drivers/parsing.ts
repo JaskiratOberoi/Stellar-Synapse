@@ -12,11 +12,17 @@ function normFlag(raw?: string): ResultFlag | undefined {
 /** Extract the analyte code from an ASTM universal test id like "^^^TSH". */
 function astmTestId(field?: string): { code: string; name?: string } {
   if (!field) return { code: '' }
-  const parts = field.split('^')
-  // Universal test ID: ^^^code^name (component 4 = code, 5 = name)
-  const code = parts[3] || parts[0] || ''
-  const name = parts[4] || undefined
-  return { code: code.trim(), name }
+  const parts = field.split('^').map((p) => p.trim())
+  // Standard ASTM universal test ID is "^^^code^name" — three empty leading
+  // components, code in component 4 (Maglumi, Beckman, generic-astm, …).
+  if (parts[0] === '' && parts[1] === '' && parts[2] === '') {
+    return { code: parts[3] || '', name: parts[4] || undefined }
+  }
+  // Non-standard layout where the test rides in the leading components, e.g. the
+  // Agappe Mispa Maestro R record "assayNo^assayName^^resultType" -> "1^HbA1c^^S".
+  // Take the first non-numeric token as the analyte name/code.
+  const code = parts.find((p) => p && !/^\d+$/.test(p)) || parts[0] || ''
+  return { code, name: code || undefined }
 }
 
 /** Parse an ASTM E1394 message into canonical results. */
@@ -28,8 +34,10 @@ export function parseAstm(message: ProtocolMessage, instrumentId: string): Canon
   for (const rec of message.records) {
     const type = (rec[0] || '').toUpperCase()
     if (type === 'O') {
-      // O|seq|sampleId|instrSpec|^^^test
-      currentSample = (rec[2] || rec[3] || '').trim()
+      // O|seq|sampleId|instrSpec|^^^test. The sample id may carry rack/position
+      // subcomponents (e.g. Mispa Maestro "sampleId^rack^pos"), so keep only the
+      // first component as the accession barcode.
+      currentSample = (rec[2] || rec[3] || '').split('^')[0].trim()
     } else if (type === 'R') {
       const { code, name } = astmTestId(rec[2])
       if (!code) continue
@@ -71,6 +79,9 @@ export function parseSimple(message: ProtocolMessage, instrumentId: string): Can
 
     if (type === 'D' || type === 'SID' || type === 'SAMPLE') {
       sampleId = (rec[1] || '').trim()
+    } else if (type === 'BITMAP') {
+      // Chromatogram image data — not a lab result row.
+      continue
     } else if (type !== 'END' && type !== '') {
       const value = (rec[1] || '').trim()
       if (!value || isNaN(parseFloat(value))) continue

@@ -6,6 +6,8 @@ import {
   COAGULATION,
   ELECTROLYTES,
   FIA_PANEL,
+  HBA1C_HPLC,
+  HBA1C_MAESTRO,
   IMMUNOASSAY_FULL,
   INTEGRATED,
   URINALYSIS,
@@ -281,23 +283,49 @@ const beckman = [
 ]
 
 // ---------------------------------------------------------------------------
-// Landwind - LD-series hematology (Simple protocol, TCP client mode)
+// Landwind / Labnovation - LD-560 HPLC HbA1c (Simple protocol, Server TCP)
 // ---------------------------------------------------------------------------
 const landwind = [
   mk(
     'landwind-ld-560',
-    'Landwind LD-560',
+    'Zeus D-20 HPLC',
     'Landwind Medical',
-    'Hematology (CBC)',
-    'LD-560 5-part differential blood cell analyzer (CBC + Diff). Proprietary "Simple protocol" over TCP. ' +
-      'The analyzer connects as a TCP client to the middleware server on port 8081. ' +
+    'HbA1c (HPLC)',
+    'LD-560 fully automated HPLC HbA1c analyzer. Proprietary "Simple protocol" over TCP. ' +
+      'Configure the analyzer as "Server TCP"; Synapse connects as tcp-client to the analyzer IP on port 8081. ' +
+      'Press Transmit on the analyzer Data screen to push a result over the open connection. ' +
       'Line-based comma-delimited format: D header + per-analyte rows + END terminator.',
-    CBC,
+    HBA1C_HPLC,
     {
       port: 8081,
       protocol: 'simple',
       mode: 'unidirectional',
       transports: ['tcp-client'],
+      maturity: 'beta'
+    }
+  )
+]
+
+// ---------------------------------------------------------------------------
+// Agappe - Mispa Maestro HPLC HbA1c (ASTM E1394-97, analyzer connects to us)
+// ---------------------------------------------------------------------------
+const agappe = [
+  mk(
+    'agappe-mispa-maestro',
+    'Agappe Mispa Maestro',
+    'Agappe Diagnostics',
+    'HbA1c (HPLC)',
+    'Mispa Maestro automated glycohemoglobin (HbA1c) HPLC analyzer (BioHermes BH60 OEM). ' +
+      'ASTM E1394-97 over TCP/IP or RS232 serial. The analyzer runs as a TCP Server ' +
+      '(PTS = TCP Server, Mode = ASTM S); Synapse connects to the analyzer IP:port as a ' +
+      'TCP client and receives uploaded H/P/O/R/L result records (assay fixed "HbA1c"), ' +
+      'posting the HbA1c value to the Noble LIS.',
+    HBA1C_MAESTRO,
+    {
+      port: 55555,
+      protocol: 'astm',
+      mode: 'unidirectional',
+      transports: ['tcp-client', 'tcp-server', 'serial'],
       maturity: 'beta'
     }
   )
@@ -324,5 +352,6 @@ export const CATALOG: ModelDefinition[] = [
   ...getein,
   ...beckman,
   ...landwind,
+  ...agappe,
   ...generic
 ]

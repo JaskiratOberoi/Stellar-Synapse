@@ -67,6 +67,8 @@ export function AddInstrumentModal({
     setTransport('tcp-server')
     setHost('127.0.0.1')
     setPort('9100')
+    setSerialPath('COM3')
+    setBaudRate('9600')
     setHostQuery(false)
     setPassive(false)
     setEnabled(true)
@@ -260,7 +262,13 @@ export function AddInstrumentModal({
             ) : (
               <div className="space-y-1.5">
                 <Label>Port</Label>
-                <Input value={port} onChange={(e) => setPort(e.target.value)} type="number" />
+                <Input
+                  value={port}
+                  onChange={(e) => setPort(e.target.value.replace(/[^0-9]/g, '').slice(0, 5))}
+                  inputMode="numeric"
+                  placeholder="55555"
+                  autoComplete="off"
+                />
               </div>
             )}
           </div>
@@ -268,7 +276,14 @@ export function AddInstrumentModal({
           {transport === 'tcp-client' && (
             <div className="space-y-1.5">
               <Label>Analyzer Host / IP</Label>
-              <Input value={host} onChange={(e) => setHost(e.target.value)} placeholder="192.168.1.50" />
+              <Input
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                placeholder="e.g. 192.168.1.150"
+                inputMode="decimal"
+                autoComplete="off"
+                spellCheck={false}
+              />
             </div>
           )}
 

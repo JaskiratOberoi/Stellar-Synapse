@@ -80,6 +80,14 @@ export interface InstrumentConnectionConfig {
    * converge several candidate ports onto the one real instrument.
    */
   autoIdentify?: boolean
+  /**
+   * When set, periodically write poll commands to request pending results
+   * (used when the analyzer listens as TCP server and does not push on its own).
+   */
+  pollIntervalMs?: number
+  pollCommands?: string[]
+  /** Reconnect the transport if no inbound bytes arrive within this window. */
+  idleReconnectMs?: number
 }
 
 export interface InstrumentDefinition {
@@ -166,6 +174,14 @@ export interface TestOrder {
 }
 
 /**
+ * Outcome of a single LIS write:
+ *  - 'written' — an existing (pre-created at registration) result row was filled.
+ *  - 'skipped' — no matching ordered row for this test/SID; nothing was written
+ *    (Synapse never inserts an orphan row the LIS status logic would ignore).
+ */
+export type LisWriteOutcome = 'written' | 'skipped'
+
+/**
  * Payload written to dbo.tbl_med_mcc_patient_test_result.
  * Captured here as a record of what *would* be persisted (mock phase).
  */
@@ -215,7 +231,14 @@ export interface MappingRule {
 // Live monitor + logging
 // ---------------------------------------------------------------------------
 
-export type MonitorStage = 'received' | 'decoded' | 'mapped' | 'written' | 'skipped' | 'error'
+export type MonitorStage =
+  | 'received'
+  | 'decoded'
+  | 'mapped'
+  | 'written'
+  | 'skipped'
+  | 'error'
+  | 'queued'
 
 export interface MonitorEvent {
   id: string
@@ -339,4 +362,6 @@ export interface AppSettings {
   /** Messages-per-minute the simulator emits per online instrument. */
   simulatorRate: number
   autoMapOnReceive: boolean
+  /** When live LIS is enabled, auto-write HbA1c panel results on receive. */
+  lisAutoWrite: boolean
 }

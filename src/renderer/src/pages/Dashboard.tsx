@@ -24,6 +24,7 @@ const stageTone: Record<MonitorStage, string> = {
   mapped: 'text-primary',
   written: 'text-success',
   skipped: 'text-warning',
+  queued: 'text-accent',
   error: 'text-destructive'
 }
 

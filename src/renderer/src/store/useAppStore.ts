@@ -89,7 +89,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Live subscriptions.
       api.instruments.onChanged((list) => set({ instruments: list }))
       api.mappings.onChanged((rules) => set({ mappings: rules }))
-      api.monitor.onEvent((evt) => set((st) => ({ monitor: [evt, ...st.monitor].slice(0, 300) })))
+      api.monitor.onEvent((evt) =>
+        set((st) => {
+          if (st.monitor.some((m) => m.id === evt.id)) return st
+          return { monitor: [evt, ...st.monitor].slice(0, 2000) }
+        })
+      )
       api.logs.onLog((entry) => set((st) => ({ logs: [entry, ...st.logs].slice(0, 500) })))
 
       // Periodic dashboard refresh.

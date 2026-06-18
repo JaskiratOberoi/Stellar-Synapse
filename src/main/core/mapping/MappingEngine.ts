@@ -34,8 +34,20 @@ export class MappingEngine {
    * Returns the number of rows added.
    */
   async seedDrivers(driverIds: string[]): Promise<number> {
-    const tests = await this.lis.getTests()
-    const params = await this.lis.getParameters()
+    // The LIS may be unreachable at startup — never let that abort boot. Seed
+    // rule rows anyway (as 'unmapped'); they auto-map once the LIS is back and a
+    // result arrives (autoMapOnReceive), or on the next manual auto-map.
+    let tests: LisTest[] = []
+    let params: LisParameter[] = []
+    try {
+      tests = await this.lis.getTests()
+      params = await this.lis.getParameters()
+    } catch (err) {
+      logger.warn(
+        'mapping',
+        `LIS catalog unavailable — seeding analytes unmapped, will auto-map later: ${(err as Error).message}`
+      )
+    }
     let added = 0
 
     const unique = [...new Set(driverIds)]
@@ -98,6 +110,21 @@ export class MappingEngine {
       }
     }
 
+    // 1b) LD-560 HbA1c panel — match parameters by name (HbA1c %, eAG mg/dL).
+    const paramByAnalyte = params.find((p) => paramMatchesAnalyte(p, code, name))
+    if (paramByAnalyte) {
+      const parent = tests.find((t) => t.id === paramByAnalyte.testId)
+      return {
+        lisTestId: parent?.id,
+        lisTestCode: parent?.testCode,
+        lisTestName: parent?.testName,
+        lisParamId: paramByAnalyte.id,
+        lisParamName: paramByAnalyte.name,
+        unit: lisUnitForAnalyte(code, paramByAnalyte.unit),
+        confidence: 0.95
+      }
+    }
+
     // 2) Exact test code match (standalone tests like TSH).
     const testExact = tests.find((t) => t.testCode.toUpperCase() === c)
     if (testExact) {
@@ -156,6 +183,37 @@ export class MappingEngine {
     return this.list(driverId)
   }
 
+  /**
+   * Restrict a driver's LIS posting to an allow-list of analyte codes. Any
+   * auto-mapped rule whose analyte is not in the list is set to 'ignored', so
+   * the value is still decoded/visible in Synapse but never written to the LIS.
+   * Manual and already-ignored/unmapped rules are left untouched, so an operator
+   * can re-enable an analyte from the UI without it being reverted on restart.
+   */
+  restrictLisScope(driverId: string, allowedCodes: readonly string[]): number {
+    const allow = new Set(allowedCodes.map((c) => c.toUpperCase()))
+    let changed = 0
+    for (const rule of this.rules) {
+      if (rule.driverId !== driverId) continue
+      // Leave manual overrides and already-ignored rules alone. Flip every other
+      // non-allowed analyte (auto or unmapped) to 'ignored' so it can never be
+      // written to the LIS — even if it later auto-maps after a cold start.
+      if (rule.status === 'manual' || rule.status === 'ignored') continue
+      if (allow.has(rule.instrumentCode.toUpperCase())) continue
+      rule.status = 'ignored'
+      rule.updatedAt = new Date().toISOString()
+      changed++
+    }
+    if (changed > 0) {
+      this.save()
+      logger.info(
+        'mapping',
+        `Restricted ${driverId} LIS posting to [${allowedCodes.join(', ')}] — ${changed} analyte(s) set to ignored`
+      )
+    }
+    return changed
+  }
+
   list(driverId?: string): MappingRule[] {
     return driverId ? this.rules.filter((r) => r.driverId === driverId) : [...this.rules]
   }
@@ -192,6 +250,30 @@ export class MappingEngine {
   private save(): void {
     persist.setMappings(this.rules)
   }
+}
+
+/** Match Noble parameter rows for LD-560 HbA1c / eAG analytes. */
+function paramMatchesAnalyte(
+  param: LisParameter,
+  code: string,
+  name?: string
+): boolean {
+  const n = param.name.toLowerCase()
+  const c = code.trim()
+  if (c === 'HbA1c' || c === 'S-A1c') {
+    return n.includes('hba1c') && !n.includes('eag')
+  }
+  if (c === 'eAG') {
+    return n.includes('eag') || n.includes('estimated average glucose')
+  }
+  if (name && n.includes(name.toLowerCase())) return true
+  return param.code.toUpperCase() === c.toUpperCase()
+}
+
+/** Noble expects eAG in mg/dL; analyzer reports mmol/L. */
+function lisUnitForAnalyte(code: string, paramUnit?: string): string | undefined {
+  if (code === 'eAG') return 'mg/dL'
+  return paramUnit
 }
 
 /** Driver id helper (kept here to avoid circular imports in callers). */

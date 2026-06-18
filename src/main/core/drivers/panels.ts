@@ -96,6 +96,25 @@ export const DIABETES: DriverAnalyte[] = [
   a('HBA1C', 'Hemoglobin A1c', '%', 4.0, 5.6, 1)
 ]
 
+/**
+ * Agappe Mispa Maestro HPLC reports a single glycated-hemoglobin result over
+ * ASTM (assay name fixed "HbA1c"). The instrument code must match what
+ * `parseAstm` extracts from the R record test-id "1^HbA1c^^S".
+ */
+export const HBA1C_MAESTRO: DriverAnalyte[] = [a('HbA1c', 'Hemoglobin A1c', '%', 4.0, 6.0, 1)]
+
+/** Landwind / Labnovation LD-560 HPLC HbA1c variant panel (Simple protocol). */
+export const HBA1C_HPLC: DriverAnalyte[] = [
+  a('HbA1a', 'HbA1a', '%', 0, 2, 1),
+  a('HbA1b', 'HbA1b', '%', 0, 2, 1),
+  a('HbF', 'HbF', '%', 0, 2, 1),
+  a('L-A1c', 'L-A1c', '%', 0, 2, 1),
+  a('S-A1c', 'HbA1c (S-A1c)', '%', 4.0, 6.0, 1),
+  a('HbA0', 'HbA0', '%', 90, 98, 1),
+  a('eAG', 'Estimated Average Glucose', 'mmol/L', 4.0, 7.0, 1),
+  a('HbA1c', 'HbA1c', '%', 4.0, 6.0, 1)
+]
+
 export const INFLAMMATION: DriverAnalyte[] = [
   a('CRP', 'C-Reactive Protein', 'mg/L', 0, 5, 1),
   a('PCT', 'Procalcitonin', 'ng/mL', 0, 0.5),

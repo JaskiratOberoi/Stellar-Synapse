@@ -12,6 +12,7 @@ import { listDriverInfos } from '../core/drivers/registry'
 import type { Orchestrator } from '../core/engine/Orchestrator'
 import type { Simulator } from '../core/simulator/Simulator'
 import type { ILisRepository } from '../core/lis/ILisRepository'
+import type { LisRouter } from '../core/lis/LisRouter'
 import { SqlLisRepository } from '../core/lis/SqlLisRepository'
 import { NetworkScanner } from '../core/discovery/NetworkScanner'
 import { persist } from '../store'
@@ -20,7 +21,7 @@ import { logger } from '../core/logger'
 interface Services {
   orchestrator: Orchestrator
   simulator: Simulator
-  lis: ILisRepository
+  lis: ILisRepository & Partial<Pick<LisRouter, 'configure'>>
 }
 
 function buildDashboard(orchestrator: Orchestrator, lis: ILisRepository): DashboardStats {
@@ -104,8 +105,17 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   ipcMain.handle(IPC.lisTests, () => lis.getTests())
   ipcMain.handle(IPC.lisParameters, (_e, testId?: number) => lis.getParameters(testId))
   ipcMain.handle(IPC.lisGetSettings, () => persist.getLis())
-  ipcMain.handle(IPC.lisSaveSettings, (_e, settings: LisConnectionSettings) => {
-    persist.setLis(settings)
+  ipcMain.handle(IPC.lisSaveSettings, async (_e, settings: LisConnectionSettings) => {
+    if (typeof lis.configure === 'function') {
+      lis.configure(settings)
+    } else {
+      persist.setLis(settings)
+    }
+    if (settings.live) {
+      await orchestrator.mapping.autoMap('landwind-ld-560')
+      win.webContents.send(IPC_EVENT.mappingsChanged, orchestrator.mapping.list())
+    }
+    win.webContents.send(IPC_EVENT.lisStateChanged, { mode: lis.mode })
     return persist.getLis()
   })
   ipcMain.handle(
@@ -119,6 +129,15 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     }
   )
   ipcMain.handle(IPC.lisRecentWrites, () => lis.recentWrites())
+  ipcMain.handle(IPC.lisWriteBarcode, async (_e, instrumentId: string, barcode: string) =>
+    orchestrator.writeBarcodeToLis(instrumentId, barcode)
+  )
+  ipcMain.handle(IPC.lisParseFrame, async (_e, instrumentId: string, raw: string) =>
+    orchestrator.parseFrameToLis(instrumentId, raw)
+  )
+  ipcMain.handle(IPC.lisParseAllUnwritten, async (_e, instrumentId: string) =>
+    orchestrator.parseAllUnwrittenToLis(instrumentId)
+  )
 
   // Monitor + logs
   ipcMain.handle(IPC.monitorRecent, () => orchestrator.recentMonitor())

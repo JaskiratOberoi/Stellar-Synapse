@@ -40,6 +40,9 @@ export function Sidebar() {
         <div>
           <div className="text-sm font-bold leading-tight tracking-tight">Stellar Synapse</div>
           <div className="text-[11px] text-muted-foreground">LIS Middleware</div>
+          <div className="text-[10px] font-medium tabular-nums text-muted-foreground/70">
+            v{__APP_VERSION__}
+          </div>
         </div>
       </div>
 

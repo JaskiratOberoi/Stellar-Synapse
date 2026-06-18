@@ -42,7 +42,12 @@ const api: StellarApi = {
     getSettings: () => ipcRenderer.invoke(IPC.lisGetSettings),
     saveSettings: (settings) => ipcRenderer.invoke(IPC.lisSaveSettings, settings),
     testConnection: (settings) => ipcRenderer.invoke(IPC.lisTestConnection, settings),
-    recentWrites: () => ipcRenderer.invoke(IPC.lisRecentWrites)
+    recentWrites: () => ipcRenderer.invoke(IPC.lisRecentWrites),
+    writeBarcode: (instrumentId, barcode) =>
+      ipcRenderer.invoke(IPC.lisWriteBarcode, instrumentId, barcode),
+    parseFrame: (instrumentId, raw) => ipcRenderer.invoke(IPC.lisParseFrame, instrumentId, raw),
+    parseAllUnwritten: (instrumentId) =>
+      ipcRenderer.invoke(IPC.lisParseAllUnwritten, instrumentId)
   },
   monitor: {
     recent: () => ipcRenderer.invoke(IPC.monitorRecent),

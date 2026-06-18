@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2 } from 'lucide-react'
+import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -11,6 +11,7 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime, timeAgo } from '@/lib/utils'
 import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
+import { normalizeLd560Raw, parseLd560SampleFromRaw, ld560FrameLisStatus } from '@shared/ld560Transmit'
 
 export function InstrumentDetail() {
   const { id } = useParams()
@@ -18,7 +19,58 @@ export function InstrumentDetail() {
   const inst = useAppStore((s) => s.instruments.find((i) => i.id === id))
   const drivers = useAppStore((s) => s.drivers)
   const monitor = useAppStore((s) => s.monitor.filter((m) => m.instrumentId === id))
+  const lisLive = useAppStore((s) => s.lisSettings?.live)
   const [logView, setLogView] = useState<'parsed' | 'raw'>('parsed')
+  const [parsingRaw, setParsingRaw] = useState<string | null>(null)
+  const [parsingAll, setParsingAll] = useState(false)
+  const [writeFeedback, setWriteFeedback] = useState<string | null>(null)
+
+  // Build results from stored RAW <TRANSMIT> frames (source of truth; survives parser fixes).
+  const resultFrames = useMemo(() => {
+    const byRaw = new Map<
+      string,
+      {
+        sampleId: string
+        internalSeq?: string
+        timestamp: string
+        raw: string
+        rows: { id: string; analyteCode: string; value: string; unit?: string }[]
+        lisStatus: ReturnType<typeof ld560FrameLisStatus>
+      }
+    >()
+
+    for (const m of monitor) {
+      const raw = normalizeLd560Raw(m.raw)
+      if (!raw || byRaw.has(raw)) continue
+      const parsed = parseLd560SampleFromRaw(raw)
+      if (!parsed) continue
+      byRaw.set(raw, {
+        sampleId: parsed.barcode,
+        internalSeq: parsed.internalSeq,
+        timestamp: m.timestamp,
+        raw,
+        lisStatus: ld560FrameLisStatus(monitor, id ?? '', raw),
+        rows: parsed.analytes.map((a) => ({
+          id: `${raw}-${a.code}`,
+          analyteCode: a.code,
+          value: a.value,
+          unit: a.unit
+        }))
+      })
+    }
+
+    return [...byRaw.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+  }, [monitor, id])
+
+  const unparsedCount = useMemo(
+    () => resultFrames.filter((f) => f.lisStatus !== 'done').length,
+    [resultFrames]
+  )
+
+  const activityLog = useMemo(
+    () => monitor.filter((m) => m.stage !== 'received' || m.analyteCode !== 'RAW'),
+    [monitor]
+  )
 
   // Distinct raw protocol frames (each message produces one frame shared across
   // its analyte events), newest first, for the realtime raw data view.
@@ -55,6 +107,67 @@ export function InstrumentDetail() {
 
   const emitSample = async (): Promise<void> => {
     await window.api.simulator.emitOne(inst.id)
+  }
+
+  const parseFrameToLis = async (raw: string, sampleId: string): Promise<void> => {
+    setParsingRaw(raw)
+    setWriteFeedback(null)
+    try {
+      const result =
+        typeof window.api.lis.parseFrame === 'function'
+          ? await window.api.lis.parseFrame(inst.id, raw)
+          : {
+              ...(await window.api.lis.writeBarcode(inst.id, sampleId)),
+              barcode: sampleId
+            }
+      setWriteFeedback(
+        `LIS parsed ${sampleId}: ${result.written} written` +
+          (result.skipped ? `, ${result.skipped} skipped` : '') +
+          (result.errors ? `, ${result.errors} failed` : '')
+      )
+    } catch (err) {
+      setWriteFeedback((err as Error).message)
+    } finally {
+      setParsingRaw(null)
+    }
+  }
+
+  const parseAllToLis = async (): Promise<void> => {
+    setParsingAll(true)
+    setWriteFeedback(null)
+    try {
+      if (typeof window.api.lis.parseAllUnwritten !== 'function') {
+        let written = 0
+        let skipped = 0
+        let errors = 0
+        for (const frame of resultFrames.filter((f) => f.lisStatus !== 'done')) {
+          try {
+            const r = await window.api.lis.writeBarcode(inst.id, frame.sampleId)
+            written += r.written
+            skipped += r.skipped
+            errors += r.errors
+          } catch {
+            errors++
+          }
+        }
+        setWriteFeedback(
+          `Parsed ${unparsedCount} sample(s): ${written} written` +
+            (skipped ? `, ${skipped} skipped` : '') +
+            (errors ? `, ${errors} failed` : '')
+        )
+        return
+      }
+      const result = await window.api.lis.parseAllUnwritten(inst.id)
+      setWriteFeedback(
+        `Parsed ${result.frames} sample(s): ${result.written} written` +
+          (result.skipped ? `, ${result.skipped} skipped` : '') +
+          (result.errors ? `, ${result.errors} failed` : '')
+      )
+    } catch (err) {
+      setWriteFeedback((err as Error).message)
+    } finally {
+      setParsingAll(false)
+    }
   }
 
   return (
@@ -160,8 +273,91 @@ export function InstrumentDetail() {
       <motion.div variants={fadeInUp}>
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Live Channel Log</CardTitle>
+          <CardTitle>Received Results</CardTitle>
           <div className="flex items-center gap-2">
+            {writeFeedback && (
+              <span className="max-w-xs truncate text-xs text-muted-foreground">{writeFeedback}</span>
+            )}
+            {lisLive && unparsedCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                disabled={parsingAll}
+                onClick={parseAllToLis}
+              >
+                <FileInput className="h-3 w-3" />
+                {parsingAll ? 'Parsing…' : `LIS Parse all (${unparsedCount})`}
+              </Button>
+            )}
+            <Badge tone="muted">{resultFrames.length} sample{resultFrames.length === 1 ? '' : 's'}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="max-h-96 space-y-3 overflow-y-auto">
+            {resultFrames.map((frame) => (
+              <div
+                key={frame.raw ?? `${frame.sampleId}-${frame.timestamp}`}
+                className="rounded-lg border border-border/50 bg-background/70"
+              >
+                <div className="flex items-center justify-between border-b border-border/40 px-3 py-2 text-xs">
+                  <span>
+                    <span className="font-mono font-medium text-accent">{frame.sampleId}</span>
+                    {frame.internalSeq && (
+                      <span className="ml-2 text-muted-foreground">run #{frame.internalSeq}</span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {frame.lisStatus === 'done' && (
+                      <Badge tone="success">In LIS</Badge>
+                    )}
+                    {frame.lisStatus === 'partial' && (
+                      <Badge tone="warning">Partial</Badge>
+                    )}
+                    {lisLive && frame.lisStatus !== 'done' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1 px-2 text-xs"
+                        disabled={parsingRaw === frame.raw}
+                        onClick={() => parseFrameToLis(frame.raw, frame.sampleId)}
+                      >
+                        <FileInput className="h-3 w-3" />
+                        {parsingRaw === frame.raw ? 'Parsing…' : 'LIS Parse'}
+                      </Button>
+                    )}
+                    <span className="text-muted-foreground">{formatTime(frame.timestamp)}</span>
+                  </div>
+                </div>
+                <div className="divide-y divide-border/30 px-3 py-1">
+                  {frame.rows.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
+                      <span className="font-medium">{r.analyteCode}</span>
+                      <span>
+                        <span className="font-semibold">{r.value}</span>
+                        {r.unit && <span className="ml-1 text-xs text-muted-foreground">{r.unit}</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {resultFrames.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No decoded results yet. Results are retained across restarts once received.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      </motion.div>
+
+      <motion.div variants={fadeInUp}>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Activity Log</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge tone="muted">{activityLog.length} events</Badge>
             <Badge tone={running ? 'success' : 'muted'}>{running ? 'Live' : 'Stopped'}</Badge>
             <div className="flex rounded-lg border border-border p-0.5">
               <button
@@ -195,7 +391,7 @@ export function InstrumentDetail() {
           {logView === 'parsed' ? (
             <div className="max-h-80 space-y-1 overflow-y-auto font-mono text-xs">
               <AnimatePresence initial={false}>
-              {monitor.slice(0, 60).map((m) => (
+              {activityLog.map((m) => (
                 <motion.div
                   key={m.id}
                   layout
@@ -221,13 +417,13 @@ export function InstrumentDetail() {
                 </motion.div>
               ))}
               </AnimatePresence>
-              {monitor.length === 0 && (
+              {activityLog.length === 0 && (
                 <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
               )}
             </div>
           ) : (
             <div className="max-h-[28rem] space-y-3 overflow-y-auto">
-              {rawFrames.slice(0, 40).map((f) => (
+              {rawFrames.map((f) => (
                 <div key={f.id} className="rounded-lg border border-border/50 bg-background/70">
                   <div className="flex items-center justify-between border-b border-border/40 px-3 py-1.5 text-xs">
                     <span className="font-mono text-accent">{f.sampleId}</span>

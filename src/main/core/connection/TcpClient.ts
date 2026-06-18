@@ -58,6 +58,8 @@ export class TcpClient extends EventEmitter implements ITransport {
       this.backoffMs = 2000
       const peer = `${host}:${port}`
       logger.info('tcp-client', `Connected to ${peer} as ${mode} (${this.instrumentId})`)
+      socket.setKeepAlive(true, 10000)
+      socket.setNoDelay(true)
       this.emitStatus('online', peer)
     })
     socket.on('data', (chunk) => this.emit('data', chunk))
@@ -104,6 +106,19 @@ export class TcpClient extends EventEmitter implements ITransport {
       return
     }
     if (this.socket && !this.socket.destroyed) this.socket.write(data)
+  }
+
+  /** Drop and re-open the socket while staying in the running state. */
+  forceReconnect(): void {
+    if (!this.running) return
+    this.backoffMs = 2000
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.socket?.destroy()
+    this.socket = null
+    this.connect()
   }
 
   private emitStatus(status: ConnectionStatus, peer?: string): void {

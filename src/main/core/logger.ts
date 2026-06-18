@@ -1,14 +1,25 @@
 import { EventEmitter } from 'node:events'
 import { randomUUID } from 'node:crypto'
+import { appendFile } from 'node:fs'
+import { join } from 'node:path'
 import type { LogEntry, LogLevel } from '../../shared/types'
 
 /**
  * In-memory ring-buffer logger with an event emitter so the UI can stream logs
- * live. In a later phase this can also persist to disk.
+ * live. When a log directory is configured (see initFile), entries are also
+ * appended to a daily file so logs survive restarts and can live off the C:
+ * drive (the data directory chosen at install time).
  */
 class Logger extends EventEmitter {
   private buffer: LogEntry[] = []
   private readonly max = 500
+  private logDir: string | null = null
+
+  /** Enable persistent file logging into the given directory. */
+  initFile(dir: string): void {
+    this.logDir = dir
+    this.info('logger', `File logging enabled at ${dir}`)
+  }
 
   log(level: LogLevel, source: string, message: string): void {
     const entry: LogEntry = {
@@ -26,6 +37,11 @@ class Logger extends EventEmitter {
     if (level === 'error') console.error(tag, message)
     else if (level === 'warn') console.warn(tag, message)
     else console.log(tag, message)
+    // Append to the daily log file (best-effort, never throws into callers).
+    if (this.logDir) {
+      const file = join(this.logDir, `synapse-${entry.timestamp.slice(0, 10)}.log`)
+      appendFile(file, `${entry.timestamp} [${level.toUpperCase()}] [${source}] ${message}\n`, () => {})
+    }
   }
 
   debug(source: string, message: string): void {

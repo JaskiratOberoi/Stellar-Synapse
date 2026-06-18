@@ -36,7 +36,11 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  allowElevation: true
+  include: build/installer.nsh
+  # Per-user install only. Disabling elevation skips the install-mode selection
+  # page, whose System.dll callbacks crash under this machine's security agent
+  # (0xc0000005 in System.dll). Flow becomes Welcome -> Directory -> Install.
+  allowElevation: false
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: Stellar Synapse

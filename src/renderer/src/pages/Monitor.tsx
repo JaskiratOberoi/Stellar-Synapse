@@ -16,6 +16,7 @@ const stageTone: Record<MonitorStage, 'muted' | 'accent' | 'primary' | 'success'
   mapped: 'primary',
   written: 'success',
   skipped: 'warning',
+  queued: 'accent',
   error: 'danger'
 }
 
@@ -105,7 +106,7 @@ export function Monitor() {
             </button>
           </div>
           <Badge tone={paused ? 'warning' : 'success'}>
-            {paused ? 'Paused' : 'Live'} - {filtered.length}
+            {paused ? 'Paused' : 'Live'} — {filtered.length} shown ({monitor.length} retained)
           </Badge>
         </CardContent>
       </Card>

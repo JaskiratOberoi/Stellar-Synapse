@@ -51,6 +51,9 @@ export const IPC = {
   lisSaveSettings: 'lis:save-settings',
   lisTestConnection: 'lis:test-connection',
   lisRecentWrites: 'lis:recent-writes',
+  lisWriteBarcode: 'lis:write-barcode',
+  lisParseFrame: 'lis:parse-frame',
+  lisParseAllUnwritten: 'lis:parse-all-unwritten',
 
   // Monitor + logs
   monitorRecent: 'monitor:recent',
@@ -111,6 +114,17 @@ export interface StellarApi {
     saveSettings(settings: LisConnectionSettings): Promise<LisConnectionSettings>
     testConnection(settings: LisConnectionSettings): Promise<LisConnectionResult>
     recentWrites(): Promise<LisResultWrite[]>
+    writeBarcode(
+      instrumentId: string,
+      barcode: string
+    ): Promise<{ written: number; skipped: number; errors: number }>
+    parseFrame(
+      instrumentId: string,
+      raw: string
+    ): Promise<{ written: number; skipped: number; errors: number; barcode: string }>
+    parseAllUnwritten(
+      instrumentId: string
+    ): Promise<{ frames: number; written: number; skipped: number; errors: number }>
   }
   monitor: {
     recent(): Promise<MonitorEvent[]>
