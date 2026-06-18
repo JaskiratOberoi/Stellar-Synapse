@@ -1,0 +1,14 @@
+08/24/2015_15:48:17 | Maglumi Online | info    | --><ENQ>
+08/24/2015_15:48:17 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><STX>1H|\^&||PSWD|Maglumi User|||||Lis||P|E1394-97|20150824<ETX>32<CR><LF>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><STX>2P|1<ETX>32<CR><LF>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><STX>3O|1|C60||^^^HBcAb IgG<ETX>10<CR><LF>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><STX>4R|1|^^^HBcAb IgG|500|index/mL|0 to 100|>||||||20140825100415|<ETX>3F<CR><LF>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><STX>5L|1|N<ETX>FB<CR><LF>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>
+08/24/2015_15:48:18 | Maglumi Online | info    | --><EOT>
+08/24/2015_15:48:18 | Maglumi Online | info    | <--<ACK>

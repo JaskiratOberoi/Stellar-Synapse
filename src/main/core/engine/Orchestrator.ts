@@ -144,6 +144,15 @@ export class Orchestrator extends EventEmitter {
     const transport = createTransport(def.id, def.connection)
     const protocol = createProtocol(def.protocol)
 
+    // Wire low-level protocol control bytes (e.g. ASTM E1381 ENQ->ACK and
+    // per-frame ACK) back to the analyzer. The ASTM decoder emits these via its
+    // `onControl` hook as it parses; without writing them to the socket the
+    // analyzer never gets an ACK and reports a communication timeout.
+    const ctrlProto = protocol as unknown as { onControl?: (byte: number) => void }
+    ctrlProto.onControl = (byte: number): void => {
+      if (!def.connection.passive) transport.write(Buffer.from([byte]))
+    }
+
     transport.on('status', (status: ConnectionStatus, peer?: string) => {
       this.patchRuntime(id, { status, peer })
     })

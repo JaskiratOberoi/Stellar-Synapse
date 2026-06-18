@@ -1,0 +1,25 @@
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ENQ>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><STX>1H|\^&||PSWD|Maglumi User|||||Lis||P|E1394-97|20120613<ETX>32<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><STX>2Q|1|^123456789||ALL||||||||O<ETX>32<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><STX>3L|1|N<ETX>FC<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><EOT>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<ENQ>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<STX>1H|\^&||PSWD|Maglumi 1000|||||Lis||P|E1394-97|20100319<ETX>32<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<STX>2P|1<ETX>32<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:50 | Maglumi Online | info    | <--<STX>3O|1|123456789||^^^Anti-TPO|R<ETX>42<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:51 | Maglumi Online | info    | <--<STX>4O|2|123456789||^^^B2-MG|R<ETX>3F<CR><LF>
+08/24/2015_09:48:50 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:51 | Maglumi Online | info    | <--<STX>5L|1|N<ETX>FB<CR><LF>
+08/24/2015_09:48:51 | Maglumi Online | info    | --><ACK>
+08/24/2015_09:48:51 | Maglumi Online | info    | <--<EOT>
+08/24/2015_09:48:51 | Maglumi Online | info    | --><ACK>

@@ -1,0 +1,14 @@
+You can find all Malgumi online log file like D:\Program Files\Maglumi 2000\online\log
+
+06/13/2014_09:38:41 | Maglumi Online | info    | --><ENQ>
+06/13/2014_09:38:42 | Maglumi Online | info    | <--<ACK>
+06/13/2014_09:38:42 | Maglumi Online | info    | --><STX>
+06/13/2014_09:38:42 | Maglumi Online | info    | -->H|\^&||PSWD|Maglumi User|||||Lis||P|E1394-97|20140613
+06/13/2014_09:38:42 | Maglumi Online | info    | -->P|1
+06/13/2014_09:38:42 | Maglumi Online | info    | -->O|1|146||^^^TSH\^^^FT4\^^^FT3
+06/13/2014_09:38:42 | Maglumi Online | info    | -->R|1|^^^TSH|1.22|uIU/mL|0.4 to 4.5|N||||||20131228162937
+06/13/2014_09:38:42 | Maglumi Online | info    | -->R|2|^^^FT4|11.06|pg/mL|7.2 to 17.2|N||||||20131228161701
+06/13/2014_09:38:42 | Maglumi Online | info    | -->R|3|^^^FT3|1.743|pg/mL|1.21 to 4.18|N||||||20131228162319
+06/13/2014_09:38:42 | Maglumi Online | info    | -->L|1|N
+06/13/2014_09:38:42 | Maglumi Online | info    | --><ETX>
+06/13/2014_09:38:42 | Maglumi Online | info    | --><EOT>

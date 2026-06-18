@@ -15,3 +15,4 @@ installer/
 pkg*/
 dist-*/
 out-pkg/
+Thumbs.db
