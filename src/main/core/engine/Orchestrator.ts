@@ -14,6 +14,8 @@ import { createTransport } from '../connection/factory'
 import { InstrumentPollScheduler } from '../connection/InstrumentPollScheduler'
 import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
+import { AstmHostQuerySender, buildAstmOrderRecords } from '../protocols/astmHostQuery'
+import { extractAstmQuery } from '../drivers/parsing'
 import { getDriver } from '../drivers/registry'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
@@ -25,6 +27,8 @@ import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '
 interface RunningConnection {
   transport: ITransport
   protocol: IProtocol
+  /** Outbound ASTM sender for host-query (order) responses (bidirectional only). */
+  sender?: AstmHostQuerySender
 }
 
 /**
@@ -153,12 +157,27 @@ export class Orchestrator extends EventEmitter {
       if (!def.connection.passive) transport.write(Buffer.from([byte]))
     }
 
+    // Outbound ASTM sender for answering host queries (bidirectional ASTM only).
+    const sender =
+      def.protocol === 'astm' && def.connection.hostQuery && !def.connection.passive
+        ? new AstmHostQuerySender(
+            (b) => transport.write(b),
+            (m) => logger.info('host-query', `${def.name}: ${m}`)
+          )
+        : undefined
+
     transport.on('status', (status: ConnectionStatus, peer?: string) => {
       this.patchRuntime(id, { status, peer })
     })
     transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
     transport.on('data', (chunk: Buffer) => {
       this.pollSchedulers.get(id)?.touchInbound()
+      // While a host-query response is in flight, the analyzer only sends ACK/NAK
+      // control bytes — route them to the sender's handshake, not the decoder.
+      if (sender?.isBusy()) {
+        for (const b of chunk) sender.feedByte(b)
+        return
+      }
       // Surface every inbound byte so live instruments are debuggable in the UI.
       if (def.connection.passive) {
         this.pushRawReceived(id, def.name, chunk)
@@ -202,7 +221,7 @@ export class Orchestrator extends EventEmitter {
 
     try {
       await transport.start()
-      this.connections.set(id, { transport, protocol })
+      this.connections.set(id, { transport, protocol, sender })
       const hasPoll = (def.connection.pollIntervalMs ?? 0) > 0
       const hasIdle = (def.connection.idleReconnectMs ?? 0) > 0
       if ((hasPoll || hasIdle) && !def.connection.passive) {
@@ -251,9 +270,83 @@ export class Orchestrator extends EventEmitter {
       lastMessageAt: new Date().toISOString()
     })
 
+    // Host query (analyzer asks the LIS which tests to run for a barcode).
+    if (def.connection.hostQuery && def.protocol === 'astm') {
+      const query = extractAstmQuery(message)
+      if (query) {
+        await this.handleHostQuery(def, driver.info.id, query.sid, message.raw)
+        return
+      }
+    }
+
     const results = driver.parse(message, instrumentId)
     for (const result of results) {
       await this.processResult(def, driver.info.id, result, message.raw)
+    }
+  }
+
+  /**
+   * Answer an ASTM host query: look up the sample's ordered tests in the LIS,
+   * reverse-map the LIS test codes to this analyzer's instrument codes, and
+   * transmit ASTM O (order) records back so the analyzer knows what to run.
+   */
+  private async handleHostQuery(
+    def: InstrumentDefinition,
+    driverId: string,
+    sid: string,
+    raw: string
+  ): Promise<void> {
+    const sender = this.connections.get(def.id)?.sender
+    const baseEvent = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: sid,
+      analyteCode: 'QUERY',
+      analyteName: 'Host query',
+      value: '',
+      raw: raw.length > 600 ? `${raw.slice(0, 600)}...` : raw,
+      timestamp: new Date().toISOString()
+    }
+    this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'received', message: `Host query for ${sid}` })
+
+    let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
+    try {
+      order = await this.lis.getOrder(sid)
+    } catch (err) {
+      logger.warn('host-query', `${def.name}: order lookup failed for ${sid}: ${(err as Error).message}`)
+    }
+
+    const codes = order
+      ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
+      : []
+
+    if (codes.length === 0) {
+      logger.info('host-query', `${def.name}: no mappable orders for ${sid} (sending empty order set)`)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'skipped',
+        message: order
+          ? `No analytes on this X3 map to the ordered tests [${order.testCodes.join(', ')}]`
+          : `Barcode ${sid} not registered in LIS — nothing to order`
+      })
+    }
+
+    if (!sender) return
+    const records = buildAstmOrderRecords(sid, codes, def.name)
+    try {
+      await sender.send(records)
+      logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'mapped',
+        mappedTo: codes.length ? codes.join(', ') : '(none)',
+        message: `Ordered ${codes.length} test(s) to analyzer`
+      })
+    } catch (err) {
+      logger.error('host-query', `${def.name}: failed to send orders for ${sid}: ${(err as Error).message}`)
+      this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: (err as Error).message })
     }
   }
 

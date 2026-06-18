@@ -25,6 +25,27 @@ function astmTestId(field?: string): { code: string; name?: string } {
   return { code, name: code || undefined }
 }
 
+/**
+ * Detect an ASTM Query (Q) record and extract the queried sample barcode (SID).
+ * Maglumi sends `Q|1|^SID||ALL|...` when a sample is loaded and "Auto Download
+ * Test Assay" (host query) is on. The SID rides in field 3 (index 2) as the
+ * starting-range id, typically `^SID` or `patientId^SID^...`; we take the first
+ * non-empty caret component.
+ */
+export function extractAstmQuery(message: ProtocolMessage): { sid: string } | null {
+  if (message.protocol !== 'astm') return null
+  for (const rec of message.records) {
+    if ((rec[0] || '').toUpperCase() !== 'Q') continue
+    const field = rec[2] || rec[3] || ''
+    const sid = field
+      .split('^')
+      .map((p) => p.trim())
+      .find((p) => p.length > 0)
+    if (sid) return { sid }
+  }
+  return null
+}
+
 /** Parse an ASTM E1394 message into canonical results. */
 export function parseAstm(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
   const results: CanonicalResult[] = []

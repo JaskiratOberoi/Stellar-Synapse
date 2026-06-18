@@ -232,6 +232,47 @@ export class MappingEngine {
     this.save()
   }
 
+  /**
+   * Reverse lookup for host-query: given the LIS test codes/names ordered for a
+   * sample, return the instrument analyte codes to put in the ASTM O records.
+   * Uses the existing mapping rules (instrumentCode <-> lisTestCode/Name), skips
+   * unmapped/ignored rules, and de-duplicates (a panel test maps many analytes).
+   */
+  instrumentCodesForLisTests(
+    driverId: string,
+    lisTestCodes: readonly string[],
+    lisTestNames: readonly string[] = []
+  ): string[] {
+    const wantCodes = new Set(lisTestCodes.map((c) => c.trim().toUpperCase()).filter(Boolean))
+    const wantNames = new Set(lisTestNames.map((n) => n.trim().toUpperCase()).filter(Boolean))
+
+    // Collect matching rules grouped by the LIS test they resolve to. A single
+    // LIS test can have both a generic catalog row (code "TSH", auto) and a
+    // real-channel manual row (code "TSH II"). The analyzer only knows its own
+    // channel name, so when a manual row exists for a test it shadows the auto
+    // one — we never emit an order code the instrument can't recognize.
+    const byTest = new Map<string, MappingRule[]>()
+    for (const r of this.rules) {
+      if (r.driverId !== driverId) continue
+      if (r.status === 'unmapped' || r.status === 'ignored') continue
+      const codeHit = r.lisTestCode && wantCodes.has(r.lisTestCode.toUpperCase())
+      const nameHit = r.lisTestName && wantNames.has(r.lisTestName.toUpperCase())
+      if (!codeHit && !nameHit) continue
+      const key = String(r.lisTestId ?? r.lisTestCode ?? r.instrumentCode).toUpperCase()
+      const group = byTest.get(key) ?? []
+      group.push(r)
+      byTest.set(key, group)
+    }
+
+    const out: string[] = []
+    for (const group of byTest.values()) {
+      const manual = group.filter((r) => r.status === 'manual')
+      const chosen = manual.length > 0 ? manual : group
+      for (const r of chosen) out.push(r.instrumentCode)
+    }
+    return [...new Set(out)]
+  }
+
   /** Resolve a canonical result to its mapping rule (by driver + analyte code). */
   resolve(result: CanonicalResult, driverId: string): MappingRule | undefined {
     return this.rules.find(

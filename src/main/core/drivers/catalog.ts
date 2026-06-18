@@ -1,4 +1,5 @@
 import type { InstrumentDriverInfo, InterfaceMode, ProtocolKind, TransportKind } from '../../../shared/types'
+import { BECKMAN_AU } from './beckmanAu'
 import type { DriverAnalyte } from './IInstrumentDriver'
 import {
   CBC,
@@ -15,7 +16,14 @@ import {
 } from './panels'
 
 /** A model definition is an InstrumentDriverInfo plus the analytes it reports. */
-export type ModelDefinition = InstrumentDriverInfo & { analytes: DriverAnalyte[] }
+export type ModelDefinition = InstrumentDriverInfo & {
+  analytes: DriverAnalyte[]
+  /**
+   * HL7 parsing dialect for `protocol: 'hl7'` models (default 'generic').
+   * 'getein' selects the Metis OBR-2 (barcode) / OBX-3 (item id) layout.
+   */
+  hl7Dialect?: 'generic' | 'getein'
+}
 
 interface MkOpts {
   protocol?: ProtocolKind
@@ -23,6 +31,7 @@ interface MkOpts {
   port: number
   maturity?: InstrumentDriverInfo['maturity']
   transports?: TransportKind[]
+  hl7Dialect?: ModelDefinition['hl7Dialect']
 }
 
 function mk(
@@ -45,7 +54,8 @@ function mk(
     mode: opts.mode ?? 'bidirectional',
     transports: opts.transports ?? ['tcp-server', 'serial'],
     defaultPort: opts.port,
-    maturity: opts.maturity ?? 'skeleton'
+    maturity: opts.maturity ?? 'skeleton',
+    ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {})
   }
 }
 
@@ -204,6 +214,49 @@ const getein = [
 ]
 
 // ---------------------------------------------------------------------------
+// Getein - Metis (HL7 v2.3.1 biochemistry, MLLP)
+// ---------------------------------------------------------------------------
+const geteinMetis = [
+  mk(
+    'getein-metis-6000',
+    'Getein Metis 6000',
+    'Getein Biotech',
+    'Clinical Chemistry',
+    'Metis-series automatic biochemistry analyzer. HL7 v2.3.1 over MLLP (TCP/IP). The ' +
+      'analyzer connects as a TCP client to this server and uploads results as ORU^R01 ' +
+      '(MSH-16: 0=patient, 1=calibration, 2=QC — only patient results are posted). The ' +
+      'accession barcode is OBR-2 (Placer Order Number) and each analyte is keyed by ' +
+      'OBX-3 (item id) with the name in OBX-4 — configure the SAME item ids on the analyzer ' +
+      'and the LIS so results match. Bidirectional host-query (QRY^Q02/DSR^Q03) is supported ' +
+      'by the device but order-download is pending a captured DSR sample.',
+    combine(CHEMISTRY, ELECTROLYTES),
+    { port: 9105, protocol: 'hl7', hl7Dialect: 'getein', transports: ['tcp-server'], maturity: 'beta' }
+  )
+]
+
+// ---------------------------------------------------------------------------
+// EDAN - H60 / H60 Vet hematology (HL7 over MLLP, analyzer = TCP client)
+// ---------------------------------------------------------------------------
+const edan = [
+  ...family(
+    [
+      ['edan-h60', 'EDAN H60'],
+      ['edan-h60-vet', 'EDAN H60 Vet']
+    ],
+    'EDAN Instruments',
+    'Hematology (CBC)',
+    'H60 / H60 Vet auto hematology analyzer (CBC/5-Diff). HL7 v2.x over MLLP. On the ' +
+      'analyzer, set the remote LIS transfer mode to MLLP, enter this server\'s IP + port, ' +
+      'tick "Auto-communication", click Communication to test, then Save (firmware H60/H60s ' +
+      'APP V1.10+, H60 Vet V1.05+; instrument and LIS must share a subnet). The analyzer ' +
+      'connects as a TCP client to this server and uploads results. The OBX item-code map is ' +
+      'pending a captured sample, so this driver decodes generic MSH/PID/OBR/OBX for bring-up.',
+    CBC,
+    { port: 7999, protocol: 'hl7', mode: 'unidirectional', transports: ['tcp-server'], maturity: 'skeleton' }
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Beckman Coulter - DxH (hematology), AU/DxC (chemistry), Access/DxI (immuno),
 // integrated and urinalysis
 // ---------------------------------------------------------------------------
@@ -232,9 +285,32 @@ const beckman = [
     { port: 9102, protocol: 'astm' },
     ['beckman-dxh-900']
   ),
+  // AU480 — dedicated entry on the Beckman "Online" fixed-field host protocol
+  // (not pipe-delimited ASTM). Carries the full configured chemistry/ISE menu.
+  mk(
+    'beckman-au480',
+    'Beckman Coulter AU480',
+    'Beckman Coulter',
+    'Clinical Chemistry',
+    'AU480 clinical chemistry analyzer. Beckman "Online" fixed-field host protocol ' +
+      '(STX/ETX framed, 2-digit Online Test No., space-padded fixed-width results) over ' +
+      'TCP/IP or RS232 serial — NOT pipe-delimited ASTM. On the analyzer set ' +
+      'System > Online > Set Up "Result Transfer" to a real format (not "None"); tests are ' +
+      'keyed by the Online Test No. table (01=GLU … 99=Cl). Results match an accession via ' +
+      'the barcode learned from the sample-information (S) message.',
+    BECKMAN_AU,
+    {
+      port: 9111,
+      protocol: 'beckman-au',
+      mode: 'unidirectional',
+      // Host link is RS-232 serial; reach it over LAN via a serial-to-Ethernet
+      // device server (Synapse = tcp-client) or use native Online LAN (tcp-server).
+      transports: ['serial', 'tcp-client', 'tcp-server'],
+      maturity: 'beta'
+    }
+  ),
   ...family(
     [
-      ['beckman-au480', 'Beckman Coulter AU480'],
       ['beckman-au680', 'Beckman Coulter AU680'],
       ['beckman-au5800', 'Beckman Coulter AU5800'],
       ['beckman-dxc-500-au', 'Beckman Coulter DxC 500 AU'],
@@ -242,9 +318,11 @@ const beckman = [
     ],
     'Beckman Coulter',
     'Clinical Chemistry',
-    'AU / DxC AU clinical chemistry analyzer. ASTM E1394 over TCP/IP or serial.',
-    combine(CHEMISTRY, ELECTROLYTES),
-    { port: 9111, protocol: 'astm' }
+    'AU / DxC AU clinical chemistry analyzer. Beckman "Online" fixed-field host protocol ' +
+      '(2-digit Online Test No., fixed-width results) over TCP/IP or serial. Shares the AU480 ' +
+      'test menu; confirm each analyzer\'s Online Test No. assignments.',
+    BECKMAN_AU,
+    { port: 9111, protocol: 'beckman-au' }
   ),
   ...family(
     [
@@ -350,6 +428,8 @@ export const CATALOG: ModelDefinition[] = [
   ...maglumi,
   ...snibeOther,
   ...getein,
+  ...geteinMetis,
+  ...edan,
   ...beckman,
   ...landwind,
   ...agappe,

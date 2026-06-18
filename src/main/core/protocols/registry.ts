@@ -1,6 +1,7 @@
 import type { ProtocolKind } from '../../../shared/types'
 import type { IProtocol } from './IProtocol'
 import { AstmProtocol } from './astm'
+import { BeckmanAuProtocol } from './beckmanAu'
 import { Hl7Protocol } from './hl7'
 import { SimpleProtocol } from './simple'
 
@@ -11,6 +12,8 @@ export function createProtocol(kind: ProtocolKind): IProtocol {
       return new Hl7Protocol()
     case 'simple':
       return new SimpleProtocol()
+    case 'beckman-au':
+      return new BeckmanAuProtocol()
     case 'astm':
     case 'poct1a':
     case 'custom':

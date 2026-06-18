@@ -15,7 +15,7 @@
 export type TransportKind = 'tcp-server' | 'tcp-client' | 'serial'
 
 /** Wire protocol an analyzer speaks. */
-export type ProtocolKind = 'astm' | 'hl7' | 'poct1a' | 'custom' | 'simple'
+export type ProtocolKind = 'astm' | 'hl7' | 'poct1a' | 'custom' | 'simple' | 'beckman-au'
 
 /** Direction of an instrument interface. */
 export type InterfaceMode = 'unidirectional' | 'bidirectional'

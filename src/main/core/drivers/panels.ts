@@ -122,6 +122,10 @@ export const INFLAMMATION: DriverAnalyte[] = [
   a('IL6', 'Interleukin-6', 'pg/mL', 0, 7, 1)
 ]
 
+export const AUTOIMMUNE: DriverAnalyte[] = [
+  a('ACCP', 'Anti-CCP', 'U/mL', 0, 17, 1)
+]
+
 export const CHEMISTRY: DriverAnalyte[] = [
   a('GLU', 'Glucose', 'mg/dL', 70, 100, 0),
   a('UREA', 'Urea', 'mg/dL', 15, 40, 0),
@@ -212,7 +216,8 @@ export const IMMUNOASSAY_FULL = combine(
   INFECTIOUS,
   BONE,
   ANEMIA,
-  DIABETES
+  DIABETES,
+  AUTOIMMUNE
 )
 
 /** Point-of-care immunofluorescence (Getein FIA) menu. */
