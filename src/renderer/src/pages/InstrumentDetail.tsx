@@ -25,45 +25,89 @@ export function InstrumentDetail() {
   const [parsingAll, setParsingAll] = useState(false)
   const [writeFeedback, setWriteFeedback] = useState<string | null>(null)
 
-  // Build results from stored RAW <TRANSMIT> frames (source of truth; survives parser fixes).
+  // Build the decoded-results view. Two sources:
+  //  - LD-560 <TRANSMIT> raw frames (reconstructed from raw so they survive parser
+  //    fixes and can be re-parsed to the LIS), and
+  //  - generic decoded results for every other protocol (ASTM/HL7/Simple), grouped
+  //    by their raw frame from the 'decoded' monitor events.
   const resultFrames = useMemo(() => {
-    const byRaw = new Map<
-      string,
-      {
-        sampleId: string
-        internalSeq?: string
-        timestamp: string
-        raw: string
-        rows: { id: string; analyteCode: string; value: string; unit?: string }[]
-        lisStatus: ReturnType<typeof ld560FrameLisStatus>
-      }
-    >()
+    type Frame = {
+      sampleId: string
+      internalSeq?: string
+      timestamp: string
+      raw: string
+      kind: 'ld560' | 'generic'
+      rows: { id: string; analyteCode: string; value: string; unit?: string }[]
+      lisStatus: ReturnType<typeof ld560FrameLisStatus> | undefined
+    }
+    const byKey = new Map<string, Frame>()
 
     for (const m of monitor) {
-      const raw = normalizeLd560Raw(m.raw)
-      if (!raw || byRaw.has(raw)) continue
-      const parsed = parseLd560SampleFromRaw(raw)
-      if (!parsed) continue
-      byRaw.set(raw, {
-        sampleId: parsed.barcode,
-        internalSeq: parsed.internalSeq,
-        timestamp: m.timestamp,
-        raw,
-        lisStatus: ld560FrameLisStatus(monitor, id ?? '', raw),
-        rows: parsed.analytes.map((a) => ({
-          id: `${raw}-${a.code}`,
-          analyteCode: a.code,
-          value: a.value,
-          unit: a.unit
-        }))
-      })
+      // 1) LD-560 reconstruction from the raw TRANSMIT frame.
+      const ld = normalizeLd560Raw(m.raw)
+      if (ld) {
+        if (byKey.has(ld)) continue
+        const parsed = parseLd560SampleFromRaw(ld)
+        if (parsed) {
+          byKey.set(ld, {
+            sampleId: parsed.barcode,
+            internalSeq: parsed.internalSeq,
+            timestamp: m.timestamp,
+            raw: ld,
+            kind: 'ld560',
+            lisStatus: ld560FrameLisStatus(monitor, id ?? '', ld),
+            rows: parsed.analytes.map((a) => ({
+              id: `${ld}-${a.code}`,
+              analyteCode: a.code,
+              value: a.value,
+              unit: a.unit
+            }))
+          })
+          continue
+        }
+      }
+      // 2) Generic decoded analyte result (ASTM/HL7/Simple) — group by frame.
+      if (
+        m.stage === 'decoded' &&
+        m.analyteCode &&
+        m.analyteCode !== 'RAW' &&
+        m.analyteCode !== 'QUERY'
+      ) {
+        const key = `gen:${m.raw || `${m.sampleId}-${m.timestamp}`}`
+        const existing = byKey.get(key)
+        if (existing) {
+          if (!existing.rows.some((r) => r.analyteCode === m.analyteCode)) {
+            existing.rows.push({ id: m.id, analyteCode: m.analyteCode, value: m.value, unit: m.unit })
+          }
+        } else {
+          byKey.set(key, {
+            sampleId: m.sampleId,
+            timestamp: m.timestamp,
+            raw: m.raw ?? '',
+            kind: 'generic',
+            lisStatus: undefined,
+            rows: [{ id: m.id, analyteCode: m.analyteCode, value: m.value, unit: m.unit }]
+          })
+        }
+      }
     }
 
-    return [...byRaw.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    // Derive LIS status for generic frames from their analytes' 'written' events.
+    for (const f of byKey.values()) {
+      if (f.kind !== 'generic') continue
+      const written = new Set(
+        monitor.filter((m) => m.stage === 'written' && m.sampleId === f.sampleId).map((m) => m.analyteCode)
+      )
+      if (written.size > 0) {
+        f.lisStatus = f.rows.every((r) => written.has(r.analyteCode)) ? 'done' : 'partial'
+      }
+    }
+
+    return [...byKey.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
   }, [monitor, id])
 
   const unparsedCount = useMemo(
-    () => resultFrames.filter((f) => f.lisStatus !== 'done').length,
+    () => resultFrames.filter((f) => f.kind === 'ld560' && f.lisStatus !== 'done').length,
     [resultFrames]
   )
 
@@ -140,7 +184,7 @@ export function InstrumentDetail() {
         let written = 0
         let skipped = 0
         let errors = 0
-        for (const frame of resultFrames.filter((f) => f.lisStatus !== 'done')) {
+        for (const frame of resultFrames.filter((f) => f.kind === 'ld560' && f.lisStatus !== 'done')) {
           try {
             const r = await window.api.lis.writeBarcode(inst.id, frame.sampleId)
             written += r.written
@@ -314,7 +358,7 @@ export function InstrumentDetail() {
                     {frame.lisStatus === 'partial' && (
                       <Badge tone="warning">Partial</Badge>
                     )}
-                    {lisLive && frame.lisStatus !== 'done' && (
+                    {lisLive && frame.kind === 'ld560' && frame.lisStatus !== 'done' && (
                       <Button
                         variant="outline"
                         size="sm"

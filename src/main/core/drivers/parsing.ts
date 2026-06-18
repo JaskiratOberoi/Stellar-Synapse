@@ -32,8 +32,21 @@ function astmTestId(field?: string): { code: string; name?: string } {
  * starting-range id, typically `^SID` or `patientId^SID^...`; we take the first
  * non-empty caret component.
  */
-export function extractAstmQuery(message: ProtocolMessage): { sid: string } | null {
+export function extractAstmQuery(
+  message: ProtocolMessage
+): { sid: string; analyzerName?: string; hostName?: string } | null {
   if (message.protocol !== 'astm') return null
+  // Capture how the analyzer identifies itself in its own H record so the order
+  // reply can mirror it exactly — the Maglumi validates the order header against
+  // its configured Analyzer ID / Host ID and silently drops the assay otherwise.
+  let analyzerName: string | undefined
+  let hostName: string | undefined
+  for (const rec of message.records) {
+    if ((rec[0] || '').toUpperCase() === 'H') {
+      analyzerName = rec[4]?.trim() || analyzerName
+      hostName = rec[9]?.trim() || hostName
+    }
+  }
   for (const rec of message.records) {
     if ((rec[0] || '').toUpperCase() !== 'Q') continue
     const field = rec[2] || rec[3] || ''
@@ -41,7 +54,7 @@ export function extractAstmQuery(message: ProtocolMessage): { sid: string } | nu
       .split('^')
       .map((p) => p.trim())
       .find((p) => p.length > 0)
-    if (sid) return { sid }
+    if (sid) return { sid, analyzerName, hostName }
   }
   return null
 }

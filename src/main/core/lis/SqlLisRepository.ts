@@ -107,13 +107,79 @@ export class SqlLisRepository implements ILisRepository {
     const row = result.recordset[0] as Record<string, unknown> | undefined
     if (!row) return null
 
+    // Noble stores ordered items as a mix of individual test codes (BI221) and
+    // profile/panel codes (CP114 = "Thyroid Profile I"). An analyzer can only run
+    // individual assays, so expand any profile codes to their member tests before
+    // returning — this is what lets the host-query order TSH/T3/T4 when a doctor
+    // ordered the thyroid profile.
+    const { codes, names } = await this.expandProfiles(
+      splitCsv(String(row.testcodes ?? '')),
+      splitCsv(String(row.testnames ?? ''))
+    )
+
     return {
       vailid: String(row.vailid),
       patientId: row.patientId != null ? Number(row.patientId) : undefined,
-      testCodes: splitCsv(String(row.testcodes ?? '')),
-      testNames: splitCsv(String(row.testnames ?? '')),
+      testCodes: codes,
+      testNames: names,
       sampleStatus: row.sampleStatus != null ? Number(row.sampleStatus) : undefined
     }
+  }
+
+  /**
+   * Replace any profile/panel codes (tbl_med_test_profile_master.Profile_Code)
+   * with their member test codes (tbl_med_test_profile_param -> test_master).
+   * Non-profile codes pass through unchanged. De-duplicated by test code.
+   */
+  private async expandProfiles(
+    codes: string[],
+    names: string[]
+  ): Promise<{ codes: string[]; names: string[] }> {
+    if (codes.length === 0) return { codes, names }
+    const pool = await this.getPool()
+    const mssql = await this.getMssql()
+    const req = pool.request()
+    const placeholders = codes.map((c, i) => {
+      req.input(`p${i}`, mssql.VarChar, c)
+      return `@p${i}`
+    })
+    const res = await req.query(`
+      SELECT pm.Profile_Code AS profileCode, t.TestCode AS testCode, t.Testname AS testName
+      FROM tbl_med_test_profile_master pm
+      JOIN tbl_med_test_profile_param pp ON pp.profileid = pm.id
+      JOIN tbl_med_test_master t ON t.id = pp.testid
+      WHERE pm.Profile_Code IN (${placeholders.join(',')})
+    `)
+
+    const members = new Map<string, { code: string; name: string }[]>()
+    for (const r of res.recordset as Array<Record<string, unknown>>) {
+      const pc = String(r.profileCode)
+      const arr = members.get(pc) ?? []
+      arr.push({ code: String(r.testCode).trim(), name: String(r.testName).trim() })
+      members.set(pc, arr)
+    }
+    if (members.size === 0) return { codes, names }
+
+    const outCodes: string[] = []
+    const outNames: string[] = []
+    const seen = new Set<string>()
+    const add = (c: string, n: string): void => {
+      const key = c.trim().toUpperCase()
+      if (!key || seen.has(key)) return
+      seen.add(key)
+      outCodes.push(c.trim())
+      outNames.push(n)
+    }
+    codes.forEach((c, i) => {
+      const mem = members.get(c)
+      if (mem) mem.forEach((m) => add(m.code, m.name))
+      else add(c, names[i] ?? '')
+    })
+    logger.info(
+      'lis',
+      `Expanded ${members.size} profile(s) [${[...members.keys()].join(', ')}] -> ${outCodes.length} tests`
+    )
+    return { codes: outCodes, names: outNames }
   }
 
   /**

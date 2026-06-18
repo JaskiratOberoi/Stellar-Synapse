@@ -47,31 +47,44 @@ function ts(): string {
 export function buildAstmOrderRecords(
   sid: string,
   analyteCodes: string[],
-  instrumentName: string
+  analyzerName: string,
+  hostName = 'Lis'
 ): string[][] {
   const records: string[][] = []
-  records.push(['H', '\\^&', '', '', 'Lis', '', '', '', '', '', instrumentName, '', 'P', 'E1394-97', ts()])
+  // Header must match SNIBE's documented host->analyzer layout exactly, AND echo
+  // the analyzer's own Analyzer ID (field 5) / Host ID (field 10) from its query
+  // header — the X3 validates these and silently drops the assay on a mismatch:
+  //   H|\^&||PSWD|<analyzerId>|||||<hostId>||P|E1394-97|<ts>
+  records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
   records.push(['P', '1'])
   analyteCodes.forEach((code, i) => {
-    // O|seq|sampleId||^^^<test>|R   (R = result requested / action code)
-    records.push(['O', String(i + 1), sid, '', `^^^${code}`, 'R'])
+    // O|seq|sampleId||^^^<test>   — matches the official Chapter 16 order-download
+    // example exactly (no trailing priority field).
+    records.push(['O', String(i + 1), sid, '', `^^^${code}`])
   })
   records.push(['L', '1', 'N'])
   return records
 }
 
-/** Frame logical records into ASTM E1381 frames (one Buffer per record). */
-export function frameAstmRecords(records: string[][]): Buffer[] {
-  return records.map((rec, i) => {
-    const frameNum = (i + 1) % 8 // 1..7 then 0, per E1381
-    const text = rec.join('|')
-    // Checksum covers frame number + text + CR + ETX.
-    const body = `${frameNum}${text}\r${String.fromCharCode(ETX)}`
-    let sum = 0
-    for (let k = 0; k < body.length; k++) sum = (sum + body.charCodeAt(k)) & 0xff
-    const cs = sum.toString(16).toUpperCase().padStart(2, '0')
-    return Buffer.from(String.fromCharCode(STX) + body + cs + '\r\n', 'latin1')
-  })
+/**
+ * Frame ALL records into ONE ASTM frame, SNIBE-style. A real Maglumi sends its
+ * entire message (H + Q + L, or H + P + O + L) inside a single STX...ETX frame
+ * with the records CR-separated — NOT one frame per record. Sending separate
+ * frames makes the X3 read the SID but never assemble the order, so we mirror
+ * its own framing.
+ *
+ * Layout:  STX <frameNum> rec1 CR rec2 CR ... recN ETX <C1C2> CR LF
+ * The checksum covers frameNum + records(+CRs) + ETX. No CR before ETX (verified
+ * against the single-record example "2P|1<ETX>32").
+ */
+export function frameAstmMessage(records: string[][]): Buffer {
+  const frameNum = 1
+  const text = records.map((r) => r.join('|')).join('\r')
+  const body = `${frameNum}${text}${String.fromCharCode(ETX)}`
+  let sum = 0
+  for (let k = 0; k < body.length; k++) sum = (sum + body.charCodeAt(k)) & 0xff
+  const cs = sum.toString(16).toUpperCase().padStart(2, '0')
+  return Buffer.from(String.fromCharCode(STX) + body + cs + '\r\n', 'latin1')
 }
 
 type SenderState = 'idle' | 'wait-enq-ack' | 'wait-frame-ack' | 'done'
@@ -100,7 +113,8 @@ export class AstmHostQuerySender {
   /** Send the records; resolves when the EOT is sent or the attempt aborts. */
   send(records: string[][]): Promise<void> {
     if (this.isBusy()) return Promise.resolve()
-    this.frames = frameAstmRecords(records)
+    // SNIBE expects the whole message in ONE frame (records CR-separated).
+    this.frames = [frameAstmMessage(records)]
     this.idx = 0
     this.retries = 0
     this.state = 'wait-enq-ack'

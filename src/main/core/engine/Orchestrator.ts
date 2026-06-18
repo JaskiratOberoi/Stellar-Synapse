@@ -274,7 +274,10 @@ export class Orchestrator extends EventEmitter {
     if (def.connection.hostQuery && def.protocol === 'astm') {
       const query = extractAstmQuery(message)
       if (query) {
-        await this.handleHostQuery(def, driver.info.id, query.sid, message.raw)
+        await this.handleHostQuery(def, driver.info.id, query.sid, message.raw, {
+          analyzerName: query.analyzerName,
+          hostName: query.hostName
+        })
         return
       }
     }
@@ -294,7 +297,8 @@ export class Orchestrator extends EventEmitter {
     def: InstrumentDefinition,
     driverId: string,
     sid: string,
-    raw: string
+    raw: string,
+    header?: { analyzerName?: string; hostName?: string }
   ): Promise<void> {
     const sender = this.connections.get(def.id)?.sender
     const baseEvent = {
@@ -326,23 +330,34 @@ export class Orchestrator extends EventEmitter {
         ...baseEvent,
         id: randomUUID(),
         stage: 'skipped',
+        value: order ? `${order.testCodes.length} ordered, 0 on X3` : 'not registered',
         message: order
-          ? `No analytes on this X3 map to the ordered tests [${order.testCodes.join(', ')}]`
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this X3`
           : `Barcode ${sid} not registered in LIS — nothing to order`
       })
     }
 
     if (!sender) return
-    const records = buildAstmOrderRecords(sid, codes, def.name)
+    // Mirror the analyzer's own Analyzer ID / Host ID from its query header so the
+    // X3 accepts the order (falls back to the configured name if absent).
+    const records = buildAstmOrderRecords(
+      sid,
+      codes,
+      header?.analyzerName || def.name,
+      header?.hostName || 'Lis'
+    )
     try {
       await sender.send(records)
       logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
-        stage: 'mapped',
+        stage: codes.length ? 'mapped' : 'skipped',
+        value: codes.length ? codes.join(', ') : '(no tests)',
         mappedTo: codes.length ? codes.join(', ') : '(none)',
-        message: `Ordered ${codes.length} test(s) to analyzer`
+        message: codes.length
+          ? `Ordered to analyzer: ${codes.join(', ')}`
+          : 'Replied with empty order set'
       })
     } catch (err) {
       logger.error('host-query', `${def.name}: failed to send orders for ${sid}: ${(err as Error).message}`)
@@ -963,6 +978,15 @@ function convertForLis(
       // value and always label it mg/dL (never the analyzer's source unit).
       return { value: (n * 18.0182).toFixed(1), unit: 'mg/dL' }
     }
+  }
+  // Hematology analyzers (e.g. EDAN H60) report HGB/MCHC in g/L while Noble's
+  // CBC fields are g/dL — convert by /10 whenever the analyzer reports g/L and
+  // the mapping's target unit is g/dL (so 144 g/L -> 14.4 g/dL).
+  const srcUnit = (result.unit ?? '').replace(/\s+/g, '').toLowerCase()
+  const tgtUnit = (rule.unit ?? '').replace(/\s+/g, '').toLowerCase()
+  if (srcUnit === 'g/l' && tgtUnit === 'g/dl') {
+    const n = parseFloat(result.value)
+    if (!Number.isNaN(n)) return { value: (n / 10).toFixed(1), unit: 'g/dL' }
   }
   return { value: result.value, unit: result.unit ?? rule.unit }
 }
