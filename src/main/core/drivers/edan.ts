@@ -32,6 +32,20 @@ function hl7Unescape(s: string): string {
 const MIN_BARCODE_LEN = 5
 
 /**
+ * Pull the patient-field barcode out of a PID segment. A real H60 frame puts the
+ * scanned barcode in PID-2 (`PID|7|8829820|null ^0|...`) and parks a literal
+ * `null` placeholder in PID-3, so we scan PID-2 → PID-3 → PID-4 and ignore empty
+ * / "null" fields and any `^`-suffixed id qualifier.
+ */
+function pickPatientId(...fields: Array<string | undefined>): string {
+  for (const f of fields) {
+    const v = (f || '').split('^')[0].trim()
+    if (v && v.toLowerCase() !== 'null') return v
+  }
+  return ''
+}
+
+/**
  * Choose the sample id from the two places an H60 can put the scanned barcode:
  * OBR-2 (the correct/placer field) and the patient-id field (where a
  * mis-configured "scan into Patient ID" setting parks it). Leads with OBR-2
@@ -75,10 +89,10 @@ export function parseEdanHl7(message: ProtocolMessage, instrumentId: string): Ca
   for (const seg of message.records) {
     const type = (seg[0] || '').toUpperCase()
     if (type === 'PID') {
-      // If the H60 is configured to scan the barcode into the patient field, the
-      // sample barcode lands here (PID-3, or PID-2/PID-4) instead of OBR-2. Keep
-      // it as a fallback sample id; the component after "^" is the id qualifier.
-      pid = (seg[3] || seg[2] || seg[4] || '').split('^')[0].trim()
+      // When the H60 is set to scan the barcode into the patient field it lands
+      // in PID-2 (PID-3 is a literal "null" placeholder). Keep it as a fallback
+      // sample id for OBR-2's short run-sequence number.
+      pid = pickPatientId(seg[2], seg[3], seg[4])
     } else if (type === 'OBR') {
       // OBR-2 (placer) = sample id; OBR-3 is blank. OBR-7 = analysis date/time.
       sid = (seg[2] || seg[3] || '').split('^')[0].trim()
