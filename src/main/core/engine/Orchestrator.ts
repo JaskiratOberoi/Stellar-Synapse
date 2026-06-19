@@ -161,11 +161,18 @@ export class Orchestrator extends EventEmitter {
       if (!def.connection.passive) transport.write(Buffer.from([byte]))
     }
 
+    // Surface bytes we transmit (order-download frames + handshake) in the RAW
+    // activity log so host-query responses are debuggable, not just inbound data.
+    const writeAndLog = (b: Buffer): void => {
+      this.pushRawSent(id, def.name, b)
+      transport.write(b)
+    }
+
     // Outbound ASTM sender for answering host queries (bidirectional ASTM only).
     const sender =
       def.protocol === 'astm' && def.connection.hostQuery && !def.connection.passive
         ? new AstmHostQuerySender(
-            (b) => transport.write(b),
+            writeAndLog,
             (m) => logger.info('host-query', `${def.name}: ${m}`)
           )
         : undefined
@@ -174,7 +181,7 @@ export class Orchestrator extends EventEmitter {
     const auSender =
       def.protocol === 'beckman-au' && def.connection.hostQuery && !def.connection.passive
         ? new AuHostQuerySender(
-            (b) => transport.write(b),
+            writeAndLog,
             (m) => logger.info('host-query', `${def.name}: ${m}`),
             DEFAULT_AU_FORMAT
           )
@@ -873,6 +880,24 @@ export class Orchestrator extends EventEmitter {
   /** Surface raw inbound bytes as a 'received' monitor event (passive taps). */
   private pushRawReceived(instrumentId: string, instrumentName: string, chunk: Buffer): void {
     this.pushRawInbound(instrumentId, instrumentName, chunk, true)
+  }
+
+  /** Surface raw bytes we transmit (host-query order frames, ACK/ENQ/EOT). */
+  private pushRawSent(instrumentId: string, instrumentName: string, chunk: Buffer): void {
+    const text = chunk.toString('latin1')
+    const printable = text.replace(/[\x00-\x08\x0e-\x1f\x7f]/g, (c) => `<${c.charCodeAt(0)}>`)
+    this.pushMonitor({
+      id: randomUUID(),
+      instrumentId,
+      instrumentName,
+      sampleId: '-',
+      analyteCode: 'TX',
+      analyteName: 'Raw outbound frame',
+      value: `${chunk.length} bytes`,
+      raw: printable.length > 600 ? `${printable.slice(0, 600)}...` : printable,
+      stage: 'received',
+      timestamp: new Date().toISOString()
+    })
   }
 
   /** Log raw bytes in the live channel; optionally bump the received counter. */
