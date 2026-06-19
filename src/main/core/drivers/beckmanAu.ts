@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto'
 import type { CanonicalResult, ResultFlag } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
 import {
-  AU_GROUP_WIDTH,
-  AU_HEADER_WIDTH,
-  AU_WIDTHS,
+  type AuFormat,
+  DEFAULT_AU_FORMAT,
+  auGroupWidth,
+  auHeaderWidth,
   parseAuHeader
 } from '../protocols/beckmanAu'
 import type { DriverAnalyte } from './IInstrumentDriver'
@@ -70,7 +71,14 @@ export const AU_ONLINE_TESTS: AuTest[] = [
 /** Online test number -> assay. */
 const AU_TEST_BY_NO = new Map<number, AuTest>(AU_ONLINE_TESTS.map((t) => [t.no, t]))
 /** Instrument code -> online test number (for the simulator / order building). */
-const AU_NO_BY_CODE = new Map<string, number>(AU_ONLINE_TESTS.map((t) => [t.code, t.no]))
+export const AU_NO_BY_CODE = new Map<string, number>(
+  AU_ONLINE_TESTS.map((t) => [t.code.toUpperCase(), t.no])
+)
+
+/** Resolve an instrument analyte code to its configured Online Test No. (or null). */
+export function auOnlineTestNo(code: string): number | null {
+  return AU_NO_BY_CODE.get(code.trim().toUpperCase()) ?? null
+}
 
 /** Driver analyte panel for the Beckman AU family (full configured menu). */
 export const BECKMAN_AU: DriverAnalyte[] = AU_ONLINE_TESTS.map((t) => ({
@@ -95,31 +103,35 @@ function auFlag(marks: string): ResultFlag | undefined {
  * from the matching S… message, and put `[distinction, sampleId]` in records[0];
  * the fixed-width result groups are sliced from `raw` here.
  */
-export function parseBeckmanAu(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
+export function parseBeckmanAu(
+  message: ProtocolMessage,
+  instrumentId: string,
+  fmt: AuFormat = DEFAULT_AU_FORMAT
+): CanonicalResult[] {
   const distinction = message.records[0]?.[0] ?? ''
-  // Only result-data messages carry analyte values; ignore S…/DB/DE markers.
+  // Only result-data messages carry analyte values; ignore R…/S…/DB/DE markers.
   if (distinction[0] !== 'D' && distinction[0] !== 'd') return []
 
   const sampleId = message.records[0]?.[1] ?? ''
   const block = message.raw
-  const header = parseAuHeader(block)
+  const groupWidth = auGroupWidth(fmt)
   const now = new Date().toISOString()
   const results: CanonicalResult[] = []
 
   // Iterate the repeating result groups. A truncated final group (the analyzer's
   // zero-suppress can drop trailing pad spaces) is padded back to full width.
-  for (let off = AU_HEADER_WIDTH; off + AU_WIDTHS.testNo <= block.length; off += AU_GROUP_WIDTH) {
-    const group = block.slice(off, off + AU_GROUP_WIDTH).padEnd(AU_GROUP_WIDTH, ' ')
+  for (let off = auHeaderWidth(fmt); off + fmt.testNo <= block.length; off += groupWidth) {
+    const group = block.slice(off, off + groupWidth).padEnd(groupWidth, ' ')
     let i = 0
     const take = (n: number): string => {
       const s = group.slice(i, i + n)
       i += n
       return s
     }
-    const testNo = parseInt(take(AU_WIDTHS.testNo), 10)
-    take(AU_WIDTHS.diluent) // diluent type — not surfaced
-    const rawValue = take(AU_WIDTHS.result).trim()
-    const marks = take(AU_WIDTHS.marks)
+    const testNo = parseInt(take(fmt.testNo), 10)
+    take(fmt.diluent) // diluent type — not surfaced
+    const rawValue = take(fmt.result).trim()
+    const marks = take(fmt.marks)
 
     if (!Number.isFinite(testNo) || testNo <= 0) break // padding / end of groups
     const test = AU_TEST_BY_NO.get(testNo)
@@ -143,53 +155,92 @@ export function parseBeckmanAu(message: ProtocolMessage, instrumentId: string): 
 }
 
 /** Right-justify a value into the fixed AU result field (space-padded). */
-function auResultField(value: string): string {
-  return value.length >= AU_WIDTHS.result
-    ? value.slice(-AU_WIDTHS.result)
-    : value.padStart(AU_WIDTHS.result, ' ')
+function auResultField(value: string, width: number): string {
+  return value.length >= width ? value.slice(-width) : value.padStart(width, ' ')
 }
 
-const auMarks = (flag: string): string =>
-  (flag === 'H' ? 'H ' : flag === 'L' ? 'L ' : flag === 'A' ? 'A ' : '  ').slice(0, AU_WIDTHS.marks)
+const auMarks = (flag: string, width: number): string =>
+  (flag === 'H' ? 'H ' : flag === 'L' ? 'L ' : flag === 'A' ? 'A ' : '  ').slice(0, width)
+
+const padField = (s: string, n: number): string => s.padEnd(n, ' ').slice(0, n)
+
+/** Build the fixed per-sample header (shared by S… and D… outbound frames). */
+function auHeader(
+  distinction: string,
+  rack: string,
+  cup: string,
+  sampleNo: string,
+  sampleId: string,
+  fmt: AuFormat
+): string {
+  return (
+    distinction +
+    padField('', fmt.systemNo) +
+    padField(rack, fmt.rack) +
+    padField(cup, fmt.cup) +
+    padField(sampleNo, fmt.sampleNo) +
+    padField('', fmt.sampleType) +
+    padField(sampleId, fmt.sampleId) +
+    padField('', fmt.dummy) +
+    padField('0', fmt.dataClass) +
+    padField('', fmt.sex)
+  )
+}
+
+/**
+ * Build the Sample-Information RESPONSE (S∆) the host sends to answer a query:
+ * the fixed header (echoing rack/cup/sample-no/sample-id) followed by one group
+ * per ordered test — just the Online Test No. + diluent (no result). This is the
+ * order-download that tells the analyzer which assays to run.
+ */
+export function buildAuOrderResponse(
+  rack: string,
+  cup: string,
+  sampleNo: string,
+  sampleId: string,
+  testNos: number[],
+  fmt: AuFormat = DEFAULT_AU_FORMAT
+): string {
+  let block = auHeader('S ', rack, cup, sampleNo, sampleId, fmt)
+  for (const no of testNos) {
+    block +=
+      padField('', fmt.sex) + // per-test sex slot (blank)
+      String(no).padStart(fmt.testNo, '0') +
+      padField('0', fmt.diluent) // normal dilution
+  }
+  return block
+}
 
 /**
  * Build a Beckman AU "Online" transmission (text, one block per line) for the
  * simulator: an S… sample-information block carrying the barcode followed by a
- * D… result block keyed by the same rack/cup. Shares the width constants with
- * the parser so the frame round-trips through the decoder.
+ * D… result block keyed by the same rack/cup. Shares the format with the parser
+ * so the frame round-trips through the decoder.
  */
-export function buildBeckmanAuSample(sampleId: string, analytes: DriverAnalyte[]): string {
+export function buildBeckmanAuSample(
+  sampleId: string,
+  analytes: DriverAnalyte[],
+  fmt: AuFormat = DEFAULT_AU_FORMAT
+): string {
   const rack = '0001'
   const cup = '01'
-  // 4-digit sample number derived from the barcode digits (analyzer-side id).
   const digits = sampleId.replace(/\D/g, '')
-  const sampleNo = (digits.slice(-4) || '0001').padStart(AU_WIDTHS.sampleNo, '0')
-  const pad = (s: string, n: number): string => s.padEnd(n, ' ').slice(0, n)
+  const sampleNo = (digits.slice(-4) || '0001').padStart(fmt.sampleNo, '0')
 
-  const headerFor = (distinction: string): string =>
-    distinction +
-    rack +
-    cup +
-    sampleNo +
-    pad(' ', AU_WIDTHS.sampleType) + // sample type
-    pad(' ', AU_WIDTHS.dummy) + // dummy
-    '0' + // data classification
-    pad(' ', AU_WIDTHS.sex) // sex
-
-  // S∆ sample-information block: header + barcode.
-  const sBlock = headerFor('S ') + sampleId
+  // S∆ sample-information block carrying the barcode.
+  const sBlock = auHeader('S ', rack, cup, sampleNo, sampleId, fmt)
 
   // D∆ result block: header + repeating [testNo, diluent, result, marks].
-  let dBlock = headerFor('D ')
+  let dBlock = auHeader('D ', rack, cup, sampleNo, sampleId, fmt)
   for (const a of analytes) {
-    const no = AU_NO_BY_CODE.get(a.code)
+    const no = AU_NO_BY_CODE.get(a.code.toUpperCase())
     if (no === undefined) continue
     const { value, flag } = simValue(a)
     dBlock +=
-      String(no).padStart(AU_WIDTHS.testNo, '0') +
-      '0' + // diluent type
-      auResultField(value) +
-      auMarks(flag)
+      String(no).padStart(fmt.testNo, '0') +
+      padField('0', fmt.diluent) +
+      auResultField(value, fmt.result) +
+      auMarks(flag, fmt.marks)
   }
 
   return `${sBlock}\n${dBlock}`

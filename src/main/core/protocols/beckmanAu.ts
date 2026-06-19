@@ -1,32 +1,38 @@
 import type { IProtocol, ProtocolMessage } from './IProtocol'
 
 /**
- * Beckman Coulter AU480 / AU680 / AU5800 "Online" host protocol decoder.
+ * Beckman Coulter AU480 / AU680 / AU5800 / DxC AU "Online" host protocol.
  *
- * Unlike pipe-delimited ASTM E1394, the AU analyzers speak a proprietary
- * fixed-field block format (AU680/AU480 Online Specification). Each message is
- * framed:
+ * Source of truth: *AU680/AU480 Instrument Online Specification (Jan-2011 v9)*.
+ * Unlike pipe-delimited ASTM E1394, the AU speaks a proprietary fixed-field block
+ * format. Each message is framed:
  *
- *     <STX> <distinction(2)> <fixed-width data...> <ETX> <BCC>
+ *     <STX> <distinction(2)> <fixed-width data...> <ETX|ETB> <BCC>
  *
- * and long messages are split into blocks terminated by <ETB> (intermediate) /
- * <ETX> (final). Tests are identified by a 2-digit "Online Test No." (the
- * `Online Test No.` setup screen), results are space-padded fixed-width numbers,
- * and the host ACKs each block. The 2-char distinction code names the message:
+ * - Long messages split into blocks: intermediate blocks end with <ETB>, the
+ *   final block with <ETX>. The receiver ACKs each block (protocol "Class B").
+ * - <BCC> is a single byte = XOR of every byte from the distinction code through
+ *   the end of the message data (i.e. everything between STX and ETX/ETB,
+ *   excluding STX itself but including the ETX/ETB terminator per spec §"BCC").
+ * - This protocol does NOT use ENQ/EOT phasing; we still tolerate them.
  *
- *   DB  analysis-data transmission start      D∆  normal sample result
- *   DH  repeat-run result                     DR  reagent-blank result
- *   DA  calibration result                    DQ  QC result
- *   d∆  STAT-quick result                     DE  analysis-data transmission end
- *   S∆/SH/Sh  sample-information response (links rack/cup -> sample barcode)
+ * Three message families matter for a LIS:
+ *   R…  Sample-information REQUEST  (analyzer -> host): "what tests for this sample?"
+ *       RB start · R∆ normal · RH repeat · Rh auto-repeat · RE end
+ *   S…  Sample-information RESPONSE (host -> analyzer): the ordered Online Test Nos
+ *       S∆ normal · SH repeat · Sh auto-repeat · SE end
+ *   D…  Analysis-data RESULT        (analyzer -> host): per-test results
+ *       D∆ normal · DH repeat · DR reagent-blank · DA calibration · DQ QC · d∆ STAT
  *
- * The result (`D…`) message carries only rack/cup + a 4-digit sample number, so
- * we correlate it with the barcode learned from the matching `S…` message.
+ * Sample identity: the **Sample ID (barcode, 4–26 chars)** rides directly in the
+ * R/S/D records (when "Sample ID" transmission is enabled on the analyzer),
+ * alongside the 4-digit analyzer Sample No. We read it straight from the frame
+ * and fall back to an S→D rack/cup correlation only when it is absent.
  *
- * NOTE: field widths below match this site's Format Configuration (Rack No=4,
- * Online Test No=2, Result=6, Data Marks=2, Device No off => System No 0 digits,
- * BCC off, ETB off). The exact fixed-part offsets must be certified against one
- * real captured frame before trusting live patient results — see drivers/beckmanAu.ts.
+ * Field widths are SITE-CONFIGURABLE (Online > Format/Requisition Configuration).
+ * `AuFormat` captures them; `DEFAULT_AU_FORMAT` matches the documented defaults +
+ * the configuration we instruct the lab to set. Certify against one real captured
+ * frame before trusting live patient results.
  */
 
 // Low-level control characters.
@@ -35,136 +41,292 @@ const ETX = 0x03
 const EOT = 0x04
 const ENQ = 0x05
 const ACK = 0x06
+const NAK = 0x15
 const ETB = 0x17
 const CR = 0x0d
 const LF = 0x0a
 
-/** Fixed-field widths (from the analyzer Format Configuration). */
-export const AU_WIDTHS = {
-  distinction: 2,
-  systemNo: 0, // "Device No." unchecked
+/** Site-configurable fixed-field widths + enabled fields (Online setup screens). */
+export interface AuFormat {
+  /** "Device No." — 0 when unchecked, else 2. */
+  systemNo: number
+  rack: number
+  cup: number
+  sampleNo: number
+  sampleType: number
+  /** Sample ID (barcode) width; 0 when Sample ID transmission is disabled. */
+  sampleId: number
+  /** "Dummy" pad field that follows the sample id (spaces). */
+  dummy: number
+  dataClass: number
+  /** Sex field, once per sample; 0 when disabled. */
+  sex: number
+  /** Online Test No. width — 2 (01–99) or 3 (001–120). */
+  testNo: number
+  /** Dilution info width; 0 when disabled. */
+  diluent: number
+  /** Result value width — 6 (default) or 9. */
+  result: number
+  /** Data-marks/flags width — 2 (default) or up to 8. */
+  marks: number
+  /** Whether the analyzer appends a 1-byte XOR BCC after ETX/ETB. */
+  bcc: boolean
+}
+
+/**
+ * Default format: documented AU defaults + the layout we instruct the lab to set.
+ * Sample ID transmission ON at 12 chars (covers most accession barcodes); adjust
+ * to match the analyzer's "Sample ID digits" if it differs.
+ */
+export const DEFAULT_AU_FORMAT: AuFormat = {
+  systemNo: 0,
   rack: 4,
   cup: 2,
   sampleNo: 4,
   sampleType: 1,
+  sampleId: 12,
   dummy: 4,
   dataClass: 1,
-  sex: 1,
+  sex: 0,
   testNo: 2,
-  diluent: 1, // "Dilution Inf." used
+  diluent: 1,
   result: 6,
-  marks: 2
-} as const
+  marks: 2,
+  bcc: false
+}
 
-/** Total width of the per-sample fixed header that precedes the result groups. */
-export const AU_HEADER_WIDTH =
-  AU_WIDTHS.distinction +
-  AU_WIDTHS.systemNo +
-  AU_WIDTHS.rack +
-  AU_WIDTHS.cup +
-  AU_WIDTHS.sampleNo +
-  AU_WIDTHS.sampleType +
-  AU_WIDTHS.dummy +
-  AU_WIDTHS.dataClass +
-  AU_WIDTHS.sex
+/** One repeating result group width: testNo + diluent + result + marks. */
+export function auGroupWidth(fmt: AuFormat): number {
+  return fmt.testNo + fmt.diluent + fmt.result + fmt.marks
+}
 
-/** Width of one repeating result group: testNo + diluent + result + marks. */
-export const AU_GROUP_WIDTH =
-  AU_WIDTHS.testNo + AU_WIDTHS.diluent + AU_WIDTHS.result + AU_WIDTHS.marks
+/** Width of the fixed per-sample header that precedes the variable part. */
+export function auHeaderWidth(fmt: AuFormat): number {
+  return (
+    2 /* distinction */ +
+    fmt.systemNo +
+    fmt.rack +
+    fmt.cup +
+    fmt.sampleNo +
+    fmt.sampleType +
+    fmt.sampleId +
+    fmt.dummy +
+    fmt.dataClass +
+    fmt.sex
+  )
+}
 
 export interface AuHeader {
   distinction: string
   rack: string
   cup: string
   sampleNo: string
-  /** Offset where the variable part (result groups / barcode) begins. */
+  /** Sample ID (barcode) when present, else ''. */
+  sampleId: string
+  sampleType: string
+  /** Offset where the variable part (result/test groups) begins. */
   bodyOffset: number
 }
 
-/** Slice the per-sample fixed header that prefixes both S… and D… messages. */
-export function parseAuHeader(block: string): AuHeader {
+/** Slice the fixed per-sample header shared by R…, S… and D… messages. */
+export function parseAuHeader(block: string, fmt: AuFormat = DEFAULT_AU_FORMAT): AuHeader {
   let i = 0
   const take = (n: number): string => {
     const s = block.slice(i, i + n)
     i += n
     return s
   }
-  const distinction = take(AU_WIDTHS.distinction)
-  take(AU_WIDTHS.systemNo)
-  const rack = take(AU_WIDTHS.rack).trim()
-  const cup = take(AU_WIDTHS.cup).trim()
-  const sampleNo = take(AU_WIDTHS.sampleNo).trim()
-  take(AU_WIDTHS.sampleType)
-  take(AU_WIDTHS.dummy)
-  take(AU_WIDTHS.dataClass)
-  take(AU_WIDTHS.sex)
-  return { distinction, rack, cup, sampleNo, bodyOffset: i }
+  const distinction = take(2)
+  take(fmt.systemNo)
+  const rack = take(fmt.rack).trim()
+  const cup = take(fmt.cup).trim()
+  const sampleNo = take(fmt.sampleNo).trim()
+  const sampleType = take(fmt.sampleType)
+  const sampleId = take(fmt.sampleId).trim()
+  take(fmt.dummy)
+  take(fmt.dataClass)
+  take(fmt.sex)
+  return { distinction, rack, cup, sampleNo, sampleId, sampleType, bodyOffset: i }
 }
 
-/** Position key used to correlate a result message with its sample barcode. */
+/** Position key used to correlate a D result with an S response by rack/cup. */
 export function auPositionKey(rack: string, cup: string): string {
   return `${rack}|${cup}`
 }
 
-const isResultMessage = (d: string): boolean => d[0] === 'D' || d[0] === 'd'
-const isSampleInfoMessage = (d: string): boolean => d[0] === 'S'
+/** XOR every byte of `body` (the message text incl. its ETX/ETB terminator). */
+export function auBcc(body: string): number {
+  let bcc = 0
+  for (let i = 0; i < body.length; i++) bcc ^= body.charCodeAt(i) & 0xff
+  return bcc & 0xff
+}
+
+const isRequest = (d: string): boolean => d[0] === 'R'
+const isResponse = (d: string): boolean => d[0] === 'S'
+const isResult = (d: string): boolean => d[0] === 'D' || d[0] === 'd'
+
+/** Frame an outbound AU message body into STX … ETX [BCC] (single block). */
+export function frameAuMessage(body: string, fmt: AuFormat = DEFAULT_AU_FORMAT): Buffer {
+  const text = body + String.fromCharCode(ETX)
+  let wire = String.fromCharCode(STX) + text
+  if (fmt.bcc) wire += String.fromCharCode(auBcc(text))
+  return Buffer.from(wire, 'latin1')
+}
+
+/**
+ * Drives the Class-B handshake to push one S… (order) block to the analyzer:
+ * write the framed block, wait for ACK (or retransmit up to 3× on NAK). The
+ * owner routes inbound ACK/NAK bytes to `feedByte` while `isBusy()` is true.
+ */
+export class AuHostQuerySender {
+  private frame: Buffer | null = null
+  private retries = 0
+  private resolve?: () => void
+  private timer: NodeJS.Timeout | null = null
+
+  constructor(
+    private readonly write: (b: Buffer) => void,
+    private readonly log?: (m: string) => void,
+    private readonly fmt: AuFormat = DEFAULT_AU_FORMAT
+  ) {}
+
+  isBusy(): boolean {
+    return this.frame !== null
+  }
+
+  send(body: string): Promise<void> {
+    if (this.isBusy()) return Promise.resolve()
+    this.frame = frameAuMessage(body, this.fmt)
+    this.retries = 0
+    this.write(this.frame)
+    this.arm()
+    return new Promise((res) => {
+      this.resolve = res
+    })
+  }
+
+  feedByte(byte: number): void {
+    if (!this.isBusy()) return
+    if (byte === ACK) {
+      this.log?.('order response ACKed by analyzer')
+      this.finish()
+    } else if (byte === NAK) {
+      if (this.retries >= 3) {
+        this.log?.('order response NAKed 3×, aborting')
+        this.finish()
+        return
+      }
+      this.retries++
+      this.arm()
+      if (this.frame) this.write(this.frame)
+    }
+  }
+
+  private arm(): void {
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = setTimeout(() => {
+      this.log?.('order response timed out waiting for ACK')
+      this.finish()
+    }, 5000)
+  }
+
+  private finish(): void {
+    if (this.timer) clearTimeout(this.timer)
+    this.timer = null
+    this.frame = null
+    const res = this.resolve
+    this.resolve = undefined
+    res?.()
+  }
+}
 
 export class BeckmanAuProtocol implements IProtocol {
   readonly kind = 'beckman-au' as const
-  /** Pushes ACK/control bytes back to the analyzer (wired by the orchestrator). */
+  /** Pushes ACK/NAK/control bytes back to the analyzer (wired by the orchestrator). */
   onControl?: (byte: number) => void
 
-  private msg = '' // accumulated message text across blocks
+  constructor(private readonly fmt: AuFormat = DEFAULT_AU_FORMAT) {}
+
+  private msg = '' // accumulated message text across ETB-split blocks
   private block = '' // current block text
   private inBlock = false
-  /** rack|cup -> sample barcode, learned from S… messages. */
+  private afterEtx = false // next byte is the BCC to validate/skip
+  private pendingTerminator = 0 // ETX or ETB awaiting its BCC byte
+  /** rack|cup -> sample barcode, learned from S responses (correlation fallback). */
   private barcodeByPos = new Map<string, string>()
 
   feed(chunk: Buffer): ProtocolMessage[] {
     const out: ProtocolMessage[] = []
     for (const byte of chunk) {
+      // A BCC byte immediately follows ETX/ETB when enabled — consume & verify it.
+      if (this.afterEtx) {
+        this.afterEtx = false
+        if (this.fmt.bcc) {
+          const expected = auBcc(this.block + String.fromCharCode(this.pendingTerminator))
+          if ((byte & 0xff) !== expected) {
+            this.onControl?.(NAK) // checksum mismatch — ask for retransmit
+            this.block = ''
+            this.inBlock = false
+            continue
+          }
+        }
+        this.finishBlock(this.pendingTerminator === ETX, out)
+        continue
+      }
+
       switch (byte) {
         case ENQ:
           this.onControl?.(ACK)
-          this.msg = ''
-          this.block = ''
-          this.inBlock = false
+          this.resetMessage()
           break
         case STX:
           this.inBlock = true
           this.block = ''
           break
-        case ETB: // intermediate block end — more blocks follow
-          this.onControl?.(ACK)
-          this.msg += this.block
-          this.inBlock = false
-          break
-        case ETX: // final block — flush the whole message
-          this.onControl?.(ACK)
-          this.msg += this.block
-          if (this.msg.trim().length > 0) {
-            const m = this.decodeBlock(this.msg)
-            if (m) out.push(m)
+        case ETB:
+        case ETX:
+          if (this.fmt.bcc) {
+            // Defer ACK/flush until the trailing BCC byte is validated.
+            this.afterEtx = true
+            this.pendingTerminator = byte
+          } else {
+            this.onControl?.(ACK)
+            this.finishBlock(byte === ETX, out)
           }
-          this.msg = ''
-          this.block = ''
-          this.inBlock = false
           break
         case EOT:
-          this.msg = ''
-          this.block = ''
-          this.inBlock = false
+          this.resetMessage()
           break
+        case ACK:
+        case NAK:
         case CR:
         case LF:
           break
         default:
-          // Only data inside STX…ETB/ETX is text; a trailing BCC byte arrives
-          // while inBlock is false and is therefore ignored.
           if (this.inBlock) this.block += String.fromCharCode(byte)
       }
     }
     return out
+  }
+
+  /** Commit the current block; on a final (ETX) block decode the whole message. */
+  private finishBlock(final: boolean, out: ProtocolMessage[]): void {
+    this.msg += this.block
+    this.block = ''
+    this.inBlock = false
+    if (!final) return // ETB — more blocks follow
+    if (this.msg.trim().length > 0) {
+      const m = this.decodeBlock(this.msg)
+      if (m) out.push(m)
+    }
+    this.msg = ''
+  }
+
+  private resetMessage(): void {
+    this.msg = ''
+    this.block = ''
+    this.inBlock = false
+    this.afterEtx = false
   }
 
   /** Accept already-textual frames (one block per line) from the simulator. */
@@ -178,25 +340,39 @@ export class BeckmanAuProtocol implements IProtocol {
     return out
   }
 
-  /** Decode one complete block into a message, updating barcode correlation. */
+  /** Decode one complete (reassembled) message into a ProtocolMessage. */
   private decodeBlock(block: string): ProtocolMessage | null {
-    const distinction = block.slice(0, AU_WIDTHS.distinction)
+    const distinction = block.slice(0, 2)
 
-    // Keep `raw` at its exact fixed width — trailing pad spaces are significant
-    // to the parser's fixed-field slicing, so we must not trim them away.
-    if (isSampleInfoMessage(distinction)) {
-      const h = parseAuHeader(block)
-      // Remaining body (patient info disabled here) is the sample barcode.
-      const barcode = block.slice(h.bodyOffset).trim()
-      if (barcode) this.barcodeByPos.set(auPositionKey(h.rack, h.cup), barcode)
-      return { protocol: 'beckman-au', records: [['S', barcode]], raw: block }
+    // Sample-information REQUEST (analyzer asks which tests to run). Surface the
+    // sample identity so the orchestrator can answer with an S response.
+    if (isRequest(distinction)) {
+      const h = parseAuHeader(block, this.fmt)
+      const sid = h.sampleId || h.sampleNo
+      return {
+        protocol: 'beckman-au',
+        records: [['R', sid, h.rack, h.cup, h.sampleNo, h.sampleType]],
+        raw: block
+      }
     }
 
-    if (isResultMessage(distinction)) {
-      const h = parseAuHeader(block)
-      const barcode = this.barcodeByPos.get(auPositionKey(h.rack, h.cup))
-      // Prefer the correlated barcode; else fall back to the 4-digit sample no.
-      const sampleId = barcode || h.sampleNo || `R${h.rack}C${h.cup}`
+    // Sample-information RESPONSE — normally we SEND these; if we ever receive one
+    // (echo/loopback), learn the barcode for rack/cup correlation.
+    if (isResponse(distinction)) {
+      const h = parseAuHeader(block, this.fmt)
+      if (h.sampleId) this.barcodeByPos.set(auPositionKey(h.rack, h.cup), h.sampleId)
+      return { protocol: 'beckman-au', records: [['S', h.sampleId]], raw: block }
+    }
+
+    // Analysis-data RESULT. Prefer the in-frame Sample ID barcode; fall back to a
+    // correlated barcode, then the analyzer's 4-digit sample number.
+    if (isResult(distinction)) {
+      const h = parseAuHeader(block, this.fmt)
+      const sampleId =
+        h.sampleId ||
+        this.barcodeByPos.get(auPositionKey(h.rack, h.cup)) ||
+        h.sampleNo ||
+        `R${h.rack}C${h.cup}`
       return { protocol: 'beckman-au', records: [[distinction.trim() || 'D', sampleId]], raw: block }
     }
 
@@ -205,9 +381,7 @@ export class BeckmanAuProtocol implements IProtocol {
   }
 
   reset(): void {
-    this.msg = ''
-    this.block = ''
-    this.inBlock = false
+    this.resetMessage()
     this.barcodeByPos.clear()
   }
 }

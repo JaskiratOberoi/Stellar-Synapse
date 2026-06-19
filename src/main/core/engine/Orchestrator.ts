@@ -15,6 +15,8 @@ import { InstrumentPollScheduler } from '../connection/InstrumentPollScheduler'
 import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords } from '../protocols/astmHostQuery'
+import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
+import { buildAuOrderResponse, auOnlineTestNo } from '../drivers/beckmanAu'
 import { extractAstmQuery } from '../drivers/parsing'
 import { getDriver } from '../drivers/registry'
 import { fingerprintInstrument } from '../discovery/fingerprint'
@@ -29,6 +31,8 @@ interface RunningConnection {
   protocol: IProtocol
   /** Outbound ASTM sender for host-query (order) responses (bidirectional only). */
   sender?: AstmHostQuerySender
+  /** Outbound Beckman-AU sender for sample-information (S) order responses. */
+  auSender?: AuHostQuerySender
 }
 
 /**
@@ -166,6 +170,16 @@ export class Orchestrator extends EventEmitter {
           )
         : undefined
 
+    // Outbound Beckman-AU sender for answering sample-information (R) requests.
+    const auSender =
+      def.protocol === 'beckman-au' && def.connection.hostQuery && !def.connection.passive
+        ? new AuHostQuerySender(
+            (b) => transport.write(b),
+            (m) => logger.info('host-query', `${def.name}: ${m}`),
+            DEFAULT_AU_FORMAT
+          )
+        : undefined
+
     transport.on('status', (status: ConnectionStatus, peer?: string) => {
       this.patchRuntime(id, { status, peer })
     })
@@ -176,6 +190,10 @@ export class Orchestrator extends EventEmitter {
       // control bytes — route them to the sender's handshake, not the decoder.
       if (sender?.isBusy()) {
         for (const b of chunk) sender.feedByte(b)
+        return
+      }
+      if (auSender?.isBusy()) {
+        for (const b of chunk) auSender.feedByte(b)
         return
       }
       // Surface every inbound byte so live instruments are debuggable in the UI.
@@ -221,7 +239,7 @@ export class Orchestrator extends EventEmitter {
 
     try {
       await transport.start()
-      this.connections.set(id, { transport, protocol, sender })
+      this.connections.set(id, { transport, protocol, sender, auSender })
       const hasPoll = (def.connection.pollIntervalMs ?? 0) > 0
       const hasIdle = (def.connection.idleReconnectMs ?? 0) > 0
       if ((hasPoll || hasIdle) && !def.connection.passive) {
@@ -277,6 +295,21 @@ export class Orchestrator extends EventEmitter {
         await this.handleHostQuery(def, driver.info.id, query.sid, message.raw, {
           analyzerName: query.analyzerName,
           hostName: query.hostName
+        })
+        return
+      }
+    }
+
+    // Beckman-AU sample-information request: R|sid|rack|cup|sampleNo|sampleType.
+    if (def.connection.hostQuery && def.protocol === 'beckman-au') {
+      const rec = message.records[0]
+      if (rec?.[0] === 'R') {
+        await this.handleAuHostQuery(def, driver.info.id, {
+          sid: rec[1] ?? '',
+          rack: rec[2] ?? '',
+          cup: rec[3] ?? '',
+          sampleNo: rec[4] ?? '',
+          raw: message.raw
         })
         return
       }
@@ -361,6 +394,79 @@ export class Orchestrator extends EventEmitter {
       })
     } catch (err) {
       logger.error('host-query', `${def.name}: failed to send orders for ${sid}: ${(err as Error).message}`)
+      this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: (err as Error).message })
+    }
+  }
+
+  /**
+   * Answer a Beckman-AU sample-information request: look up the sample's ordered
+   * tests in the LIS, map them to this analyzer's configured Online Test Numbers,
+   * and transmit the S… response so the analyzer knows which assays to run.
+   */
+  private async handleAuHostQuery(
+    def: InstrumentDefinition,
+    driverId: string,
+    req: { sid: string; rack: string; cup: string; sampleNo: string; raw: string }
+  ): Promise<void> {
+    const auSender = this.connections.get(def.id)?.auSender
+    const baseEvent = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: req.sid,
+      analyteCode: 'QUERY',
+      analyteName: 'Sample-info request',
+      value: '',
+      raw: req.raw.length > 600 ? `${req.raw.slice(0, 600)}...` : req.raw,
+      timestamp: new Date().toISOString()
+    }
+    this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'received', message: `Order request for ${req.sid}` })
+
+    let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
+    try {
+      order = await this.lis.getOrder(req.sid)
+    } catch (err) {
+      logger.warn('host-query', `${def.name}: AU order lookup failed for ${req.sid}: ${(err as Error).message}`)
+    }
+
+    // LIS test codes -> this analyzer's instrument codes -> 2-digit Online Test Nos.
+    const codes = order
+      ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
+      : []
+    const testNos = [...new Set(codes.map((c) => auOnlineTestNo(c)).filter((n): n is number => n != null))]
+
+    if (testNos.length === 0) {
+      logger.info('host-query', `${def.name}: no Online Test Nos for ${req.sid}`)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'skipped',
+        value: order ? `${order.testCodes.length} ordered, 0 on AU` : 'not registered',
+        message: order
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none map to a configured AU Online Test No.`
+          : `Barcode ${req.sid} not registered in LIS — nothing to order`
+      })
+    }
+
+    if (!auSender) return
+    const block = buildAuOrderResponse(req.rack, req.cup, req.sampleNo, req.sid, testNos, DEFAULT_AU_FORMAT)
+    try {
+      await auSender.send(block)
+      logger.info(
+        'host-query',
+        `${def.name}: answered ${req.sid} with ${testNos.length} test(s): [${testNos.join(', ')}]`
+      )
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: testNos.length ? 'mapped' : 'skipped',
+        value: testNos.length ? `Online Test Nos: ${testNos.join(', ')}` : '(no tests)',
+        mappedTo: codes.join(', ') || '(none)',
+        message: testNos.length
+          ? `Ordered ${testNos.length} test(s) to analyzer`
+          : 'Replied with empty order set'
+      })
+    } catch (err) {
+      logger.error('host-query', `${def.name}: failed to send AU orders for ${req.sid}: ${(err as Error).message}`)
       this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: (err as Error).message })
     }
   }

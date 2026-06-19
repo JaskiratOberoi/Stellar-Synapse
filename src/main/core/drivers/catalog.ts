@@ -296,16 +296,17 @@ const beckman = [
     'Beckman Coulter',
     'Clinical Chemistry',
     'AU480 clinical chemistry analyzer. Beckman "Online" fixed-field host protocol ' +
-      '(STX/ETX framed, 2-digit Online Test No., space-padded fixed-width results) over ' +
-      'TCP/IP or RS232 serial — NOT pipe-delimited ASTM. On the analyzer set ' +
-      'System > Online > Set Up "Result Transfer" to a real format (not "None"); tests are ' +
-      'keyed by the Online Test No. table (01=GLU … 99=Cl). Results match an accession via ' +
-      'the barcode learned from the sample-information (S) message.',
+      '(STX/ETX framed + 1-byte XOR BCC, 2-digit Online Test No., space-padded fixed-width ' +
+      'results) over TCP/IP or RS232 serial — NOT pipe-delimited ASTM. Bidirectional: the ' +
+      'analyzer sends a sample-information request (R) by barcode, Synapse answers with the ' +
+      'ordered Online Test Nos (S response), then the analyzer returns results (D). Tests are ' +
+      'keyed by the Online Test No. table (01=GLU … 99=Cl); the accession barcode (Sample ID) ' +
+      'rides directly in the R/D records. On the analyzer set the Online format to match.',
     BECKMAN_AU,
     {
       port: 9111,
       protocol: 'beckman-au',
-      mode: 'unidirectional',
+      mode: 'bidirectional',
       // Host link is RS-232 serial; reach it over LAN via a serial-to-Ethernet
       // device server (Synapse = tcp-client) or use native Online LAN (tcp-server).
       transports: ['serial', 'tcp-client', 'tcp-server'],
