@@ -316,8 +316,45 @@ export class Orchestrator extends EventEmitter {
     }
 
     const results = driver.parse(message, instrumentId)
+    await this.reconcileSampleId(def, results)
     for (const result of results) {
       await this.processResult(def, driver.info.id, result, message.raw)
+    }
+  }
+
+  /**
+   * Resolve which barcode candidate a sample's results should be filed under.
+   *
+   * Some analyzers can park the scanned sample barcode in more than one field —
+   * e.g. an EDAN H60 set to "scan into Patient ID" sends the barcode in the
+   * patient field while OBR-2 carries only a short run-sequence number. The
+   * driver surfaces the secondary candidate as `altSampleId`; here we verify the
+   * primary against the LIS and switch to the alternate when only the alternate
+   * is a registered order. This self-corrects in either direction, so it never
+   * breaks a correctly-configured (even short) sample id.
+   *
+   * Runs once per message and only in SQL mode (mock has no real orders to
+   * verify against — the driver's offline default stands).
+   */
+  private async reconcileSampleId(
+    def: InstrumentDefinition,
+    results: CanonicalResult[]
+  ): Promise<void> {
+    if (this.lis.mode !== 'sql') return
+    const witness = results.find((r) => r.altSampleId && r.altSampleId !== r.sampleId)
+    if (!witness) return
+    const primary = witness.sampleId
+    const alt = witness.altSampleId as string
+    try {
+      if (primary && (await this.lis.getOrder(primary))) return // primary is valid
+      if (!(await this.lis.getOrder(alt))) return // neither registered — keep default
+      for (const r of results) r.sampleId = alt
+      logger.info(
+        'engine',
+        `${def.name}: sample id "${primary || '(empty)'}" not in LIS; filing under barcode "${alt}" from the analyzer's patient field`
+      )
+    } catch (err) {
+      logger.warn('engine', `${def.name}: sample-id reconcile failed: ${(err as Error).message}`)
     }
   }
 

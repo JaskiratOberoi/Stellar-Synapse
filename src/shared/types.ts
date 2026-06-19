@@ -127,6 +127,14 @@ export interface CanonicalResult {
   instrumentId: string
   /** Sample / accession barcode. Maps to LIS `vailid`. */
   sampleId: string
+  /**
+   * Secondary barcode candidate, when the analyzer can place the scanned sample
+   * barcode in more than one field (e.g. an EDAN H60 configured to scan into the
+   * patient-id field instead of the sample-id field). The Orchestrator verifies
+   * `sampleId` against the LIS and falls back to this when only the alternate is
+   * a registered order.
+   */
+  altSampleId?: string
   /** Instrument analyte code, e.g. "TSH", "FT4". */
   analyteCode: string
   analyteName?: string

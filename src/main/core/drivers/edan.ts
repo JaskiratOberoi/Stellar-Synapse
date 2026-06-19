@@ -23,6 +23,28 @@ function hl7Unescape(s: string): string {
     .replace(/\\E\\/g, '\\')
 }
 
+/**
+ * Minimum length for an OBR-2 value to be trusted as a real scanned barcode.
+ * H60 run-sequence numbers are 1-3 digits; site barcodes are longer. Used only
+ * to pick the *offline* default sample id — when the LIS is reachable the
+ * Orchestrator verifies the choice against registered orders and self-corrects.
+ */
+const MIN_BARCODE_LEN = 5
+
+/**
+ * Choose the sample id from the two places an H60 can put the scanned barcode:
+ * OBR-2 (the correct/placer field) and the patient-id field (where a
+ * mis-configured "scan into Patient ID" setting parks it). Leads with OBR-2
+ * unless it's too short to be a barcode and the patient id looks like one;
+ * always surfaces the other candidate as the alternate for LIS verification.
+ */
+function chooseEdanSampleId(obr2: string, pid: string): { primary: string; alt?: string } {
+  const obrOk = obr2.length >= MIN_BARCODE_LEN
+  const pidOk = pid.length >= MIN_BARCODE_LEN
+  if (!obrOk && pidOk) return { primary: pid, alt: obr2 || undefined }
+  return { primary: obr2, alt: pid && pid !== obr2 ? pid : undefined }
+}
+
 function normFlag(raw?: string): ResultFlag | undefined {
   if (!raw) return undefined
   const f = raw.split('~')[0].trim().toUpperCase()
@@ -47,11 +69,17 @@ export function parseEdanHl7(message: ProtocolMessage, instrumentId: string): Ca
   const results: CanonicalResult[] = []
   const now = new Date().toISOString()
   let sid = ''
+  let pid = ''
   let measuredAt: string | undefined
 
   for (const seg of message.records) {
     const type = (seg[0] || '').toUpperCase()
-    if (type === 'OBR') {
+    if (type === 'PID') {
+      // If the H60 is configured to scan the barcode into the patient field, the
+      // sample barcode lands here (PID-3, or PID-2/PID-4) instead of OBR-2. Keep
+      // it as a fallback sample id; the component after "^" is the id qualifier.
+      pid = (seg[3] || seg[2] || seg[4] || '').split('^')[0].trim()
+    } else if (type === 'OBR') {
       // OBR-2 (placer) = sample id; OBR-3 is blank. OBR-7 = analysis date/time.
       sid = (seg[2] || seg[3] || '').split('^')[0].trim()
       measuredAt = seg[7]?.trim() || undefined
@@ -64,7 +92,7 @@ export function parseEdanHl7(message: ProtocolMessage, instrumentId: string): Ca
       results.push({
         id: randomUUID(),
         instrumentId,
-        sampleId: sid,
+        sampleId: '',
         analyteCode: code,
         analyteName: code,
         value,
@@ -75,6 +103,14 @@ export function parseEdanHl7(message: ProtocolMessage, instrumentId: string): Ca
         receivedAt: now
       })
     }
+  }
+
+  // PID precedes OBR/OBX in the frame, so both candidates are known here. Pick
+  // the offline default and carry the other for the Orchestrator to verify.
+  const { primary, alt } = chooseEdanSampleId(sid, pid)
+  for (const r of results) {
+    r.sampleId = primary
+    if (alt) r.altSampleId = alt
   }
   return results
 }
