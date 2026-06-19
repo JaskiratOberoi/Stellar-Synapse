@@ -12,7 +12,7 @@
  *     ana -> <ACK>
  *     LIS -> <STX>2P|1<CR><ETX>cc<CR><LF>
  *     ana -> <ACK>
- *     LIS -> <STX>3O|1|SID||^^^TSH|R<CR><ETX>cc<CR><LF>
+ *     LIS -> <STX>3O|1|SID||^^^TSH<CR><ETX>cc<CR><LF>
  *     ana -> <ACK>
  *     LIS -> <STX>4L|1|N<CR><ETX>cc<CR><LF>
  *     ana -> <ACK>
@@ -58,12 +58,11 @@ export function buildAstmOrderRecords(
   records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
   records.push(['P', '1'])
   analyteCodes.forEach((code, i) => {
-    // O|seq|sampleId||^^^<test>|R — the Chapter 16 multi-test order-download
-    // example (p.16-8) ends EVERY O record with the priority field "R". The X3
-    // needs it to accept the order: a single order is tolerated without it, but
-    // with multiple O records the analyzer picks up only the first when "R" is
-    // missing.
-    records.push(['O', String(i + 1), sid, '', `^^^${code}`, 'R'])
+    // O|seq|sampleId||^^^<test> — NO trailing priority field. The Chapter 16
+    // manual (Maglumi 1000/2000) shows "...|R", but this X3 firmware REJECTS the
+    // order when the priority field is present — verified live: adding "|R"
+    // broke even a single-test selection that worked without it. Do not re-add.
+    records.push(['O', String(i + 1), sid, '', `^^^${code}`])
   })
   records.push(['L', '1', 'N'])
   return records
