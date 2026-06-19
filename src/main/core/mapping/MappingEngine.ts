@@ -95,6 +95,13 @@ export class MappingEngine {
   ): MappingTarget | null {
     const c = code.trim().toUpperCase()
 
+    // 0) Hematology CBC analyte (WBC, NEU%, HGB, …): the H60 mnemonics don't
+    // equal Noble's parameter codes, and the same cell name often exists in
+    // several panels (e.g. a "Neutrophils" param under a body-fluid test), so
+    // match by curated synonyms and prefer the CBC panel.
+    const cbc = suggestCbcParam(c, tests, params)
+    if (cbc) return cbc
+
     // 1) Exact parameter code match (panel members like WBC, NA).
     const paramExact = params.find((p) => p.code.toUpperCase() === c)
     if (paramExact) {
@@ -136,12 +143,15 @@ export class MappingEngine {
       }
     }
 
-    // 3) Fuzzy: test name contains the analyte name token.
-    if (name) {
-      const n = name.toLowerCase()
-      const fuzzy = tests.find(
-        (t) => t.testName.toLowerCase().includes(n) || n.includes(t.testName.toLowerCase())
-      )
+    // 3) Fuzzy: test name contains the analyte name token. Require both sides to
+    // be >= 4 chars so a test literally named "M" can't swallow "Monocytes".
+    if (name && name.trim().length >= 4) {
+      const n = name.toLowerCase().trim()
+      const fuzzy = tests.find((t) => {
+        const tn = t.testName.toLowerCase().trim()
+        if (tn.length < 4) return false
+        return tn.includes(n) || n.includes(tn)
+      })
       if (fuzzy) {
         return {
           lisTestId: fuzzy.id,
@@ -290,6 +300,103 @@ export class MappingEngine {
 
   private save(): void {
     persist.setMappings(this.rules)
+  }
+}
+
+/**
+ * Canonical Noble CBC parameter-name synonyms for each EDAN H60 / 5-part analyte
+ * code. Keyed by the analyte code as emitted by the driver (uppercased). The
+ * order within each list is most-specific-first so the "%" differential picks
+ * the "… %" parameter, not the bare cell name.
+ */
+const CBC_PARAM_ALIASES: Record<string, string[]> = {
+  WBC: ['total leukocyte count', 'total leucocyte count', 'tlc', 'white blood cell count', 'wbc count'],
+  RBC: ['rbc count', 'red blood cell count', 'total rbc count'],
+  HGB: ['hemoglobin', 'haemoglobin', 'hb'],
+  HCT: ['hematocrit', 'haematocrit', 'packed cell volume', 'pcv'],
+  MCV: ['mcv', 'mean corpuscular volume'],
+  MCH: ['mch', 'mean corpuscular hemoglobin'],
+  MCHC: ['mchc', 'mean corpuscular hemoglobin concentration'],
+  RDW_CV: ['rdw cv', 'rdw'],
+  RDW_SD: ['rdw sd'],
+  PLT: ['platelet count', 'platelets'],
+  MPV: ['mpv', 'mean platelet volume'],
+  PDW: ['pdw', 'platelet distribution width'],
+  PCT: ['plateletcrit'],
+  'NEU%': ['neutrophils %', '% neutrophils', 'neutrophil %', 'neutrophils'],
+  'LYM%': ['lymphocytes %', '% lymphocytes', 'lymphocyte %', 'lymphocytes'],
+  'MON%': ['monocytes %', '% monocytes', 'monocyte %', 'monocytes'],
+  'EOS%': ['eosinophils %', '% eosinophils', 'eosinophil %', 'eosinophils'],
+  'BAS%': ['basophils %', '% basophils', 'basophil %', 'basophils'],
+  'NEU#': ['absolute neutrophil count', 'neutrophils absolute', 'absolute neutrophils'],
+  'LYM#': ['absolute lymphocyte count', 'lymphocytes absolute', 'absolute lymphocytes'],
+  'MON#': ['absolute monocyte count', 'monocytes absolute', 'absolute monocytes'],
+  'EOS#': ['absolute eosinophil count', 'eosinophils absolute', 'absolute eosinophils'],
+  'BAS#': ['absolute basophil count', 'basophils absolute', 'absolute basophils']
+}
+
+/** Lowercase a name and collapse separators/punctuation for tolerant matching. */
+function normName(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[\s_\-/]+/g, ' ')
+    .replace(/[^\w% ]/g, '')
+    .trim()
+}
+
+/** True when a LIS test name looks like the CBC / hemogram panel. */
+function isCbcTestName(name: string): boolean {
+  const n = name.toLowerCase()
+  return (
+    n.includes('blood count') ||
+    n.includes('cbc') ||
+    n.includes('hemogram') ||
+    n.includes('haemogram') ||
+    n.includes('5 part') ||
+    n.includes('5-part')
+  )
+}
+
+/**
+ * Resolve a hematology analyte code to a Noble CBC parameter by curated synonym,
+ * preferring a parameter whose parent test is the CBC panel (the same cell name
+ * frequently appears in body-fluid / other panels too). Returns null for codes
+ * we don't carry a synonym for (e.g. research indices NLR, P_LCC).
+ */
+function suggestCbcParam(
+  code: string,
+  tests: LisTest[],
+  params: LisParameter[]
+): MappingTarget | null {
+  const aliases = CBC_PARAM_ALIASES[code.trim().toUpperCase()]
+  if (!aliases) return null
+  const aliasNorm = aliases.map(normName)
+  const testById = new Map(tests.map((t) => [t.id, t]))
+
+  const cands = params
+    .map((p) => {
+      const idx = aliasNorm.indexOf(normName(p.name))
+      if (idx < 0) return null
+      const parent = testById.get(p.testId)
+      return { p, parent, cbc: !!parent && isCbcTestName(parent.testName), idx }
+    })
+    .filter((x): x is NonNullable<typeof x> => x != null)
+
+  if (cands.length === 0) return null
+  // CBC-panel match wins; then most-specific synonym; then shortest name.
+  cands.sort(
+    (a, b) =>
+      Number(b.cbc) - Number(a.cbc) || a.idx - b.idx || a.p.name.length - b.p.name.length
+  )
+  const best = cands[0]
+  return {
+    lisTestId: best.parent?.id,
+    lisTestCode: best.parent?.testCode,
+    lisTestName: best.parent?.testName,
+    lisParamId: best.p.id,
+    lisParamName: best.p.name,
+    unit: best.p.unit,
+    confidence: best.cbc ? 0.97 : 0.8
   }
 }
 
