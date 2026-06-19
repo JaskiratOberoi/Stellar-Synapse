@@ -58,9 +58,12 @@ export function buildAstmOrderRecords(
   records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
   records.push(['P', '1'])
   analyteCodes.forEach((code, i) => {
-    // O|seq|sampleId||^^^<test>   — matches the official Chapter 16 order-download
-    // example exactly (no trailing priority field).
-    records.push(['O', String(i + 1), sid, '', `^^^${code}`])
+    // O|seq|sampleId||^^^<test>|R — the Chapter 16 multi-test order-download
+    // example (p.16-8) ends EVERY O record with the priority field "R". The X3
+    // needs it to accept the order: a single order is tolerated without it, but
+    // with multiple O records the analyzer picks up only the first when "R" is
+    // missing.
+    records.push(['O', String(i + 1), sid, '', `^^^${code}`, 'R'])
   })
   records.push(['L', '1', 'N'])
   return records
