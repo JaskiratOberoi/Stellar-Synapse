@@ -21,12 +21,14 @@ export function MappingEditor({
   const [selTest, setSelTest] = useState<LisTest | null>(null)
   const [selParam, setSelParam] = useState<LisParameter | null>(null)
   const [unit, setUnit] = useState('')
+  const [analyzerCode, setAnalyzerCode] = useState('')
 
   useEffect(() => {
     if (rule) {
       setSelTest(tests.find((t) => t.id === rule.lisTestId) ?? null)
       setSelParam(parameters.find((p) => p.id === rule.lisParamId) ?? null)
       setUnit(rule.unit ?? '')
+      setAnalyzerCode(rule.analyzerCode ?? '')
       setSearch('')
     }
   }, [rule, tests, parameters])
@@ -56,6 +58,7 @@ export function MappingEditor({
       lisParamId: status === 'ignored' ? undefined : selParam?.id,
       lisParamName: status === 'ignored' ? undefined : selParam?.name,
       unit: unit || rule.unit,
+      analyzerCode: analyzerCode.trim() || undefined,
       confidence: undefined,
       updatedAt: new Date().toISOString()
     }
@@ -158,9 +161,23 @@ export function MappingEditor({
           </div>
         )}
 
-        <div className="space-y-1.5">
-          <Label>Unit override (optional)</Label>
-          <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. uIU/mL" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Unit override (optional)</Label>
+            <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. uIU/mL" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Analyzer channel / transmit code (optional)</Label>
+            <Input
+              value={analyzerCode}
+              onChange={(e) => setAnalyzerCode(e.target.value)}
+              placeholder="e.g. Vit B12 III"
+            />
+            <p className="text-xs text-muted-foreground">
+              Exact assay name the analyzer expects (e.g. MAGLUMI X3 Channel No.). Sent in
+              host-query orders. Defaults to {rule.instrumentCode}.
+            </p>
+          </div>
         </div>
       </div>
     </Modal>

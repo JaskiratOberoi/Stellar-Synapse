@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { CanonicalResult, LisParameter, LisTest, MappingRule } from '../../../shared/types'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { getDriver } from '../drivers/registry'
+import { maglumiX3Channel } from '../drivers/maglumi'
 import { persist } from '../../store'
 import { logger } from '../logger'
 
@@ -51,20 +52,32 @@ export class MappingEngine {
     let added = 0
 
     const unique = [...new Set(driverIds)]
+    let backfilled = 0
     for (const driverId of unique) {
       const driver = getDriver(driverId)
       if (!driver) continue
       for (const analyte of driver.analytes()) {
+        // Default analyzer channel name (e.g. MAGLUMI X3 "Channel No.").
+        const channel = driverId === 'maglumi-x3' ? maglumiX3Channel(analyte.code) : undefined
         const exists = this.rules.find(
           (r) => r.driverId === driverId && r.instrumentCode === analyte.code
         )
-        if (exists) continue
+        if (exists) {
+          // Backfill the channel name onto rules created before this field existed
+          // (e.g. an in-place upgrade), without touching an operator's override.
+          if (channel && !exists.analyzerCode) {
+            exists.analyzerCode = channel
+            backfilled++
+          }
+          continue
+        }
         const target = this.suggest(analyte.code, analyte.name, tests, params)
         this.rules.push({
           id: randomUUID(),
           driverId,
           instrumentCode: analyte.code,
           instrumentName: analyte.name,
+          analyzerCode: channel,
           unit: analyte.unit,
           status: target ? 'auto' : 'unmapped',
           confidence: target?.confidence,
@@ -79,9 +92,12 @@ export class MappingEngine {
       }
     }
 
-    if (added > 0) {
+    if (added > 0 || backfilled > 0) {
       this.save()
-      logger.info('mapping', `Seeded ${added} mapping rows for ${unique.length} in-use driver(s)`)
+      logger.info(
+        'mapping',
+        `Seeded ${added} mapping row(s) (+${backfilled} channel backfill) for ${unique.length} in-use driver(s)`
+      )
     }
     return added
   }
@@ -278,17 +294,25 @@ export class MappingEngine {
     for (const group of byTest.values()) {
       const manual = group.filter((r) => r.status === 'manual')
       const chosen = manual.length > 0 ? manual : group
-      for (const r of chosen) out.push(r.instrumentCode)
+      // Send the analyzer's own channel name when set (e.g. MAGLUMI X3 matches the
+      // order by Channel No., not our generic code), else the instrument code.
+      for (const r of chosen) out.push(r.analyzerCode?.trim() || r.instrumentCode)
     }
     return [...new Set(out)]
   }
 
-  /** Resolve a canonical result to its mapping rule (by driver + analyte code). */
+  /**
+   * Resolve a canonical result to its mapping rule (by driver + analyte code).
+   * Matches the instrument code OR the analyzer channel name, since an analyzer
+   * that orders by Channel No. also uploads results keyed by it.
+   */
   resolve(result: CanonicalResult, driverId: string): MappingRule | undefined {
+    const code = result.analyteCode.toUpperCase()
     return this.rules.find(
       (r) =>
         r.driverId === driverId &&
-        r.instrumentCode.toUpperCase() === result.analyteCode.toUpperCase()
+        (r.instrumentCode.toUpperCase() === code ||
+          (r.analyzerCode?.trim().toUpperCase() === code && !!r.analyzerCode))
     )
   }
 

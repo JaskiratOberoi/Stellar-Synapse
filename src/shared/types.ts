@@ -213,6 +213,10 @@ export interface LisResultWrite {
 
 export type MappingStatus = 'auto' | 'manual' | 'unmapped' | 'ignored'
 
+// (MappingRule below) — analyzerCode carries the analyzer's own channel/transmit
+// name when it differs from the generic instrumentCode (e.g. a SNIBE MAGLUMI X3
+// "Channel No." like "Vit B12 III"). It is what Synapse sends in a host-query
+// order and what it matches on result upload.
 export interface MappingRule {
   id: string
   /** Which instrument/driver this rule belongs to. */
@@ -220,6 +224,12 @@ export interface MappingRule {
   /** Instrument analyte code, e.g. "FT4". */
   instrumentCode: string
   instrumentName?: string
+  /**
+   * Analyzer channel / transmit name, when it differs from instrumentCode. Sent
+   * in host-query order records and matched against uploaded result codes. Falls
+   * back to instrumentCode when empty. (e.g. MAGLUMI X3 "Channel No.")
+   */
+  analyzerCode?: string
   /** Resolved LIS test. */
   lisTestId?: number
   lisTestCode?: string
