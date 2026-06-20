@@ -417,14 +417,21 @@ export class Orchestrator extends EventEmitter {
     if (!sender) return
     // Mirror the analyzer's own Analyzer ID / Host ID from its query header so the
     // X3 accepts the order (falls back to the configured name if absent).
-    const records = buildAstmOrderRecords(
-      sid,
-      codes,
-      header?.analyzerName || def.name,
-      header?.hostName || 'Lis'
-    )
+    const analyzerName = header?.analyzerName || def.name
+    const hostName = header?.hostName || 'Lis'
     try {
-      await sender.send(records)
+      if (codes.length > 1) {
+        // The X3 honors only the FIRST O record in a message, so send one
+        // complete single-test order per assay (each its own ENQ..EOT) — the same
+        // message shape proven to work for a single test. A small gap lets the
+        // analyzer settle between transmissions.
+        for (let i = 0; i < codes.length; i++) {
+          await sender.send(buildAstmOrderRecords(sid, [codes[i]], analyzerName, hostName))
+          if (i < codes.length - 1) await new Promise((r) => setTimeout(r, 300))
+        }
+      } else {
+        await sender.send(buildAstmOrderRecords(sid, codes, analyzerName, hostName))
+      }
       logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
       this.pushMonitor({
         ...baseEvent,
