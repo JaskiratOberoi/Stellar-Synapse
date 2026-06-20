@@ -57,18 +57,16 @@ export function buildAstmOrderRecords(
   //   H|\^&||PSWD|<analyzerId>|||||<hostId>||P|E1394-97|<ts>
   records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
   records.push(['P', '1'])
-  if (analyteCodes.length > 0) {
-    // ONE O record carrying every test, repeat-delimited with "\" (the X3's
-    // configured Repeat Delimiter):  O|1|sid||^^^A\^^^B\^^^C
+  analyteCodes.forEach((code, i) => {
+    // EXACT SNIBE Chapter 16 order-download format (p.16-8): one O record per
+    // test, each ending in the priority field "R":  O|seq|sid||^^^<channel>|R
     //
-    // This X3 firmware is quirky: it selects a single-test order fine, but
-    // IGNORES the order when multiple O records share the frame, and it REJECTS
-    // the "|R" priority field its manual documents (verified live — adding "|R"
-    // broke even single-test selection). Packing the tests into one repeat-
-    // delimited O record sidesteps both. A single-test order is unchanged
-    // (no "\"), so this can't regress the working single case.
-    records.push(['O', '1', sid, '', analyteCodes.map((c) => `^^^${c}`).join('\\')])
-  }
+    // History: "|R" was removed earlier after a single-test order failed with it
+    // — but that test was contaminated (the channel name was also wrong then,
+    // "VITB12" vs "Vit B12 III"), so the failure was the channel, not "|R".
+    // Restored to match the manual now that channel names are correct.
+    records.push(['O', String(i + 1), sid, '', `^^^${code}`, 'R'])
+  })
   records.push(['L', '1', 'N'])
   return records
 }
