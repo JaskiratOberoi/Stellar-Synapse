@@ -28,6 +28,7 @@ const ETX = 0x03
 const EOT = 0x04
 const ENQ = 0x05
 const ACK = 0x06
+const ETB = 0x17
 const NAK = 0x15
 
 /** ASTM timestamp YYYYMMDDHHMMSS. */
@@ -96,14 +97,17 @@ export function frameAstmMessage(records: string[][]): Buffer {
  * Frame each record as its OWN ASTM frame, with incrementing frame numbers
  * (1-7, rolling to 0). Use for the MAGLUMI X3 multi-test order-download: the X3
  * reads only one order (O) record per frame, so every record must arrive in its
- * own frame within the single response session. Per-frame layout matches the
- * combined framer (no CR before ETX; checksum over frameNum + record + ETX),
- * verified against the manual's single-record example "2P|1<ETX>32".
+ * own frame within the single response session.
+ *
+ * Per E1381, INTERMEDIATE frames terminate with ETB (0x17) and only the FINAL
+ * frame with ETX (0x03); the checksum covers frameNum + record + terminator.
  */
 export function frameAstmPerRecord(records: string[][]): Buffer[] {
+  const lastIdx = records.length - 1
   return records.map((rec, i) => {
     const frameNum = (i + 1) % 8 // 1,2,…,7,0,1,…
-    const body = `${frameNum}${rec.join('|')}${String.fromCharCode(ETX)}`
+    const term = i === lastIdx ? ETX : ETB
+    const body = `${frameNum}${rec.join('|')}${String.fromCharCode(term)}`
     let sum = 0
     for (let k = 0; k < body.length; k++) sum = (sum + body.charCodeAt(k)) & 0xff
     const cs = sum.toString(16).toUpperCase().padStart(2, '0')
