@@ -57,13 +57,18 @@ export function buildAstmOrderRecords(
   //   H|\^&||PSWD|<analyzerId>|||||<hostId>||P|E1394-97|<ts>
   records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
   records.push(['P', '1'])
-  analyteCodes.forEach((code, i) => {
-    // O|seq|sampleId||^^^<test> — NO trailing priority field. The Chapter 16
-    // manual (Maglumi 1000/2000) shows "...|R", but this X3 firmware REJECTS the
-    // order when the priority field is present — verified live: adding "|R"
-    // broke even a single-test selection that worked without it. Do not re-add.
-    records.push(['O', String(i + 1), sid, '', `^^^${code}`])
-  })
+  if (analyteCodes.length > 0) {
+    // ONE O record carrying every test, repeat-delimited with "\" (the X3's
+    // configured Repeat Delimiter):  O|1|sid||^^^A\^^^B\^^^C
+    //
+    // This X3 firmware is quirky: it selects a single-test order fine, but
+    // IGNORES the order when multiple O records share the frame, and it REJECTS
+    // the "|R" priority field its manual documents (verified live — adding "|R"
+    // broke even single-test selection). Packing the tests into one repeat-
+    // delimited O record sidesteps both. A single-test order is unchanged
+    // (no "\"), so this can't regress the working single case.
+    records.push(['O', '1', sid, '', analyteCodes.map((c) => `^^^${c}`).join('\\')])
+  }
   records.push(['L', '1', 'N'])
   return records
 }
