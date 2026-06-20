@@ -213,32 +213,64 @@ export class SqlLisRepository implements ILisRepository {
     req.input('upload', mssql.VarChar, write.uploadFlag)
     req.input('addeddate', mssql.DateTime, new Date(write.addedDate))
 
-    const whereParam = write.paramId
+    req.input('testcode', mssql.VarChar, write.testCode || '')
+    req.input('testname', mssql.VarChar, write.testName || '')
+
+    // Match the pre-created result row. Tier 1 is the exact ordered slot; the
+    // fallbacks find the SAME analyte when it was ordered via a profile/package
+    // (e.g. "Thyroid Profile I") instead of directly — Noble files the member row
+    // under the profile, so the fixed testid the mapping carries no longer matches.
+    // Never touch testcode/testname/testunit (Noble owns those labels) and never
+    // INSERT: a genuine miss means the test was not ordered for this sample.
+    const exactWhere = write.paramId
       ? 'vailid = @vailid AND testid = @testid AND paramid = @paramid'
       : 'vailid = @vailid AND testid = @testid AND (paramid IS NULL OR paramid = 0)'
+    const setCols =
+      'SET value = @value, abnormal = @abnormal, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
 
     const result = await req.query(`
-      -- 1) Fill the value into the pre-created result row. Never touch
-      --    testcode/testname/testunit (Noble owns those labels) and never INSERT:
-      --    if no ordered row matches, the test was not ordered for this sample.
-      UPDATE tbl_med_mcc_patient_test_result
-      SET value = @value,
-          abnormal = @abnormal,
-          machine_name = @machine,
-          UploadFlag = @upload,
-          addeddate = @addeddate
-      WHERE ${whereParam};
+      DECLARE @matched int = 0;
 
-      DECLARE @matched int = @@ROWCOUNT;
+      -- Tier 1: the exact ordered row (testid + paramid) — a direct order.
+      UPDATE tbl_med_mcc_patient_test_result ${setCols} WHERE ${exactWhere};
+      SET @matched = @@ROWCOUNT;
+
+      -- Tier 2: same parameter, regardless of grouping. A parameter_master row is
+      -- shared whether the analyte is ordered directly or inside a profile, so this
+      -- catches profile-ordered results the fixed testid misses. Measurable rows
+      -- only (never the Head/Profile container).
+      IF @matched = 0 AND @paramid IS NOT NULL
+      BEGIN
+        UPDATE tbl_med_mcc_patient_test_result ${setCols}
+        WHERE vailid = @vailid AND paramid = @paramid AND testtype NOT IN ('Head', 'Profile');
+        SET @matched = @@ROWCOUNT;
+      END
+
+      -- Tier 3: same test by code (profile members keep the member test's code).
+      -- Only for test-level mappings (no paramid) so a panel can't be overwritten.
+      IF @matched = 0 AND @testcode <> '' AND @paramid IS NULL
+      BEGIN
+        UPDATE tbl_med_mcc_patient_test_result ${setCols}
+        WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile');
+        SET @matched = @@ROWCOUNT;
+      END
+
+      -- Tier 4: same test/parameter by name. Last resort; the name is specific to
+      -- the analyte so it cannot bleed into a different test's row.
+      IF @matched = 0 AND @testname <> ''
+      BEGIN
+        UPDATE tbl_med_mcc_patient_test_result ${setCols}
+        WHERE vailid = @vailid AND testname = @testname AND testtype NOT IN ('Head', 'Profile');
+        SET @matched = @@ROWCOUNT;
+      END
 
       IF @matched > 0
       BEGIN
-        -- 2) Recompute sample_status exactly like Noble's UpdateSampleResult:
-        --    count measurable rows (testtype not Head/Profile) vs. those now
-        --    holding a value. Advance only 2 (Registered) -> 4 (Partially Tested)
-        --    -> 5 (Tested). The IN (2,4) guard means Synapse never downgrades or
-        --    touches Rejected (3), Authorized (6/7), Printed (8/9) or Pending (10),
-        --    and never auto-authorizes.
+        -- Recompute sample_status exactly like Noble's UpdateSampleResult: count
+        -- measurable rows (testtype not Head/Profile) vs. those now holding a
+        -- value. Advance only 2 (Registered) -> 4 (Partially Tested) -> 5 (Tested).
+        -- The IN (2,4) guard means Synapse never downgrades or touches Rejected
+        -- (3), Authorized (6/7), Printed (8/9) or Pending (10), nor auto-authorizes.
         DECLARE @total int, @filled int;
         SELECT
           @total  = COUNT(*),
@@ -259,9 +291,27 @@ export class SqlLisRepository implements ILisRepository {
 
     const matched = Number(result.recordset?.[0]?.matched ?? 0)
     if (matched === 0) {
+      // Dump the sample's rows so a genuine "not ordered" is debuggable, and any
+      // profile layout the tiers don't yet cover is immediately visible in Logs.
+      let rowsDump = ''
+      try {
+        const rows = await pool
+          .request()
+          .input('v', mssql.VarChar, write.vailid)
+          .query(
+            'SELECT testid, paramid, testtype, testcode, testname FROM tbl_med_mcc_patient_test_result WHERE vailid = @v'
+          )
+        rowsDump = (rows.recordset as Array<Record<string, unknown>>)
+          .map((r) => `${r.testcode}/${r.testname}[t${r.testid},p${r.paramid ?? '-'},${r.testtype}]`)
+          .join('; ')
+      } catch {
+        /* best-effort diagnostic */
+      }
       logger.warn(
         'lis-sql',
-        `No ordered row for ${write.vailid} ${write.testCode}${write.paramId ? `[param ${write.paramId}]` : ''} — test not ordered for this sample; skipped (no row inserted)`
+        `No matching result row for ${write.vailid} ${write.testCode} ` +
+          `(mapped testid ${write.testId}, paramid ${write.paramId ?? 'null'}, name "${write.testName}") — ` +
+          `sample rows: ${rowsDump || '(none registered)'}`
       )
       return 'skipped'
     }
