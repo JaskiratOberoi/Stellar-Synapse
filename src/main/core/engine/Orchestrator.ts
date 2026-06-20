@@ -420,18 +420,14 @@ export class Orchestrator extends EventEmitter {
     const analyzerName = header?.analyzerName || def.name
     const hostName = header?.hostName || 'Lis'
     try {
-      if (codes.length > 1) {
-        // The X3 honors only the FIRST O record in a message, so send one
-        // complete single-test order per assay (each its own ENQ..EOT) — the same
-        // message shape proven to work for a single test. A small gap lets the
-        // analyzer settle between transmissions.
-        for (let i = 0; i < codes.length; i++) {
-          await sender.send(buildAstmOrderRecords(sid, [codes[i]], analyzerName, hostName))
-          if (i < codes.length - 1) await new Promise((r) => setTimeout(r, 300))
-        }
-      } else {
-        await sender.send(buildAstmOrderRecords(sid, codes, analyzerName, hostName))
-      }
+      // The X3 answers a query with ONE session and reads only one O record per
+      // frame. So for multiple tests, send a single session but frame each record
+      // separately (incrementing frame numbers) so every O lands in its own
+      // frame. A single test keeps the proven single combined frame.
+      await sender.send(
+        buildAstmOrderRecords(sid, codes, analyzerName, hostName),
+        codes.length > 1
+      )
       logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
       this.pushMonitor({
         ...baseEvent,

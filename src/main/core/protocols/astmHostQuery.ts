@@ -92,6 +92,25 @@ export function frameAstmMessage(records: string[][]): Buffer {
   return Buffer.from(String.fromCharCode(STX) + body + cs + '\r\n', 'latin1')
 }
 
+/**
+ * Frame each record as its OWN ASTM frame, with incrementing frame numbers
+ * (1-7, rolling to 0). Use for the MAGLUMI X3 multi-test order-download: the X3
+ * reads only one order (O) record per frame, so every record must arrive in its
+ * own frame within the single response session. Per-frame layout matches the
+ * combined framer (no CR before ETX; checksum over frameNum + record + ETX),
+ * verified against the manual's single-record example "2P|1<ETX>32".
+ */
+export function frameAstmPerRecord(records: string[][]): Buffer[] {
+  return records.map((rec, i) => {
+    const frameNum = (i + 1) % 8 // 1,2,…,7,0,1,…
+    const body = `${frameNum}${rec.join('|')}${String.fromCharCode(ETX)}`
+    let sum = 0
+    for (let k = 0; k < body.length; k++) sum = (sum + body.charCodeAt(k)) & 0xff
+    const cs = sum.toString(16).toUpperCase().padStart(2, '0')
+    return Buffer.from(String.fromCharCode(STX) + body + cs + '\r\n', 'latin1')
+  })
+}
+
 type SenderState = 'idle' | 'wait-enq-ack' | 'wait-frame-ack' | 'done'
 
 /**
@@ -116,10 +135,11 @@ export class AstmHostQuerySender {
   }
 
   /** Send the records; resolves when the EOT is sent or the attempt aborts. */
-  send(records: string[][]): Promise<void> {
+  send(records: string[][], perRecord = false): Promise<void> {
     if (this.isBusy()) return Promise.resolve()
-    // SNIBE expects the whole message in ONE frame (records CR-separated).
-    this.frames = [frameAstmMessage(records)]
+    // Default: whole message in ONE frame (records CR-separated). perRecord: one
+    // frame per record (X3 multi-test — it reads only one O record per frame).
+    this.frames = perRecord ? frameAstmPerRecord(records) : [frameAstmMessage(records)]
     this.idx = 0
     this.retries = 0
     this.state = 'wait-enq-ack'
