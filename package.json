@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.2.25",
+  "version": "0.2.26",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
@@ -13,7 +13,7 @@
     "build": "npm run typecheck && electron-vite build",
     "build:win": "node scripts/build-installer.mjs",
     "installer": "node scripts/build-installer.mjs",
-    "build:win:dir": "npm run build && electron-builder --win --dir --config electron-builder.yml",
+    "build:win:dir": "npm run build && electron-builder --win --dir --x64 --config electron-builder.yml",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -21,9 +21,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
-    "electron-store": "^8.2.0"
-  },
-  "optionalDependencies": {
+    "electron-store": "^8.2.0",
     "mssql": "^11.0.1",
     "serialport": "^12.0.0"
   },

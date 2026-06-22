@@ -64,6 +64,12 @@ export interface InstrumentConnectionConfig {
   /** Serial port path, e.g. "COM3". */
   serialPath?: string
   baudRate?: number
+  /** Serial data bits. Beckman AU "Online" uses 7; most ASTM serial uses 8. */
+  dataBits?: 7 | 8
+  /** Serial parity. AU "Online" uses 'none'. */
+  parity?: 'none' | 'even' | 'odd'
+  /** Serial stop bits. */
+  stopBits?: 1 | 2
   /** Enable host-query (analyzer asks the LIS what tests to run by barcode). */
   hostQuery?: boolean
   /**
