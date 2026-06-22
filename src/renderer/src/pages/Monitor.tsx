@@ -16,6 +16,7 @@ const stageTone: Record<MonitorStage, 'muted' | 'accent' | 'primary' | 'success'
   mapped: 'primary',
   written: 'success',
   skipped: 'warning',
+  suppressed: 'warning',
   queued: 'accent',
   error: 'danger'
 }

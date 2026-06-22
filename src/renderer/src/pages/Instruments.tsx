@@ -60,7 +60,19 @@ export function Instruments() {
               animate="show"
               exit={{ opacity: 0, scale: 0.95 }}
             >
-            <Card interactive className="group relative h-full overflow-hidden">
+            <Card
+              interactive
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`/instruments/${inst.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate(`/instruments/${inst.id}`)
+                }
+              }}
+              className="group relative h-full cursor-pointer overflow-hidden"
+            >
               <CardContent className="space-y-4 p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -116,15 +128,32 @@ export function Instruments() {
                       variant={running ? 'outline' : 'success'}
                       size="sm"
                       disabled={busy === inst.id}
-                      onClick={() => toggle(inst.id, running)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggle(inst.id, running)
+                      }}
                     >
                       {running ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                       {running ? 'Stop' : 'Start'}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(inst.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        remove(inst.id)
+                      }}
+                    >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => navigate(`/instruments/${inst.id}`)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/instruments/${inst.id}`)
+                      }}
+                    >
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>

@@ -18,13 +18,27 @@ export class DefinitionDriver implements IInstrumentDriver {
   constructor(private readonly def: ModelDefinition) {}
 
   get info(): InstrumentDriverInfo {
-    const { analytes: _analytes, hl7Dialect: _hl7Dialect, lisValueOnly: _lisValueOnly, ...info } =
-      this.def
+    const {
+      analytes: _analytes,
+      hl7Dialect: _hl7Dialect,
+      lisValueOnly: _lisValueOnly,
+      astmFlushOnTerminator: _astmFlushOnTerminator,
+      transientConnection: _transientConnection,
+      ...info
+    } = this.def
     return info
   }
 
   get lisValueOnly(): boolean | undefined {
     return this.def.lisValueOnly
+  }
+
+  get astmFlushOnTerminator(): boolean | undefined {
+    return this.def.astmFlushOnTerminator
+  }
+
+  get transientConnection(): boolean | undefined {
+    return this.def.transientConnection
   }
 
   analytes(): DriverAnalyte[] {

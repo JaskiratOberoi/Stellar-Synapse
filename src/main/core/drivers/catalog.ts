@@ -31,6 +31,18 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * Agappe Mispa Maestro HbA1c integration (map by SID, send the value only).
    */
   lisValueOnly?: boolean
+  /**
+   * Bare ASTM framing: the analyzer sends no E1381 envelope (no inter-record CR,
+   * no checksum, no <EOT>) and ends the message with the L terminator, so the
+   * decoder must flush on that terminator (Agappe Mispa Maestro / BH60).
+   */
+  astmFlushOnTerminator?: boolean
+  /**
+   * Analyzer opens a new connection per result batch and disconnects after, so
+   * the UI status stays 'online' between batches instead of flapping back to
+   * 'listening' on each inter-batch disconnect (Agappe Mispa Maestro / BH60).
+   */
+  transientConnection?: boolean
 }
 
 interface MkOpts {
@@ -42,6 +54,8 @@ interface MkOpts {
   hl7Dialect?: ModelDefinition['hl7Dialect']
   lisValueOnly?: boolean
   derivesEag?: boolean
+  astmFlushOnTerminator?: boolean
+  transientConnection?: boolean
 }
 
 function mk(
@@ -67,7 +81,9 @@ function mk(
     maturity: opts.maturity ?? 'skeleton',
     ...(opts.derivesEag ? { derivesEag: true } : {}),
     ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {}),
-    ...(opts.lisValueOnly ? { lisValueOnly: true } : {})
+    ...(opts.lisValueOnly ? { lisValueOnly: true } : {}),
+    ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
+    ...(opts.transientConnection ? { transientConnection: true } : {})
   }
 }
 
@@ -393,7 +409,8 @@ const landwind = [
       protocol: 'simple',
       mode: 'unidirectional',
       transports: ['tcp-client'],
-      maturity: 'beta'
+      maturity: 'beta',
+      derivesEag: true
     }
   )
 ]
@@ -420,7 +437,9 @@ const agappe = [
       transports: ['tcp-client', 'tcp-server', 'serial'],
       maturity: 'beta',
       lisValueOnly: true,
-      derivesEag: true
+      derivesEag: true,
+      astmFlushOnTerminator: true,
+      transientConnection: true
     }
   )
 ]

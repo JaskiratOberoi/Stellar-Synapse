@@ -10,6 +10,7 @@ import type {
 import type { ILisRepository } from './ILisRepository'
 import { MockLisRepository } from './MockLisRepository'
 import { SqlLisRepository } from './SqlLisRepository'
+import { ReadOnlyLisRepository } from './ReadOnlyLisRepository'
 import { persist } from '../../store'
 import { logger } from '../logger'
 
@@ -20,7 +21,9 @@ export class LisRouter implements ILisRepository {
   private backend: ILisRepository
 
   constructor() {
-    this.backend = this.createBackend(persist.getLis())
+    const settings = persist.getLis()
+    this.backend = this.createBackend(settings)
+    logger.info('lis', `Startup mode: ${this.modeLabel(settings)}`)
   }
 
   get mode(): 'mock' | 'sql' {
@@ -32,10 +35,19 @@ export class LisRouter implements ILisRepository {
     persist.setLis(settings)
     void this.close()
     this.backend = this.createBackend(settings)
-    logger.info('lis', settings.live ? 'Live Noble SQL enabled' : 'Mock LIS mode')
+    logger.info('lis', this.modeLabel(settings))
+  }
+
+  private modeLabel(settings: LisConnectionSettings): string {
+    if (settings.live && settings.readOnly) return 'Read-only Noble SQL (reads live, writes BLOCKED)'
+    if (settings.live) return 'Live Noble SQL enabled'
+    return 'Mock LIS mode'
   }
 
   private createBackend(settings: LisConnectionSettings): ILisRepository {
+    if (settings.live && settings.readOnly) {
+      return new ReadOnlyLisRepository(new SqlLisRepository(settings))
+    }
     if (settings.live) return new SqlLisRepository(settings)
     return new MockLisRepository()
   }
@@ -66,7 +78,7 @@ export class LisRouter implements ILisRepository {
   }
 
   async close(): Promise<void> {
-    if (this.backend instanceof SqlLisRepository) {
+    if (this.backend instanceof SqlLisRepository || this.backend instanceof ReadOnlyLisRepository) {
       await this.backend.close()
     }
   }

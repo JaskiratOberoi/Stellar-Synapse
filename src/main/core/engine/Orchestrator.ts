@@ -14,7 +14,7 @@ import { createTransport } from '../connection/factory'
 import { InstrumentPollScheduler } from '../connection/InstrumentPollScheduler'
 import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
-import { AstmHostQuerySender, buildAstmOrderRecords } from '../protocols/astmHostQuery'
+import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo } from '../drivers/beckmanAu'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
@@ -150,7 +150,9 @@ export class Orchestrator extends EventEmitter {
     if (!driver) throw new Error(`Driver ${def.driverId} not registered`)
 
     const transport = createTransport(def.id, def.connection)
-    const protocol = createProtocol(def.protocol)
+    const protocol = createProtocol(def.protocol, {
+      astmFlushOnTerminator: driver.astmFlushOnTerminator
+    })
 
     // Wire low-level protocol control bytes (e.g. ASTM E1381 ENQ->ACK and
     // per-frame ACK) back to the analyzer. The ASTM decoder emits these via its
@@ -188,6 +190,18 @@ export class Orchestrator extends EventEmitter {
         : undefined
 
     transport.on('status', (status: ConnectionStatus, peer?: string) => {
+      // Analyzers that open a fresh connection per result batch and hang up after
+      // (Agappe Mispa Maestro / BH60) would otherwise flap online<->listening on
+      // every transmission. Once such an instrument is online, ignore the
+      // inter-batch 'listening' so the badge stays steady like a persistently
+      // connected analyzer (EDAN H60, Zeus). Stop ('offline') and 'error' still apply.
+      if (
+        status === 'listening' &&
+        driver.transientConnection &&
+        this.runtimes.get(id)?.status === 'online'
+      ) {
+        return
+      }
       this.patchRuntime(id, { status, peer })
     })
     transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
@@ -308,13 +322,25 @@ export class Orchestrator extends EventEmitter {
     }
 
     // Beckman-AU sample-information request: R|sid|rack|cup|sampleNo|sampleType.
+    // The analyzer brackets a host-query batch with bare "RB" (begin) / "RE" (end)
+    // markers that carry no sample — only an actual R∆ record (with a sample id or
+    // rack/cup position) is an order request. Answering a begin/end marker would
+    // push a malformed empty S∆ onto the line, so ignore markers entirely.
     if (def.connection.hostQuery && def.protocol === 'beckman-au') {
       const rec = message.records[0]
       if (rec?.[0] === 'R') {
+        const sid = (rec[1] ?? '').trim()
+        const rack = (rec[2] ?? '').trim()
+        const cup = (rec[3] ?? '').trim()
+        const isMarker = !sid && !rack && !cup
+        if (isMarker) {
+          logger.debug('host-query', `${def.name}: request marker "${message.raw.trim()}" (no sample) — ignored`)
+          return
+        }
         await this.handleAuHostQuery(def, driver.info.id, {
-          sid: rec[1] ?? '',
-          rack: rec[2] ?? '',
-          cup: rec[3] ?? '',
+          sid,
+          rack,
+          cup,
           sampleNo: rec[4] ?? '',
           raw: message.raw
         })
@@ -410,32 +436,35 @@ export class Orchestrator extends EventEmitter {
       : []
 
     if (codes.length === 0) {
-      logger.info('host-query', `${def.name}: no mappable orders for ${sid} (sending empty order set)`)
+      // Replicate the live ElabAssistLite behaviour exactly: when no test is
+      // ordered/mappable for the sample, send NOTHING back (no ENQ, no empty
+      // H/P/L). The working interface stays silent ("Order Not Received") and the
+      // X3 simply runs nothing for that barcode.
+      logger.info('host-query', `${def.name}: no mappable orders for ${sid} — sending nothing (matches eLab)`)
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
         stage: 'skipped',
         value: order ? `${order.testCodes.length} ordered, 0 on X3` : 'not registered',
         message: order
-          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this X3`
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this X3 (no order sent)`
           : `Barcode ${sid} not registered in LIS — nothing to order`
       })
+      return
     }
 
     if (!sender) return
-    // Mirror the analyzer's own Analyzer ID / Host ID from its query header so the
-    // X3 accepts the order (falls back to the configured name if absent).
-    const analyzerName = header?.analyzerName || def.name
-    const hostName = header?.hostName || 'Lis'
+    // Header is sent exactly as the live X3 interface does: literal " MAGLUMI X3 "
+    // sender + fixed date "20180319" (handled inside buildAstmOrderRecords). The
+    // analyzer's own query header is intentionally NOT echoed — the working
+    // interface ignores it and the X3 accepts the order anyway.
+    void header
     try {
-      // The X3 answers a query with ONE session and reads only one O record per
-      // frame. So for multiple tests, send a single session but frame each record
-      // separately (incrementing frame numbers) so every O lands in its own
-      // frame. A single test keeps the proven single combined frame.
-      await sender.send(
-        buildAstmOrderRecords(sid, codes, analyzerName, hostName),
-        codes.length > 1
-      )
+      // The MAGLUMI X3 expects SNIBE's "simple" host-download framing (verified
+      // on a live unit): <ENQ> <STX> <all records CR-separated> <ETX> <EOT> with
+      // NO frame numbers and NO checksums. Standard E1381 frames (numbered +
+      // checksummed) make the X3 read the SID but silently refuse the order.
+      await sender.sendFrames(frameAstmSimple(buildAstmOrderRecords(sid, codes)))
       logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
       this.pushMonitor({
         ...baseEvent,
@@ -490,20 +519,31 @@ export class Orchestrator extends EventEmitter {
     const testNos = [...new Set(codes.map((c) => auOnlineTestNo(c)).filter((n): n is number => n != null))]
 
     if (testNos.length === 0) {
-      logger.info('host-query', `${def.name}: no Online Test Nos for ${req.sid}`)
+      // Replicate the live ElabAssistLite behaviour exactly: when nothing is
+      // ordered/mappable, send NOTHING ("Order Not Found"). The AU re-requests a
+      // few times then moves on — sending an empty S frame is never done.
+      logger.info('host-query', `${def.name}: no Online Test Nos for ${req.sid} — sending nothing (matches eLab)`)
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
         stage: 'skipped',
         value: order ? `${order.testCodes.length} ordered, 0 on AU` : 'not registered',
         message: order
-          ? `Ordered tests [${order.testCodes.join(', ')}] — none map to a configured AU Online Test No.`
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none map to a configured AU Online Test No. (no order sent)`
           : `Barcode ${req.sid} not registered in LIS — nothing to order`
       })
+      return
     }
 
     if (!auSender) return
-    const block = buildAuOrderResponse(req.rack, req.cup, req.sampleNo, req.sid, testNos, DEFAULT_AU_FORMAT)
+    // Echo the request's identification fields verbatim (rack/cup/sampleNo/
+    // sampleId) so they match exactly — the AU NAKs (alarm 6042 ONLINE MISMATCH)
+    // if the response sample No./ID differ from what it asked for — then append
+    // the fixed demographics block (E + M00000 + patient name) so the Online Test
+    // Nos land at the offset the analyzer expects.
+    const block = buildAuOrderResponse(req.raw, testNos, DEFAULT_AU_FORMAT, {
+      patientName: order?.patientName
+    })
     try {
       await auSender.send(block)
       logger.info(
@@ -532,7 +572,7 @@ export class Orchestrator extends EventEmitter {
     result: CanonicalResult,
     raw: string,
     options?: { forceWrite?: boolean }
-  ): Promise<'written' | 'skipped' | 'error' | 'queued'> {
+  ): Promise<'written' | 'skipped' | 'suppressed' | 'error' | 'queued'> {
     const base = {
       id: randomUUID(),
       instrumentId: def.id,
@@ -627,6 +667,18 @@ export class Orchestrator extends EventEmitter {
 
     try {
       const outcome = await this.lis.writeResult(write)
+      if (outcome === 'suppressed') {
+        // Read-only safe mode: the value was resolved against live Noble data but
+        // the write was deliberately blocked. Nothing is persisted.
+        this.pushMonitor({
+          ...base,
+          id: randomUUID(),
+          stage: 'suppressed',
+          mappedTo,
+          message: `Read-only mode — NOT written to Noble (would write ${write.value}${write.unit ? ` ${write.unit}` : ''})`
+        })
+        return 'suppressed'
+      }
       if (outcome === 'skipped') {
         // Sample is registered but this test was not ordered for it — Synapse
         // does not fabricate a row (it would be invisible to Noble's status).

@@ -6,7 +6,10 @@ import { Hl7Protocol } from './hl7'
 import { SimpleProtocol } from './simple'
 
 /** Construct a fresh (stateful) protocol decoder for a connection. */
-export function createProtocol(kind: ProtocolKind): IProtocol {
+export function createProtocol(
+  kind: ProtocolKind,
+  opts?: { astmFlushOnTerminator?: boolean }
+): IProtocol {
   switch (kind) {
     case 'hl7':
       return new Hl7Protocol()
@@ -18,6 +21,6 @@ export function createProtocol(kind: ProtocolKind): IProtocol {
     case 'poct1a':
     case 'custom':
     default:
-      return new AstmProtocol()
+      return new AstmProtocol(opts?.astmFlushOnTerminator ?? false)
   }
 }

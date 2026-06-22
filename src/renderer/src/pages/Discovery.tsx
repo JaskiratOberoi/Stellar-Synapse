@@ -34,6 +34,7 @@ export function Discovery() {
   const [cidr, setCidr] = useState('')
   const [prefill, setPrefill] = useState<InstrumentPrefill | undefined>()
   const [modalOpen, setModalOpen] = useState(false)
+  const [copiedIp, setCopiedIp] = useState<string | null>(null)
 
   useEffect(() => {
     loadSubnets().then((subs) => {
@@ -43,6 +44,27 @@ export function Discovery() {
   }, [loadSubnets])
 
   const candidates = useMemo(() => hosts.filter((h) => h.guessedDriverId), [hosts])
+
+  // Free IPs = the scanned /24 (.1–.254) minus every host that responded or was
+  // in the ARP cache. Heuristic ("no device answered"), handy for picking a
+  // static address when adding an instrument.
+  const freeIps = useMemo(() => {
+    if (!progress) return []
+    const base = progress.cidr.split('/')[0].split('.').slice(0, 3).join('.')
+    const used = new Set(hosts.map((h) => h.ip))
+    const out: string[] = []
+    for (let i = 1; i <= 254; i++) {
+      const ip = `${base}.${i}`
+      if (!used.has(ip)) out.push(ip)
+    }
+    return out
+  }, [progress, hosts])
+
+  const copyIp = (ip: string): void => {
+    void navigator.clipboard?.writeText(ip)
+    setCopiedIp(ip)
+    setTimeout(() => setCopiedIp((c) => (c === ip ? null : c)), 1200)
+  }
 
   const addAsInstrument = (h: DiscoveredHost): void => {
     const port = h.openPorts.find((p) => p.service.startsWith('Instrument'))?.port ?? h.openPorts[0]?.port
@@ -206,6 +228,41 @@ export function Discovery() {
         </CardContent>
       </Card>
       </motion.div>
+
+      {progress?.done && !scanning && (
+        <motion.div variants={fadeInUp}>
+          <Card>
+            <CardContent className="p-5">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold">Available IPs</p>
+                <Badge tone="success">{freeIps.length}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  No device responded on this subnet — likely free to assign (click to copy)
+                </span>
+              </div>
+              <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
+                {freeIps.map((ip) => (
+                  <button
+                    key={ip}
+                    type="button"
+                    onClick={() => copyIp(ip)}
+                    title="Click to copy"
+                    className={cn(
+                      'rounded-md border border-border/60 bg-secondary/40 px-2 py-1 font-mono text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground',
+                      copiedIp === ip && 'border-success/60 text-success'
+                    )}
+                  >
+                    {copiedIp === ip ? 'Copied!' : ip}
+                  </button>
+                ))}
+                {freeIps.length === 0 && (
+                  <span className="text-xs text-muted-foreground">No free IPs in this subnet.</span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <AddInstrumentModal
         open={modalOpen}
