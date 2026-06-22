@@ -37,6 +37,12 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * decoder must flush on that terminator (Agappe Mispa Maestro / BH60).
    */
   astmFlushOnTerminator?: boolean
+  /**
+   * Analyzer opens a new connection per result batch and disconnects after, so
+   * the UI status stays 'online' between batches instead of flapping back to
+   * 'listening' on each inter-batch disconnect (Agappe Mispa Maestro / BH60).
+   */
+  transientConnection?: boolean
 }
 
 interface MkOpts {
@@ -49,6 +55,7 @@ interface MkOpts {
   lisValueOnly?: boolean
   derivesEag?: boolean
   astmFlushOnTerminator?: boolean
+  transientConnection?: boolean
 }
 
 function mk(
@@ -75,7 +82,8 @@ function mk(
     ...(opts.derivesEag ? { derivesEag: true } : {}),
     ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {}),
     ...(opts.lisValueOnly ? { lisValueOnly: true } : {}),
-    ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {})
+    ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
+    ...(opts.transientConnection ? { transientConnection: true } : {})
   }
 }
 
@@ -429,7 +437,8 @@ const agappe = [
       maturity: 'beta',
       lisValueOnly: true,
       derivesEag: true,
-      astmFlushOnTerminator: true
+      astmFlushOnTerminator: true,
+      transientConnection: true
     }
   )
 ]

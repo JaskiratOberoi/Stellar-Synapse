@@ -23,6 +23,8 @@ export interface IInstrumentDriver {
   readonly lisValueOnly?: boolean
   /** When true, the analyzer uses bare ASTM framing (no <EOT>); flush on the L terminator. */
   readonly astmFlushOnTerminator?: boolean
+  /** When true, the analyzer reconnects per result batch; keep the UI status 'online' between batches. */
+  readonly transientConnection?: boolean
   /** Analytes this instrument can report. */
   analytes(): DriverAnalyte[]
   /** Normalize a decoded protocol message into canonical results. */

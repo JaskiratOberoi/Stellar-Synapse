@@ -23,6 +23,7 @@ export class DefinitionDriver implements IInstrumentDriver {
       hl7Dialect: _hl7Dialect,
       lisValueOnly: _lisValueOnly,
       astmFlushOnTerminator: _astmFlushOnTerminator,
+      transientConnection: _transientConnection,
       ...info
     } = this.def
     return info
@@ -34,6 +35,10 @@ export class DefinitionDriver implements IInstrumentDriver {
 
   get astmFlushOnTerminator(): boolean | undefined {
     return this.def.astmFlushOnTerminator
+  }
+
+  get transientConnection(): boolean | undefined {
+    return this.def.transientConnection
   }
 
   analytes(): DriverAnalyte[] {

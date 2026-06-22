@@ -190,6 +190,18 @@ export class Orchestrator extends EventEmitter {
         : undefined
 
     transport.on('status', (status: ConnectionStatus, peer?: string) => {
+      // Analyzers that open a fresh connection per result batch and hang up after
+      // (Agappe Mispa Maestro / BH60) would otherwise flap online<->listening on
+      // every transmission. Once such an instrument is online, ignore the
+      // inter-batch 'listening' so the badge stays steady like a persistently
+      // connected analyzer (EDAN H60, Zeus). Stop ('offline') and 'error' still apply.
+      if (
+        status === 'listening' &&
+        driver.transientConnection &&
+        this.runtimes.get(id)?.status === 'online'
+      ) {
+        return
+      }
       this.patchRuntime(id, { status, peer })
     })
     transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
