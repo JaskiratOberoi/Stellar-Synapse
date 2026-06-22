@@ -409,7 +409,8 @@ const landwind = [
       protocol: 'simple',
       mode: 'unidirectional',
       transports: ['tcp-client'],
-      maturity: 'beta'
+      maturity: 'beta',
+      derivesEag: true
     }
   )
 ]
