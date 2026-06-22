@@ -9,6 +9,7 @@ release/
 .vite/
 coverage/
 *.local
+*.tsbuildinfo
 
 # electron-builder output dirs (installers must not be committed)
 installer/
