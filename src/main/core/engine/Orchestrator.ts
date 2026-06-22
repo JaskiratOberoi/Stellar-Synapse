@@ -150,7 +150,9 @@ export class Orchestrator extends EventEmitter {
     if (!driver) throw new Error(`Driver ${def.driverId} not registered`)
 
     const transport = createTransport(def.id, def.connection)
-    const protocol = createProtocol(def.protocol)
+    const protocol = createProtocol(def.protocol, {
+      astmFlushOnTerminator: driver.astmFlushOnTerminator
+    })
 
     // Wire low-level protocol control bytes (e.g. ASTM E1381 ENQ->ACK and
     // per-frame ACK) back to the analyzer. The ASTM decoder emits these via its

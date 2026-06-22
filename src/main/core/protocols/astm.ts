@@ -40,6 +40,14 @@ export class AstmProtocol implements IProtocol {
   /** Callback used by the orchestrator to push low-level ACKs back. */
   onControl?: (byte: number) => void
 
+  /**
+   * `flushOnTerminator`: the analyzer uses bare ASTM framing with no E1381
+   * envelope — no inter-record CR and no closing <EOT> — ending the message with
+   * the L terminator (Agappe Mispa Maestro / BioHermes BH60). Off by default, so
+   * standard E1381 analyzers (Maglumi, …) keep their exact behavior.
+   */
+  constructor(private readonly flushOnTerminator = false) {}
+
   feed(chunk: Buffer): ProtocolMessage[] {
     const messages: ProtocolMessage[] = []
 
@@ -62,6 +70,22 @@ export class AstmProtocol implements IProtocol {
           // which we skip until the CR/LF frame terminator.
           this.onControl?.(ACK)
           this.inChecksum = true
+          // Bare-framing analyzers (Agappe Mispa Maestro / BH60) omit the
+          // inter-record CR and the closing <EOT>, ending the message with the L
+          // terminator. For those only, separate the record here and flush on L —
+          // standard E1381 analyzers (flushOnTerminator=false) are unaffected.
+          if (this.flushOnTerminator) {
+            if (this.textBuffer.length > 0 && !this.textBuffer.endsWith('\n')) {
+              this.textBuffer += '\n'
+            }
+            if (/(^|\n)\d?L\|[^\n]*\n$/.test(this.textBuffer)) {
+              if (this.textBuffer.trim().length > 0) {
+                messages.push(this.buildMessage(this.textBuffer))
+              }
+              this.textBuffer = ''
+              this.inChecksum = false
+            }
+          }
           break
         case EOT:
           // End of transmission -> flush a complete message.

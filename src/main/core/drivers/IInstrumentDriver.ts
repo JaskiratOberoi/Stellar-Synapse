@@ -21,6 +21,8 @@ export interface IInstrumentDriver {
   readonly info: InstrumentDriverInfo
   /** When true, LIS writes for this driver send only the value (no abnormal flag). */
   readonly lisValueOnly?: boolean
+  /** When true, the analyzer uses bare ASTM framing (no <EOT>); flush on the L terminator. */
+  readonly astmFlushOnTerminator?: boolean
   /** Analytes this instrument can report. */
   analytes(): DriverAnalyte[]
   /** Normalize a decoded protocol message into canonical results. */
