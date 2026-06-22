@@ -6,7 +6,8 @@ import type {
   InstrumentDefinition,
   LisConnectionResult,
   LisConnectionSettings,
-  MappingRule
+  MappingRule,
+  SerialPortInfo
 } from '../../shared/types'
 import { listDriverInfos } from '../core/drivers/registry'
 import type { Orchestrator } from '../core/engine/Orchestrator'
@@ -83,6 +84,31 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   ipcMain.handle(IPC.instrumentRemove, (_e, id: string) => orchestrator.removeInstrument(id))
   ipcMain.handle(IPC.instrumentStart, (_e, id: string) => orchestrator.startInstrument(id))
   ipcMain.handle(IPC.instrumentStop, (_e, id: string) => orchestrator.stopInstrument(id))
+
+  // Serial — enumerate host COM ports for the picker. Lazy-loads `serialport`
+  // the same way SerialTransport does, so a missing/unbuilt native module
+  // degrades to an empty list (and a log line) instead of throwing.
+  ipcMain.handle(IPC.serialListPorts, async (): Promise<SerialPortInfo[]> => {
+    try {
+      const mod = (await import('serialport')) as unknown as {
+        SerialPort: { list(): Promise<SerialPortInfo[]> }
+      }
+      const ports = await mod.SerialPort.list()
+      return ports.map((p) => ({
+        path: p.path,
+        manufacturer: p.manufacturer,
+        friendlyName: p.friendlyName,
+        pnpId: p.pnpId
+      }))
+    } catch (err) {
+      logger.error(
+        'serial',
+        `Could not list serial ports: ${(err as Error).message}. ` +
+          `The 'serialport' native module may be missing for this platform.`
+      )
+      return []
+    }
+  })
 
   // Mapping
   ipcMain.handle(IPC.mappingsList, (_e, driverId?: string) => orchestrator.mapping.list(driverId))

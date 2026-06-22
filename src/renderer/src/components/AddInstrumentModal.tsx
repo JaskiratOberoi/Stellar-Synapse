@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronRight, Cpu, Search } from 'lucide-react'
+import { Check, ChevronRight, Cpu, RefreshCw, Search } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
 import { useAppStore } from '@/store/useAppStore'
-import type { InstrumentDriverInfo, TransportKind } from '@shared/types'
+import type { InstrumentDriverInfo, SerialPortInfo, TransportKind } from '@shared/types'
 
 const maturityTone = { stable: 'success', beta: 'warning', skeleton: 'muted' } as const
 
@@ -34,6 +34,9 @@ export function AddInstrumentModal({
   const [host, setHost] = useState('127.0.0.1')
   const [port, setPort] = useState('9100')
   const [serialPath, setSerialPath] = useState('COM3')
+  const [ports, setPorts] = useState<SerialPortInfo[]>([])
+  const [portsLoading, setPortsLoading] = useState(false)
+  const [portsScanned, setPortsScanned] = useState(false)
   const [baudRate, setBaudRate] = useState('9600')
   const [dataBits, setDataBits] = useState('8')
   const [parity, setParity] = useState('none')
@@ -71,6 +74,9 @@ export function AddInstrumentModal({
     setHost('127.0.0.1')
     setPort('9100')
     setSerialPath('COM3')
+    setPorts([])
+    setPortsLoading(false)
+    setPortsScanned(false)
     setBaudRate('9600')
     setDataBits('8')
     setParity('none')
@@ -80,6 +86,16 @@ export function AddInstrumentModal({
     setEnabled(true)
     setQuery('')
     setVendor('all')
+  }
+
+  const refreshPorts = async (): Promise<void> => {
+    setPortsLoading(true)
+    try {
+      setPorts(await window.api.serial.listPorts())
+    } finally {
+      setPortsScanned(true)
+      setPortsLoading(false)
+    }
   }
 
   // Apply discovery prefill: jump to config with the guessed driver, TCP-client
@@ -102,6 +118,13 @@ export function AddInstrumentModal({
     setHostQuery(false)
     setStep(2)
   }, [open, prefill, drivers])
+
+  // Enumerate COM ports the first time the serial config is shown.
+  useEffect(() => {
+    if (step === 2 && transport === 'serial' && !portsScanned && !portsLoading) {
+      void refreshPorts()
+    }
+  }, [step, transport, portsScanned, portsLoading])
 
   const choose = (d: InstrumentDriverInfo): void => {
     setDriver(d)
@@ -275,8 +298,41 @@ export function AddInstrumentModal({
 
             {transport === 'serial' ? (
               <div className="space-y-1.5">
-                <Label>COM Port</Label>
-                <Input value={serialPath} onChange={(e) => setSerialPath(e.target.value)} placeholder="COM3" />
+                <div className="flex items-center justify-between">
+                  <Label>COM Port</Label>
+                  <button
+                    type="button"
+                    onClick={refreshPorts}
+                    disabled={portsLoading}
+                    className="flex items-center gap-1 text-xs text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${portsLoading ? 'animate-spin' : ''}`} />
+                    {portsLoading ? 'Detecting...' : 'Detect'}
+                  </button>
+                </div>
+                <Input
+                  value={serialPath}
+                  onChange={(e) => setSerialPath(e.target.value)}
+                  placeholder="COM3"
+                  list="serial-ports"
+                  autoComplete="off"
+                />
+                <datalist id="serial-ports">
+                  {ports.map((p) => (
+                    <option key={p.path} value={p.path}>
+                      {p.friendlyName ?? p.manufacturer ?? p.path}
+                    </option>
+                  ))}
+                </datalist>
+                <p className="text-xs text-muted-foreground">
+                  {portsLoading
+                    ? 'Scanning serial ports...'
+                    : ports.length > 0
+                      ? `${ports.length} detected: ${ports.map((p) => p.path).join(', ')}`
+                      : portsScanned
+                        ? 'No ports detected - type the COM port manually.'
+                        : ''}
+                </p>
               </div>
             ) : (
               <div className="space-y-1.5">

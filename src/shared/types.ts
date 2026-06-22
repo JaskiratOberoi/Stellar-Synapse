@@ -96,6 +96,16 @@ export interface InstrumentConnectionConfig {
   idleReconnectMs?: number
 }
 
+/** A serial port enumerated from the host, for the COM-port picker. */
+export interface SerialPortInfo {
+  /** Port path, e.g. "COM3". */
+  path: string
+  manufacturer?: string
+  /** Windows-friendly label, e.g. "Communications Port (COM1)". */
+  friendlyName?: string
+  pnpId?: string
+}
+
 export interface InstrumentDefinition {
   id: string
   /** User-facing name, e.g. "Maglumi X3 - Bench 2". */

@@ -22,7 +22,8 @@ import type {
   LogEntry,
   MappingRule,
   MonitorEvent,
-  ScanProgress
+  ScanProgress,
+  SerialPortInfo
 } from './types'
 
 /** Request/response channels (renderer -> main, via ipcRenderer.invoke). */
@@ -37,6 +38,9 @@ export const IPC = {
   instrumentRemove: 'instruments:remove',
   instrumentStart: 'instruments:start',
   instrumentStop: 'instruments:stop',
+
+  // Serial
+  serialListPorts: 'serial:list-ports',
 
   // Mapping
   mappingsList: 'mappings:list',
@@ -99,6 +103,10 @@ export interface StellarApi {
     start(id: string): Promise<InstrumentRuntime>
     stop(id: string): Promise<InstrumentRuntime>
     onChanged(cb: (instruments: InstrumentRuntime[]) => void): () => void
+  }
+  serial: {
+    /** Enumerate serial ports on the host. Empty if serialport can't load. */
+    listPorts(): Promise<SerialPortInfo[]>
   }
   mappings: {
     list(driverId?: string): Promise<MappingRule[]>

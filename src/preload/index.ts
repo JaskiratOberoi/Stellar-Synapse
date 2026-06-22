@@ -29,6 +29,9 @@ const api: StellarApi = {
     stop: (id) => ipcRenderer.invoke(IPC.instrumentStop, id),
     onChanged: (cb) => on<InstrumentRuntime[]>(IPC_EVENT.instrumentsChanged, cb)
   },
+  serial: {
+    listPorts: () => ipcRenderer.invoke(IPC.serialListPorts)
+  },
   mappings: {
     list: (driverId) => ipcRenderer.invoke(IPC.mappingsList, driverId),
     upsert: (rule) => ipcRenderer.invoke(IPC.mappingUpsert, rule),
