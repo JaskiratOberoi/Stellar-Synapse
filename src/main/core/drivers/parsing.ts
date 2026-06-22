@@ -68,10 +68,15 @@ export function parseAstm(message: ProtocolMessage, instrumentId: string): Canon
   for (const rec of message.records) {
     const type = (rec[0] || '').toUpperCase()
     if (type === 'O') {
-      // O|seq|sampleId|instrSpec|^^^test. The sample id may carry rack/position
-      // subcomponents (e.g. Mispa Maestro "sampleId^rack^pos"), so keep only the
-      // first component as the accession barcode.
-      currentSample = (rec[2] || rec[3] || '').split('^')[0].trim()
+      // O|seq|specimenId|instrSpecimenId|^^^test. The accession barcode usually
+      // rides in the Specimen ID (field 3), sometimes as "sampleId^rack^pos", so
+      // we keep only its first component. Some analyzers (e.g. Agappe Mispa
+      // Maestro) leave field 3's id component empty ("^rack^pos") and carry the
+      // real barcode/SID in the Instrument Specimen ID (field 4) — fall back to
+      // field 4's first component when field 3 has no id.
+      const specimenId = (rec[2] || '').split('^')[0].trim()
+      const instrSpecimenId = (rec[3] || '').split('^')[0].trim()
+      currentSample = specimenId || instrSpecimenId || ''
     } else if (type === 'R') {
       const { code, name } = astmTestId(rec[2])
       if (!code) continue

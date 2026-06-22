@@ -218,6 +218,12 @@ export interface LisResultWrite {
   value: string
   unit?: string
   abnormal: boolean
+  /**
+   * When true, the repository writes only the value (plus bookkeeping columns)
+   * and never the `abnormal` flag, so the LIS keeps its own reference-range
+   * determination. Set by value-only drivers (e.g. Agappe Mispa Maestro HbA1c).
+   */
+  valueOnly?: boolean
   machineName: string
   uploadFlag: string
   addedDate: string

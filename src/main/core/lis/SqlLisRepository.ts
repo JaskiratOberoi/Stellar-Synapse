@@ -237,8 +237,12 @@ export class SqlLisRepository implements ILisRepository {
     const exactWhere = write.paramId
       ? 'vailid = @vailid AND testid = @testid AND paramid = @paramid'
       : 'vailid = @vailid AND testid = @testid AND (paramid IS NULL OR paramid = 0)'
-    const setCols =
-      'SET value = @value, abnormal = @abnormal, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
+    // Value-only drivers (e.g. Agappe Mispa Maestro HbA1c) write just the value
+    // plus bookkeeping — never the abnormal flag — so Noble keeps its own
+    // reference-range determination instead of having it overwritten.
+    const setCols = write.valueOnly
+      ? 'SET value = @value, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
+      : 'SET value = @value, abnormal = @abnormal, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
 
     const result = await req.query(`
       DECLARE @matched int = 0;

@@ -18,8 +18,13 @@ export class DefinitionDriver implements IInstrumentDriver {
   constructor(private readonly def: ModelDefinition) {}
 
   get info(): InstrumentDriverInfo {
-    const { analytes: _analytes, hl7Dialect: _hl7Dialect, ...info } = this.def
+    const { analytes: _analytes, hl7Dialect: _hl7Dialect, lisValueOnly: _lisValueOnly, ...info } =
+      this.def
     return info
+  }
+
+  get lisValueOnly(): boolean | undefined {
+    return this.def.lisValueOnly
   }
 
   analytes(): DriverAnalyte[] {

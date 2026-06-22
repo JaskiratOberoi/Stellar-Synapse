@@ -609,6 +609,9 @@ export class Orchestrator extends EventEmitter {
       value: writeValue,
       unit: writeUnit,
       abnormal: !!result.flag && result.flag !== 'N',
+      // Value-only drivers (e.g. Agappe Mispa Maestro) send the value alone; the
+      // repository then omits the abnormal column so the LIS keeps its own ranges.
+      valueOnly: getDriver(driverId)?.lisValueOnly ?? false,
       machineName: def.name.slice(0, 20),
       uploadFlag: 'Y',
       addedDate: new Date().toISOString()

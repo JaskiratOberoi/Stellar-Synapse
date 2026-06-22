@@ -25,6 +25,12 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * 'edan' selects the H60 OBR-2 (sample id) / OBX-4 (analyte mnemonic) layout.
    */
   hl7Dialect?: 'generic' | 'getein' | 'edan'
+  /**
+   * When true, LIS writes for this model send only the result value (never the
+   * abnormal flag), leaving Noble to apply its own reference range. Used by the
+   * Agappe Mispa Maestro HbA1c integration (map by SID, send the value only).
+   */
+  lisValueOnly?: boolean
 }
 
 interface MkOpts {
@@ -34,6 +40,7 @@ interface MkOpts {
   maturity?: InstrumentDriverInfo['maturity']
   transports?: TransportKind[]
   hl7Dialect?: ModelDefinition['hl7Dialect']
+  lisValueOnly?: boolean
 }
 
 function mk(
@@ -57,7 +64,8 @@ function mk(
     transports: opts.transports ?? ['tcp-server', 'serial'],
     defaultPort: opts.port,
     maturity: opts.maturity ?? 'skeleton',
-    ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {})
+    ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {}),
+    ...(opts.lisValueOnly ? { lisValueOnly: true } : {})
   }
 }
 
@@ -408,7 +416,8 @@ const agappe = [
       protocol: 'astm',
       mode: 'unidirectional',
       transports: ['tcp-client', 'tcp-server', 'serial'],
-      maturity: 'beta'
+      maturity: 'beta',
+      lisValueOnly: true
     }
   )
 ]

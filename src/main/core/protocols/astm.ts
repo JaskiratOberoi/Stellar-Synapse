@@ -24,10 +24,12 @@ const ETB = 0x17
  *   R|1|^^^TSH|2.31|uIU/mL|0.27 to 4.2|N
  *   L|1|N
  *
- * This implementation is a faithful scaffold: it accumulates frame text between
- * STX/ETX(ETB), strips the checksum, splits records on CR, and returns the
- * E1394 rows. Checksum verification and full retransmit handling are marked for
- * the hardening phase.
+ * This implementation accumulates frame text, separating records at each
+ * frame's ETX (or an inter-record CR), and flushes a complete message on <EOT>
+ * or as soon as an L (terminator) record arrives. The terminator-flush supports
+ * analyzers that omit the E1381 <EOT> envelope (Agappe Mispa Maestro /
+ * BioHermes BH60: bare <STX>FN data<ETX> frames, no CR/checksum/EOT). Checksum
+ * verification and full retransmit handling are marked for the hardening phase.
  */
 export class AstmProtocol implements IProtocol {
   readonly kind = 'astm'
@@ -47,19 +49,32 @@ export class AstmProtocol implements IProtocol {
           this.textBuffer = ''
           break
         case STX:
-          // Start of a frame; the next char is the frame number (skip it).
+          // Start of a frame; the next char is the frame number, stripped in
+          // buildMessage. Record separation happens at the frame's ETX below.
           break
-        case ETX:
         case ETB:
-          // End of frame block; ACK it. We keep accumulating records.
+          // Intermediate frame of a multi-frame record: ACK and keep
+          // accumulating — the record continues in the next frame.
           this.onControl?.(ACK)
           break
-        case EOT:
-          // End of transmission -> flush a complete message.
-          if (this.textBuffer.trim().length > 0) {
-            messages.push(this.buildMessage(this.textBuffer))
+        case ETX:
+          // End of a record's final frame. ACK, then terminate the record so
+          // each frame becomes its own E1394 row even when the analyzer omits
+          // the inter-record CR — the Agappe Mispa Maestro / BioHermes BH60 send
+          // <STX>FN data<ETX> with no CR, no checksum and no closing <EOT>.
+          this.onControl?.(ACK)
+          if (this.textBuffer.length > 0 && !this.textBuffer.endsWith('\n')) {
+            this.textBuffer += '\n'
           }
-          this.textBuffer = ''
+          // Those analyzers mark end-of-message with the L (terminator) record
+          // rather than <EOT>, so flush as soon as a terminator frame completes.
+          if (/(^|\n)\d?L\|[^\n]*\n$/.test(this.textBuffer)) {
+            this.flush(messages)
+          }
+          break
+        case EOT:
+          // End of transmission (E1381 analyzers, e.g. Maglumi) -> flush.
+          this.flush(messages)
           break
         case ACK:
         case LF:
@@ -73,6 +88,14 @@ export class AstmProtocol implements IProtocol {
     }
 
     return messages
+  }
+
+  /** Emit the accumulated records as one message and reset the buffer. */
+  private flush(messages: ProtocolMessage[]): void {
+    if (this.textBuffer.trim().length > 0) {
+      messages.push(this.buildMessage(this.textBuffer))
+    }
+    this.textBuffer = ''
   }
 
   /** Accept already-textual ASTM (used by the simulator). */

@@ -19,6 +19,8 @@ export interface DriverAnalyte {
  */
 export interface IInstrumentDriver {
   readonly info: InstrumentDriverInfo
+  /** When true, LIS writes for this driver send only the value (no abnormal flag). */
+  readonly lisValueOnly?: boolean
   /** Analytes this instrument can report. */
   analytes(): DriverAnalyte[]
   /** Normalize a decoded protocol message into canonical results. */
