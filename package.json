@@ -12,6 +12,7 @@
     "start": "electron-vite preview",
     "build": "npm run typecheck && electron-vite build",
     "build:win": "node scripts/build-installer.mjs",
+    "icon": "node scripts/gen-icon.mjs",
     "installer": "node scripts/build-installer.mjs",
     "build:win:dir": "npm run build && electron-builder --win --dir --x64 --config electron-builder.yml",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
@@ -26,6 +27,7 @@
     "serialport": "^12.0.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/mssql": "^12.3.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
