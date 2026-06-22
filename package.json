@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.2.28",
+  "version": "0.2.29",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
