@@ -99,6 +99,60 @@ export function parseAstm(message: ProtocolMessage, instrumentId: string): Canon
 }
 
 /**
+ * Estimated Average Glucose (mg/dL) from HbA1c%, per the ADAG/Nathan 2008
+ * equation eAG = 28.7 × HbA1c − 46.7, rounded to one decimal. Returns null
+ * outside the clinically valid 4–20% HbA1c range (no eAG is derived).
+ */
+export function eagFromHba1c(hba1cPercent: number): number | null {
+  if (!Number.isFinite(hba1cPercent) || hba1cPercent < 4 || hba1cPercent > 20) return null
+  return Math.round((28.7 * hba1cPercent - 46.7) * 10) / 10
+}
+
+/** Round a numeric value string to a single decimal; non-numerics pass through. */
+function toOneDecimal(value: string): string {
+  const n = parseFloat(value)
+  return Number.isFinite(n) ? (Math.round(n * 10) / 10).toFixed(1) : value
+}
+
+/**
+ * Post-process HbA1c HPLC results: round HbA1c (and eAG) values to a single
+ * decimal and — when auto-eAG is enabled — derive an Estimated Average Glucose
+ * result per HbA1c. The computed eAG is authoritative (it replaces any eAG the
+ * analyzer reported) and carries the same sampleId, so it files under the
+ * sample's eAG order in the LIS (and is skipped where eAG was not ordered).
+ */
+export function applyHba1cDerivations(
+  results: CanonicalResult[],
+  opts: { autoEag: boolean; instrumentId: string }
+): CanonicalResult[] {
+  const rounded = results.map((r) => {
+    const code = r.analyteCode.toLowerCase()
+    return code === 'hba1c' || code === 'eag' ? { ...r, value: toOneDecimal(r.value) } : r
+  })
+  if (!opts.autoEag) return rounded
+
+  // Our computed eAG wins: drop any reported eAG, then derive one per HbA1c.
+  const out = rounded.filter((r) => r.analyteCode.toLowerCase() !== 'eag')
+  for (const r of rounded) {
+    if (r.analyteCode.toLowerCase() !== 'hba1c') continue
+    const eag = eagFromHba1c(parseFloat(r.value))
+    if (eag === null) continue
+    out.push({
+      id: randomUUID(),
+      instrumentId: opts.instrumentId,
+      sampleId: r.sampleId,
+      analyteCode: 'eAG',
+      analyteName: 'Estimated Average Glucose',
+      value: eag.toFixed(1),
+      unit: 'mg/dL',
+      measuredAt: r.measuredAt,
+      receivedAt: r.receivedAt
+    })
+  }
+  return out
+}
+
+/**
  * Parse a "Simple protocol" message from Landwind LD-series hematology analyzers.
  *
  * Records layout (comma or tab delimited, auto-detected by SimpleProtocol):

@@ -47,6 +47,12 @@ export interface InstrumentDriverInfo {
   description: string
   /** Whether the protocol decoding is fully implemented (vs. skeleton). */
   maturity: 'stable' | 'beta' | 'skeleton'
+  /**
+   * HbA1c HPLC analyzers that can derive Estimated Average Glucose (eAG) from
+   * the measured HbA1c. Surfaces the "Auto-calculate eAG" toggle in the UI and
+   * gates the derivation in the pipeline (Agappe Mispa Maestro).
+   */
+  derivesEag?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +78,12 @@ export interface InstrumentConnectionConfig {
   stopBits?: 1 | 2
   /** Enable host-query (analyzer asks the LIS what tests to run by barcode). */
   hostQuery?: boolean
+  /**
+   * Auto-calculate Estimated Average Glucose (eAG) from HbA1c and write it to
+   * the LIS alongside the HbA1c. Only meaningful for `derivesEag` drivers
+   * (Agappe Mispa Maestro); enabled by default (undefined = on).
+   */
+  autoEag?: boolean
   /**
    * Passive read-only tap: connect to the analyzer and only listen. The
    * transport never writes bytes back (no ACK/ENQ/host-query) and the pipeline

@@ -149,6 +149,12 @@ export function InstrumentDetail() {
     })
   }
 
+  const setAutoEag = async (v: boolean): Promise<void> => {
+    await window.api.instruments.update(inst.id, {
+      connection: { ...inst.connection, autoEag: v }
+    })
+  }
+
   const emitSample = async (): Promise<void> => {
     await window.api.simulator.emitOne(inst.id)
   }
@@ -286,6 +292,17 @@ export function InstrumentDetail() {
                 disabled={driver?.mode === 'unidirectional'}
               />
             </div>
+            {driver?.derivesEag && (
+              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Auto-calculate eAG</p>
+                  <p className="text-xs text-muted-foreground">
+                    Estimated Average Glucose from HbA1c → LIS
+                  </p>
+                </div>
+                <Switch checked={inst.connection.autoEag !== false} onChange={setAutoEag} />
+              </div>
+            )}
             <div className="rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
               <p className="text-xs uppercase text-muted-foreground">Driver mode</p>
               <p className="mt-1 text-sm font-medium capitalize">{driver?.mode}</p>

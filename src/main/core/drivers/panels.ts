@@ -101,7 +101,12 @@ export const DIABETES: DriverAnalyte[] = [
  * ASTM (assay name fixed "HbA1c"). The instrument code must match what
  * `parseAstm` extracts from the R record test-id "1^HbA1c^^S".
  */
-export const HBA1C_MAESTRO: DriverAnalyte[] = [a('HbA1c', 'Hemoglobin A1c', '%', 4.0, 6.0, 1)]
+export const HBA1C_MAESTRO: DriverAnalyte[] = [
+  a('HbA1c', 'Hemoglobin A1c', '%', 4.0, 6.0, 1),
+  // Estimated Average Glucose — auto-derived from HbA1c (28.7*A1c − 46.7). Listed
+  // so it is mappable to the LIS eAG test; the value is computed, not measured.
+  a('eAG', 'Estimated Average Glucose', 'mg/dL', 90, 180, 1)
+]
 
 /** Landwind / Labnovation LD-560 HPLC HbA1c variant panel (Simple protocol). */
 export const HBA1C_HPLC: DriverAnalyte[] = [

@@ -17,7 +17,7 @@ import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords } from '../protocols/astmHostQuery'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo } from '../drivers/beckmanAu'
-import { extractAstmQuery } from '../drivers/parsing'
+import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
 import { getDriver } from '../drivers/registry'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
@@ -322,7 +322,15 @@ export class Orchestrator extends EventEmitter {
       }
     }
 
-    const results = driver.parse(message, instrumentId)
+    let results = driver.parse(message, instrumentId)
+    // HbA1c HPLC analyzers (Agappe Mispa Maestro): round to a single decimal and,
+    // when enabled, derive Estimated Average Glucose to write alongside HbA1c.
+    if (driver.info.derivesEag) {
+      results = applyHba1cDerivations(results, {
+        autoEag: def.connection.autoEag !== false,
+        instrumentId
+      })
+    }
     await this.reconcileSampleId(def, results)
     for (const result of results) {
       await this.processResult(def, driver.info.id, result, message.raw)

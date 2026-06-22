@@ -41,6 +41,7 @@ interface MkOpts {
   transports?: TransportKind[]
   hl7Dialect?: ModelDefinition['hl7Dialect']
   lisValueOnly?: boolean
+  derivesEag?: boolean
 }
 
 function mk(
@@ -64,6 +65,7 @@ function mk(
     transports: opts.transports ?? ['tcp-server', 'serial'],
     defaultPort: opts.port,
     maturity: opts.maturity ?? 'skeleton',
+    ...(opts.derivesEag ? { derivesEag: true } : {}),
     ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {}),
     ...(opts.lisValueOnly ? { lisValueOnly: true } : {})
   }
@@ -417,7 +419,8 @@ const agappe = [
       mode: 'unidirectional',
       transports: ['tcp-client', 'tcp-server', 'serial'],
       maturity: 'beta',
-      lisValueOnly: true
+      lisValueOnly: true,
+      derivesEag: true
     }
   )
 ]
