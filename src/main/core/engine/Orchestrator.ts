@@ -69,16 +69,32 @@ export class Orchestrator extends EventEmitter {
     // Restore persisted monitor history, counters, and the offline LIS queue.
     this.monitorBuffer = persist.getMonitorHistory()
     this.pendingWrites = persist.getPendingWrites()
-    // Seed mappings only for drivers actually in use (keeps the store small even
-    // with a large model catalog).
-    await this.mapping.seedDrivers(persist.getInstruments().map((i) => i.driverId))
+
+    // Show the configured instruments to the UI IMMEDIATELY (as offline), BEFORE
+    // any slow LIS or connection work. seedDrivers() below makes a cold call to
+    // the (possibly remote) Noble SQL server, which can park init for tens of
+    // seconds; if runtimes aren't populated yet, listInstruments() returns an
+    // empty map and the UI shows "0 configured" — which looks exactly like an
+    // upgrade wiped every instrument. Populate + emit first so it never looks
+    // empty on startup; statuses then transition to online as connections come up.
     for (const def of persist.getInstruments()) {
       this.runtimes.set(def.id, this.toRuntime(def, 'offline'))
     }
-    // Auto-start enabled instruments.
-    for (const def of persist.getInstruments()) {
-      if (def.enabled) await this.startInstrument(def.id).catch(() => undefined)
-    }
+    this.emitInstruments()
+
+    // Seed mappings only for drivers actually in use (keeps the store small even
+    // with a large model catalog). May hit the LIS, but no longer blocks the list.
+    await this.mapping.seedDrivers(persist.getInstruments().map((i) => i.driverId))
+
+    // Auto-start enabled instruments CONCURRENTLY: a slow or unreachable analyzer
+    // (and its connect timeout) must not delay the others — sequential awaits here
+    // were a second source of the startup stall.
+    await Promise.all(
+      persist
+        .getInstruments()
+        .filter((def) => def.enabled)
+        .map((def) => this.startInstrument(def.id).catch(() => undefined))
+    )
     this.emitInstruments()
 
     // Begin draining any results queued while the LIS was down, and keep retrying.
