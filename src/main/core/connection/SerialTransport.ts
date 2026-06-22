@@ -64,10 +64,13 @@ export class SerialTransport extends EventEmitter implements ITransport {
 
     let SerialPortCtor: new (opts: Record<string, unknown>) => SerialPortLike
     try {
-      const mod = (await import('serialport')) as unknown as {
-        SerialPort: new (opts: Record<string, unknown>) => SerialPortLike
-      }
-      SerialPortCtor = mod.SerialPort
+      type Sp = { SerialPort: new (opts: Record<string, unknown>) => SerialPortLike }
+      const mod = (await import('serialport')) as unknown as Sp & { default?: Sp }
+      // Tolerate CJS↔ESM interop: the named export may sit under `.default` in
+      // the packaged ESM build, where `mod.SerialPort` would otherwise be
+      // undefined and `new undefined(...)` would throw.
+      SerialPortCtor = mod.SerialPort ?? mod.default?.SerialPort
+      if (!SerialPortCtor) throw new Error('SerialPort export not found')
     } catch (err) {
       logger.error(
         'serial',

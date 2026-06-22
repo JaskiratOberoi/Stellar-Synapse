@@ -30,11 +30,23 @@ export class SqlLisRepository implements ILisRepository {
 
   private async getMssql(): Promise<MssqlModule> {
     // @ts-ignore - optional dependency
-    const mssql = await import('mssql').catch(() => null)
-    if (!mssql) {
+    const mod = await import('mssql').catch(() => null)
+    if (!mod) {
       throw new Error('The "mssql" driver is not installed. Run: npm install mssql')
     }
-    return mssql as MssqlModule
+    // `mssql` is CommonJS. In the packaged ESM main process, Node's CJS↔ESM
+    // interop wraps the real module under `.default`, so `mssql.connect` is
+    // undefined while `mssql.default.connect` is the function. (In dev the
+    // electron-vite loader hoists named exports, which is why it only fails in
+    // the installed build.) Unwrap whichever shape actually carries connect().
+    const candidate = mod as unknown as { default?: MssqlModule } & MssqlModule
+    const mssql = (
+      typeof candidate.connect === 'function' ? candidate : candidate.default
+    ) as MssqlModule | undefined
+    if (!mssql || typeof mssql.connect !== 'function') {
+      throw new Error('The "mssql" driver loaded but is missing connect() (bad module interop).')
+    }
+    return mssql
   }
 
   private async getPool(): Promise<MssqlPool> {

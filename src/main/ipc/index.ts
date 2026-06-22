@@ -90,10 +90,13 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   // degrades to an empty list (and a log line) instead of throwing.
   ipcMain.handle(IPC.serialListPorts, async (): Promise<SerialPortInfo[]> => {
     try {
-      const mod = (await import('serialport')) as unknown as {
-        SerialPort: { list(): Promise<SerialPortInfo[]> }
-      }
-      const ports = await mod.SerialPort.list()
+      type Sp = { SerialPort: { list(): Promise<SerialPortInfo[]> } }
+      const mod = (await import('serialport')) as unknown as Sp & { default?: Sp }
+      // Tolerate CJS↔ESM interop: the named export may sit under `.default` in
+      // the packaged ESM build (see SqlLisRepository.getMssql for the same fix).
+      const SerialPort = mod.SerialPort ?? mod.default?.SerialPort
+      if (!SerialPort) throw new Error('serialport: SerialPort export not found')
+      const ports = await SerialPort.list()
       return ports.map((p) => ({
         path: p.path,
         manufacturer: p.manufacturer,
