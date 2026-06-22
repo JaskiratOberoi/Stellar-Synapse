@@ -18,6 +18,7 @@ import { SqlLisRepository } from '../core/lis/SqlLisRepository'
 import { NetworkScanner } from '../core/discovery/NetworkScanner'
 import { persist } from '../store'
 import { logger } from '../core/logger'
+import { applyLoginItem } from '../autostart'
 
 interface Services {
   orchestrator: Orchestrator
@@ -183,6 +184,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     if (patch.simulatorEnabled === true) simulator.start(next.simulatorRate)
     if (patch.simulatorEnabled === false) simulator.stop()
     if (patch.simulatorRate && simulator.running) simulator.start(next.simulatorRate)
+    if (patch.launchAtStartup !== undefined) applyLoginItem(patch.launchAtStartup)
     return next
   })
 

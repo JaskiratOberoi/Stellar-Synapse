@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Beaker, Wand2, Info, Waypoints, Database } from 'lucide-react'
+import { Zap, Beaker, Wand2, Info, Waypoints, Database, Power, MinusSquare } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
@@ -38,6 +38,43 @@ export function Settings() {
 
   return (
     <motion.div className="max-w-3xl space-y-6" variants={staggerContainer} initial="hidden" animate="show">
+      <motion.div variants={fadeInUp}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Power className="h-4 w-4" /> Background &amp; Startup
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Stellar Synapse runs as a background service so machine interfacing never stops by accident.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Start automatically on system startup</p>
+              <p className="text-xs text-muted-foreground">
+                Launch hidden in the system tray at login so interfacing resumes after a reboot
+              </p>
+            </div>
+            <Switch
+              checked={form.launchAtStartup}
+              onChange={(v) => apply({ launchAtStartup: v })}
+            />
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
+            <MinusSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="text-xs text-muted-foreground">
+              Closing the window with the <span className="font-medium text-foreground">✕</span> button
+              keeps the app running in the system tray — interfacing continues. To fully stop it,
+              right-click the tray icon and choose{' '}
+              <span className="font-medium text-foreground">Quit Stellar Synapse</span>.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      </motion.div>
+
       <motion.div variants={fadeInUp}>
       <Card>
         <CardHeader>

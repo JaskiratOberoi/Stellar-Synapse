@@ -43,7 +43,8 @@ const defaults: PersistShape = {
     simulatorEnabled: false,
     simulatorRate: 6,
     autoMapOnReceive: true,
-    lisAutoWrite: true
+    lisAutoWrite: true,
+    launchAtStartup: false
   },
   // Noble LISTEC LIS — live mode on; set password under Settings or LIS Connection.
   lis: {
@@ -78,8 +79,12 @@ export const persist = {
   getSettings: (): AppSettings => {
     const s = store().get('settings')
     // Backfill new settings keys for existing installs.
-    if (s.lisAutoWrite === undefined) {
-      const next = { ...s, lisAutoWrite: true }
+    if (s.lisAutoWrite === undefined || s.launchAtStartup === undefined) {
+      const next = {
+        ...s,
+        lisAutoWrite: s.lisAutoWrite ?? true,
+        launchAtStartup: s.launchAtStartup ?? false
+      }
       store().set('settings', next)
       return next
     }

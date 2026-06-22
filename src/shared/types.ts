@@ -426,4 +426,9 @@ export interface AppSettings {
   autoMapOnReceive: boolean
   /** When live LIS is enabled, auto-write HbA1c panel results on receive. */
   lisAutoWrite: boolean
+  /**
+   * Launch Stellar Synapse automatically at user login (starts hidden in the
+   * system tray so interfacing resumes on boot without showing the UI).
+   */
+  launchAtStartup: boolean
 }

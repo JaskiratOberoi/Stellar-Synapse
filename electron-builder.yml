@@ -14,6 +14,12 @@ files:
   - '!node_modules/**/{CHANGELOG.md,README.md,readme.md,readme,*.md}'
   - '!node_modules/**/{test,tests,__tests__,docs,example,examples}/**'
 
+# Ship the tray icon outside the asar so the main process can load it at runtime
+# via process.resourcesPath (asar-packed paths aren't real files on disk).
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+
 asar: true
 asarUnpack:
   - node_modules/serialport/**/*
