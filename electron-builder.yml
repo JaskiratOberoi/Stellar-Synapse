@@ -18,10 +18,17 @@ asar: true
 asarUnpack:
   - node_modules/serialport/**/*
   - node_modules/@serialport/**/*
+  - node_modules/node-gyp-build/**/*
   - node_modules/mssql/**/*
   - node_modules/tedious/**/*
 
-npmRebuild: true
+# serialport's native binding (@serialport/bindings-cpp) is N-API / prebuildify:
+# it ships an ABI-stable prebuilt .node for win32-x64 that loads directly in
+# Electron with NO recompilation. Disabling npmRebuild means the Windows build
+# just PACKAGES that prebuilt — so producing the installer needs no Visual Studio
+# / Python build toolchain, and the resulting .exe ships a working serialport
+# with no end-user npm install or rebuild.
+npmRebuild: false
 buildDependenciesFromSource: false
 
 win:

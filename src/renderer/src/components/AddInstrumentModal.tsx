@@ -35,6 +35,9 @@ export function AddInstrumentModal({
   const [port, setPort] = useState('9100')
   const [serialPath, setSerialPath] = useState('COM3')
   const [baudRate, setBaudRate] = useState('9600')
+  const [dataBits, setDataBits] = useState('8')
+  const [parity, setParity] = useState('none')
+  const [stopBits, setStopBits] = useState('1')
   const [hostQuery, setHostQuery] = useState(false)
   const [passive, setPassive] = useState(false)
   const [enabled, setEnabled] = useState(true)
@@ -69,6 +72,9 @@ export function AddInstrumentModal({
     setPort('9100')
     setSerialPath('COM3')
     setBaudRate('9600')
+    setDataBits('8')
+    setParity('none')
+    setStopBits('1')
     setHostQuery(false)
     setPassive(false)
     setEnabled(true)
@@ -103,6 +109,16 @@ export function AddInstrumentModal({
     setTransport(d.transports[0])
     setPort(String(d.defaultPort ?? 9100))
     setHostQuery(d.mode === 'bidirectional')
+    // Beckman AU "Online" serial link is 7-N-1; most other ASTM serial is 8-N-1.
+    if (d.protocol === 'beckman-au') {
+      setDataBits('7')
+      setParity('none')
+      setStopBits('1')
+    } else {
+      setDataBits('8')
+      setParity('none')
+      setStopBits('1')
+    }
     setStep(2)
   }
 
@@ -121,6 +137,9 @@ export function AddInstrumentModal({
           port: transport === 'serial' ? undefined : Number(port),
           serialPath: transport === 'serial' ? serialPath : undefined,
           baudRate: transport === 'serial' ? Number(baudRate) : undefined,
+          dataBits: transport === 'serial' ? (Number(dataBits) as 7 | 8) : undefined,
+          parity: transport === 'serial' ? (parity as 'none' | 'even' | 'odd') : undefined,
+          stopBits: transport === 'serial' ? (Number(stopBits) as 1 | 2) : undefined,
           hostQuery: passive ? false : hostQuery,
           passive,
           autoIdentify: passive
@@ -288,15 +307,47 @@ export function AddInstrumentModal({
           )}
 
           {transport === 'serial' && (
-            <div className="space-y-1.5">
-              <Label>Baud Rate</Label>
-              <Select value={baudRate} onChange={(e) => setBaudRate(e.target.value)}>
-                {['9600', '19200', '38400', '57600', '115200'].map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Baud Rate</Label>
+                <Select value={baudRate} onChange={(e) => setBaudRate(e.target.value)}>
+                  {['9600', '19200', '38400', '57600', '115200'].map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Data Bits</Label>
+                <Select value={dataBits} onChange={(e) => setDataBits(e.target.value)}>
+                  {['8', '7'].map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Parity</Label>
+                <Select value={parity} onChange={(e) => setParity(e.target.value)}>
+                  {['none', 'even', 'odd'].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Stop Bits</Label>
+                <Select value={stopBits} onChange={(e) => setStopBits(e.target.value)}>
+                  {['1', '2'].map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
           )}
 

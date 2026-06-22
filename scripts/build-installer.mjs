@@ -22,8 +22,12 @@ console.log('[installer] building app (typecheck + electron-vite)...')
 execSync('npm run build', { stdio: 'inherit' })
 
 console.log(`[installer] packaging into temp dir: ${tmp}`)
+// Force --x64: the build host may be an arm64 Mac, but the target lab PC is
+// Intel/AMD Windows (win32-x64). serialport ships an ABI-stable N-API prebuilt
+// for win32-x64, so no cross-compilation is needed — electron-builder downloads
+// the win32-x64 Electron and packages the prebuilt binding as-is.
 execSync(
-  `npx electron-builder --win --config electron-builder.yml -c.directories.output="${tmp}"`,
+  `npx electron-builder --win --x64 --config electron-builder.yml -c.directories.output="${tmp}"`,
   { stdio: 'inherit' }
 )
 
