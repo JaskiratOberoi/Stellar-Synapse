@@ -132,9 +132,48 @@ export class SqlLisRepository implements ILisRepository {
     return {
       vailid: String(row.vailid),
       patientId: row.patientId != null ? Number(row.patientId) : undefined,
+      patientName: await this.lookupPatientName(vailid, row),
       testCodes: codes,
       testNames: names,
       sampleStatus: row.sampleStatus != null ? Number(row.sampleStatus) : undefined
+    }
+  }
+
+  // Whether the live schema exposes a patient-name column we can read (probed once).
+  private patientNameUnavailable = false
+
+  /**
+   * Best-effort patient display name for the AU480 S-frame (display only).
+   *
+   * The Beckman host-query response carries the patient name in a fixed-width
+   * field; the live ElabAssistLite interface fills it from the LIS. We mirror
+   * that here, but DEFENSIVELY: any failure (column/table absent on this Noble
+   * build) is swallowed and we fall back to a blank field. This must never break
+   * order lookup or result writes, which share `getOrder`.
+   */
+  private async lookupPatientName(
+    vailid: string,
+    sampleRow: Record<string, unknown>
+  ): Promise<string | undefined> {
+    // If Noble already returned a name on the samples row, use it directly.
+    const inline = sampleRow.patient_name ?? sampleRow.patientName ?? sampleRow.pname
+    if (inline != null && String(inline).trim()) return String(inline).trim()
+    if (this.patientNameUnavailable) return undefined
+    try {
+      const pool = await this.getPool()
+      const mssql = await this.getMssql()
+      const res = await pool
+        .request()
+        .input('vailid', mssql.VarChar, vailid)
+        .query(
+          'SELECT TOP 1 patient_name FROM tbl_med_mcc_patient_samples WHERE vailid = @vailid'
+        )
+      const name = (res.recordset?.[0] as Record<string, unknown> | undefined)?.patient_name
+      return name != null && String(name).trim() ? String(name).trim() : undefined
+    } catch {
+      // Column/table not present on this build — stop probing to avoid log noise.
+      this.patientNameUnavailable = true
+      return undefined
     }
   }
 

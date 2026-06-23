@@ -67,6 +67,25 @@ export function LisConnection() {
           </div>
         </motion.div>
       )}
+      {form.live && form.readOnly && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={ease}
+          className="flex items-start gap-3 overflow-hidden rounded-xl border border-warning/30 bg-warning/10 p-4"
+        >
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+          <div className="text-sm">
+            <p className="font-semibold text-warning">Read-only (safe) mode active</p>
+            <p className="text-muted-foreground">
+              Synapse reads live Noble data for host-query order lookups, but every result write is
+              blocked — nothing is persisted to the production database. Turn this off only when you
+              intend to write real results.
+            </p>
+          </div>
+        </motion.div>
+      )}
       </AnimatePresence>
 
       <motion.div className="grid gap-6 lg:grid-cols-2" variants={staggerContainer}>
@@ -127,6 +146,18 @@ export function LisConnection() {
               </div>
               <Switch checked={form.live} onChange={(v) => update({ live: v })} />
             </div>
+
+            {form.live && (
+              <div className="flex items-center justify-between rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-warning">Read-only (safe) Mode</p>
+                  <p className="text-xs text-muted-foreground">
+                    Read live Noble data (host query / order lookup) but block every write
+                  </p>
+                </div>
+                <Switch checked={!!form.readOnly} onChange={(v) => update({ readOnly: v })} />
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={test} disabled={testing} className="flex-1">

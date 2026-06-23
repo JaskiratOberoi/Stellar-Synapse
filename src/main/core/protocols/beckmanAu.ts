@@ -74,22 +74,31 @@ export interface AuFormat {
 }
 
 /**
- * Default format: documented AU defaults + the layout we instruct the lab to set.
- * Sample ID transmission ON at 12 chars (covers most accession barcodes); adjust
- * to match the analyzer's "Sample ID digits" if it differs.
+ * Default format — CALIBRATED against a real AU480 "Online" frame captured on the
+ * live host link (COM1, 8-N-1) at this site:
+ *
+ *   D 000301 0001             9063962    E0                         001 161.3
+ *   └2┘└rack┘cup└ sampleNo ┘└──── sampleId(19, right-just) ───┘└── pad/demographics ──┘└grp┘
+ *
+ * Fixed header is 64 chars; result groups are 11 chars = testNo(3) + result(6) +
+ * marks(2) with no diluent digit. Online Test No. is 3 digits (001–099). The
+ * sample barcode rides right-justified in a 19-char field; the 31-char `dummy`
+ * pad absorbs the analyzer's data-class ("E0") + blank demographic slots that
+ * precede the result groups. `sex` is kept 0 (it doubles as the per-test slot in
+ * host-query S responses). Re-certify if the analyzer's Online format is changed.
  */
 export const DEFAULT_AU_FORMAT: AuFormat = {
   systemNo: 0,
   rack: 4,
   cup: 2,
-  sampleNo: 4,
+  sampleNo: 5,
   sampleType: 1,
-  sampleId: 12,
-  dummy: 4,
-  dataClass: 1,
+  sampleId: 19,
+  dummy: 31,
+  dataClass: 0,
   sex: 0,
-  testNo: 2,
-  diluent: 1,
+  testNo: 3,
+  diluent: 0,
   result: 6,
   marks: 2,
   bcc: false

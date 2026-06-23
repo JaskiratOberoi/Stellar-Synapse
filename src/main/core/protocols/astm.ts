@@ -24,16 +24,19 @@ const ETB = 0x17
  *   R|1|^^^TSH|2.31|uIU/mL|0.27 to 4.2|N
  *   L|1|N
  *
- * This implementation accumulates frame text, separating records at each
- * frame's ETX (or an inter-record CR), and flushes a complete message on <EOT>
- * or as soon as an L (terminator) record arrives. The terminator-flush supports
- * analyzers that omit the E1381 <EOT> envelope (Agappe Mispa Maestro /
- * BioHermes BH60: bare <STX>FN data<ETX> frames, no CR/checksum/EOT). Checksum
- * verification and full retransmit handling are marked for the hardening phase.
+ * This implementation is a faithful scaffold: it accumulates frame text between
+ * STX/ETX(ETB), strips the checksum, splits records on CR, and returns the
+ * E1394 rows. Checksum verification and full retransmit handling are marked for
+ * the hardening phase.
  */
 export class AstmProtocol implements IProtocol {
   readonly kind = 'astm'
   private textBuffer = ''
+  // After ETX/ETB the analyzer sends a 2-char checksum (e.g. "FB") then CR LF.
+  // We must DISCARD those bytes: if appended to the buffer they glue onto the
+  // record's last field (e.g. "...|N" -> "...|NFB"), corrupting a result flag or
+  // trailing value and causing the result to be mis-mapped or skipped.
+  private inChecksum = false
   /** Callback used by the orchestrator to push low-level ACKs back. */
   onControl?: (byte: number) => void
 
@@ -47,55 +50,42 @@ export class AstmProtocol implements IProtocol {
           // Analyzer requests to send. Reply ACK (handled by orchestrator).
           this.onControl?.(ACK)
           this.textBuffer = ''
+          this.inChecksum = false
           break
         case STX:
-          // Start of a frame; the next char is the frame number, stripped in
-          // buildMessage. Record separation happens at the frame's ETX below.
-          break
-        case ETB:
-          // Intermediate frame of a multi-frame record: ACK and keep
-          // accumulating — the record continues in the next frame.
-          this.onControl?.(ACK)
+          // Start of a frame; the next char is the frame number (stripped later).
+          this.inChecksum = false
           break
         case ETX:
-          // End of a record's final frame. ACK, then terminate the record so
-          // each frame becomes its own E1394 row even when the analyzer omits
-          // the inter-record CR — the Agappe Mispa Maestro / BioHermes BH60 send
-          // <STX>FN data<ETX> with no CR, no checksum and no closing <EOT>.
+        case ETB:
+          // End of frame block; ACK it. The next bytes are the frame checksum,
+          // which we skip until the CR/LF frame terminator.
           this.onControl?.(ACK)
-          if (this.textBuffer.length > 0 && !this.textBuffer.endsWith('\n')) {
-            this.textBuffer += '\n'
-          }
-          // Those analyzers mark end-of-message with the L (terminator) record
-          // rather than <EOT>, so flush as soon as a terminator frame completes.
-          if (/(^|\n)\d?L\|[^\n]*\n$/.test(this.textBuffer)) {
-            this.flush(messages)
-          }
+          this.inChecksum = true
           break
         case EOT:
-          // End of transmission (E1381 analyzers, e.g. Maglumi) -> flush.
-          this.flush(messages)
+          // End of transmission -> flush a complete message.
+          if (this.textBuffer.trim().length > 0) {
+            messages.push(this.buildMessage(this.textBuffer))
+          }
+          this.textBuffer = ''
+          this.inChecksum = false
           break
         case ACK:
         case LF:
           break
         case CR:
+          // Frame terminator: ends any checksum run and separates records.
+          this.inChecksum = false
           this.textBuffer += '\n'
           break
         default:
-          this.textBuffer += String.fromCharCode(byte)
+          // Drop the post-ETX checksum digits; keep everything else.
+          if (!this.inChecksum) this.textBuffer += String.fromCharCode(byte)
       }
     }
 
     return messages
-  }
-
-  /** Emit the accumulated records as one message and reset the buffer. */
-  private flush(messages: ProtocolMessage[]): void {
-    if (this.textBuffer.trim().length > 0) {
-      messages.push(this.buildMessage(this.textBuffer))
-    }
-    this.textBuffer = ''
   }
 
   /** Accept already-textual ASTM (used by the simulator). */
@@ -115,5 +105,6 @@ export class AstmProtocol implements IProtocol {
 
   reset(): void {
     this.textBuffer = ''
+    this.inChecksum = false
   }
 }

@@ -204,6 +204,8 @@ export interface LisParameter {
 export interface TestOrder {
   vailid: string
   patientId?: number
+  /** Patient display name, when the LIS provides it (used in the AU480 S-frame). */
+  patientName?: string
   testCodes: string[]
   testNames: string[]
   sampleStatus?: number
@@ -215,7 +217,7 @@ export interface TestOrder {
  *  - 'skipped' — no matching ordered row for this test/SID; nothing was written
  *    (Synapse never inserts an orphan row the LIS status logic would ignore).
  */
-export type LisWriteOutcome = 'written' | 'skipped'
+export type LisWriteOutcome = 'written' | 'skipped' | 'suppressed'
 
 /**
  * Payload written to dbo.tbl_med_mcc_patient_test_result.
@@ -289,6 +291,7 @@ export type MonitorStage =
   | 'mapped'
   | 'written'
   | 'skipped'
+  | 'suppressed'
   | 'error'
   | 'queued'
 
@@ -333,6 +336,13 @@ export interface LisConnectionSettings {
   port: number
   /** When false, the SQL repository is bypassed and the mock is used. */
   live: boolean
+  /**
+   * Read-only safe mode. When true *and* `live` is true, Synapse connects to the
+   * real Noble SQL Server for READS (catalog, host-query order lookups) but every
+   * write is blocked (no result is ever persisted). Lets the host-query feature be
+   * tested against live data with zero risk to the production database.
+   */
+  readOnly?: boolean
   encrypt: boolean
 }
 

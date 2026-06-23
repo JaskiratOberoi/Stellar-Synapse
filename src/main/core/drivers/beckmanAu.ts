@@ -188,25 +188,52 @@ function auHeader(
 }
 
 /**
- * Build the Sample-Information RESPONSE (S∆) the host sends to answer a query:
- * the fixed header (echoing rack/cup/sample-no/sample-id) followed by one group
- * per ordered test — just the Online Test No. + diluent (no result). This is the
- * order-download that tells the analyzer which assays to run.
+ * Build the Sample-Information RESPONSE (S∆) that answers a sample-information
+ * request — replicated BYTE-FOR-BYTE from the live, working ElabAssistLite AU480
+ * interface (Genomic Labs, 2026-06, logINMessage / logDetails).
+ *
+ * Worked example (request → response) captured on the live host link:
+ *
+ *   R 000301N0007             9064234
+ *   S 000301 0007             9064234    EM00000KAMLESH             099012011005018097010004013002003015098016017006008020
+ *
+ * Decode of the response:
+ *   "S " + <31-char identity: rack(4) cup(2) type(1) sampleNo(4) … barcode> +
+ *   "    "(4) + "E" + "M00000" + <patient name, 20 chars> + <3-digit Online Test Nos…>
+ *
+ * Two rules make it work, and both are intentionally NOT "smart":
+ *  - The 31-char demographics region ("    " + "E" + "M00000" + name(20)) MUST be
+ *    present. It is fixed-width padding that places the first Online Test No. at
+ *    byte offset 64 — exactly where the analyzer (and our own result parser)
+ *    expects it. Omitting the name field shifts every test number and the AU
+ *    misreads / rejects the order.
+ *  - The identity region (rack..barcode) is echoed from the request verbatim so
+ *    it matches exactly (alarm 6042 "ONLINE MISMATCH" otherwise), EXCEPT the
+ *    1-char sample-type flag, which the live interface always blanks to a space
+ *    in its S responses (the request may carry "N").
+ *
+ * @param requestBlock the raw R∆ request block (no STX/ETX), e.g. "R 000301N0007…"
+ * @param testNos       the ordered Online Test Numbers, in DB order
+ * @param opts.patientName the LIS patient name (≤20 chars shown; blank-padded if absent)
  */
 export function buildAuOrderResponse(
-  rack: string,
-  cup: string,
-  sampleNo: string,
-  sampleId: string,
+  requestBlock: string,
   testNos: number[],
-  fmt: AuFormat = DEFAULT_AU_FORMAT
+  fmt: AuFormat = DEFAULT_AU_FORMAT,
+  opts: { patientName?: string } = {}
 ): string {
-  let block = auHeader('S ', rack, cup, sampleNo, sampleId, fmt)
+  // 31-char identity region (rack..barcode), echoed verbatim from the request.
+  let id = requestBlock.slice(2)
+  // Blank the sample-type flag (rack(4) + cup(2) = index 6 within `id`) — the
+  // live interface always sends a space here in its S responses.
+  if (id.length > 6) id = id.slice(0, 6) + ' ' + id.slice(7)
+
+  // Fixed 31-char demographics block: 4 spaces + block flag "E" + "M00000" + name(20).
+  const demographics = ' '.repeat(4) + 'E' + 'M00000' + padField(opts.patientName ?? '', 20)
+
+  let block = 'S ' + id + demographics
   for (const no of testNos) {
-    block +=
-      padField('', fmt.sex) + // per-test sex slot (blank)
-      String(no).padStart(fmt.testNo, '0') +
-      padField('0', fmt.diluent) // normal dilution
+    block += String(no).padStart(fmt.testNo, '0') // Online Test No. (3 digits)
   }
   return block
 }

@@ -28,46 +28,47 @@ const ETX = 0x03
 const EOT = 0x04
 const ENQ = 0x05
 const ACK = 0x06
-const ETB = 0x17
 const NAK = 0x15
-
-/** ASTM timestamp YYYYMMDDHHMMSS. */
-function ts(): string {
-  const d = new Date()
-  const p = (n: number): string => String(n).padStart(2, '0')
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(
-    d.getMinutes()
-  )}${p(d.getSeconds())}`
-}
 
 /**
  * Build the ASTM order records that answer a host query for `sid` with the given
  * instrument analyte codes. Returns logical records (the framer adds E1381
- * framing). One O record per ordered test; the analyzer reads `^^^<code>`.
+ * framing).
+ *
+ * Replicated BYTE-FOR-BYTE from the live, working ElabAssistLite interface
+ * (Genomic Labs, 2026-06, logINMessage / logDetails). The X3's own query is
+ * answered with exactly:
+ *
+ *   H|\^&||PSWD| MAGLUMI X3 |||||Lis||P|E1394-97|20180319
+ *   P|1
+ *   O|1|<sid>||^^^<ch1>\^^^<ch2>\^^^<ch3>|R
+ *   L|1|N
+ *
+ * Two things proved essential and are intentionally NOT "smart":
+ *  - ALL ordered tests ride in a SINGLE O record, their universal-test-IDs joined
+ *    by the ASTM repeat delimiter "\" (NOT one O record per test). The X3 reads
+ *    the whole assay list from that one field.
+ *  - The header sender is the literal " MAGLUMI X3 " (leading/trailing spaces)
+ *    and the date is the fixed "20180319" — the working interface does NOT echo
+ *    the analyzer's own query header, and the X3 accepts the order regardless.
+ *
+ * `analyzerName` / `hostName` remain overridable for other ASTM analyzers, but
+ * default to the exact values the live X3 interface sends.
  */
 export function buildAstmOrderRecords(
   sid: string,
   analyteCodes: string[],
-  analyzerName: string,
+  analyzerName = ' MAGLUMI X3 ',
   hostName = 'Lis'
 ): string[][] {
   const records: string[][] = []
-  // Header must match SNIBE's documented host->analyzer layout exactly, AND echo
-  // the analyzer's own Analyzer ID (field 5) / Host ID (field 10) from its query
-  // header — the X3 validates these and silently drops the assay on a mismatch:
-  //   H|\^&||PSWD|<analyzerId>|||||<hostId>||P|E1394-97|<ts>
-  records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', ts()])
+  records.push(['H', '\\^&', '', 'PSWD', analyzerName, '', '', '', '', hostName, '', 'P', 'E1394-97', '20180319'])
   records.push(['P', '1'])
-  analyteCodes.forEach((code, i) => {
-    // EXACT SNIBE Chapter 16 order-download format (p.16-8): one O record per
-    // test, each ending in the priority field "R":  O|seq|sid||^^^<channel>|R
-    //
-    // History: "|R" was removed earlier after a single-test order failed with it
-    // — but that test was contaminated (the channel name was also wrong then,
-    // "VITB12" vs "Vit B12 III"), so the failure was the channel, not "|R".
-    // Restored to match the manual now that channel names are correct.
-    records.push(['O', String(i + 1), sid, '', `^^^${code}`, 'R'])
-  })
+  if (analyteCodes.length > 0) {
+    // One O record, all assays in field 5 joined by the ASTM repeat delimiter "\".
+    const universal = analyteCodes.map((code) => `^^^${code}`).join('\\')
+    records.push(['O', '1', sid, '', universal, 'R'])
+  }
   records.push(['L', '1', 'N'])
   return records
 }
@@ -95,24 +96,52 @@ export function frameAstmMessage(records: string[][]): Buffer {
 
 /**
  * Frame each record as its OWN ASTM frame, with incrementing frame numbers
- * (1-7, rolling to 0). Use for the MAGLUMI X3 multi-test order-download: the X3
- * reads only one order (O) record per frame, so every record must arrive in its
- * own frame within the single response session.
+ * (1-7, rolling to 0). This is the format SNIBE's own host-order download uses
+ * for the MAGLUMI X3: the X3 reads only one record per frame, so every record
+ * must arrive in its own frame within the single response session.
  *
- * Per E1381, INTERMEDIATE frames terminate with ETB (0x17) and only the FINAL
- * frame with ETX (0x03); the checksum covers frameNum + record + terminator.
+ * IMPORTANT: every frame terminates with ETX (0x03) — NOT ETB. SNIBE's
+ * documented working host->analyzer order log (Chapter 16 / "requests.txt")
+ * sends H, P, O, O, L as five separate frames, each ending `<ETX>cc<CR><LF>`,
+ * with continuous frame numbers 1..5. Using ETB for the intermediate frames
+ * (standard E1381 multi-frame continuation) makes the X3 silently drop the
+ * order, because it treats each single-record frame as a complete unit. The
+ * checksum covers frameNum + record + ETX.
  */
 export function frameAstmPerRecord(records: string[][]): Buffer[] {
-  const lastIdx = records.length - 1
   return records.map((rec, i) => {
     const frameNum = (i + 1) % 8 // 1,2,…,7,0,1,…
-    const term = i === lastIdx ? ETX : ETB
-    const body = `${frameNum}${rec.join('|')}${String.fromCharCode(term)}`
+    const body = `${frameNum}${rec.join('|')}${String.fromCharCode(ETX)}`
     let sum = 0
     for (let k = 0; k < body.length; k++) sum = (sum + body.charCodeAt(k)) & 0xff
     const cs = sum.toString(16).toUpperCase().padStart(2, '0')
     return Buffer.from(String.fromCharCode(STX) + body + cs + '\r\n', 'latin1')
   })
+}
+
+/**
+ * Frame an order response in SNIBE's "simple" host-download format used by the
+ * MAGLUMI X3 (Chapter 16 §16.4.2), VERIFIED against the bytes a live X3 sends in
+ * its own query (Genomic Labs, 2026-06):
+ *
+ *   LIS -> <ENQ>                                   ana -> <ACK>
+ *   LIS -> <STX>                                   ana -> <ACK>
+ *   LIS -> H|...<CR>P|1<CR>O|1|SID||^^^CH|R<CR>...L|1|N<CR>   ana -> <ACK>
+ *   LIS -> <ETX>                                   ana -> <ACK>
+ *   LIS -> <EOT>
+ *
+ * Crucially there are NO frame numbers and NO checksums — the X3 sends none and
+ * silently refuses standard E1381 frames (`<STX>1H|...<ETX>cc`). All records go
+ * in ONE CR-separated block (each record, including L, ends with CR).
+ *
+ * Returned as ACK-gated units. We keep STX+block+ETX as a single write (the X3
+ * reads it as one STX..ETX message regardless of ACK timing); the sender adds
+ * the leading ENQ and trailing EOT.
+ */
+export function frameAstmSimple(records: string[][]): Buffer[] {
+  const block = records.map((r) => r.join('|')).join('\r') + '\r'
+  const frame = String.fromCharCode(STX) + block + String.fromCharCode(ETX)
+  return [Buffer.from(frame, 'latin1')]
 }
 
 type SenderState = 'idle' | 'wait-enq-ack' | 'wait-frame-ack' | 'done'
@@ -143,7 +172,17 @@ export class AstmHostQuerySender {
     if (this.isBusy()) return Promise.resolve()
     // Default: whole message in ONE frame (records CR-separated). perRecord: one
     // frame per record (X3 multi-test — it reads only one O record per frame).
-    this.frames = perRecord ? frameAstmPerRecord(records) : [frameAstmMessage(records)]
+    return this.sendFrames(perRecord ? frameAstmPerRecord(records) : [frameAstmMessage(records)])
+  }
+
+  /**
+   * Send pre-built, ACK-gated transmission units (e.g. the MAGLUMI X3 simple
+   * format from `frameAstmSimple`). The ENQ/ACK handshake, per-unit ACK wait, and
+   * trailing EOT are identical to `send`; only the framing differs.
+   */
+  sendFrames(frames: Buffer[]): Promise<void> {
+    if (this.isBusy()) return Promise.resolve()
+    this.frames = frames
     this.idx = 0
     this.retries = 0
     this.state = 'wait-enq-ack'
