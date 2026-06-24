@@ -8,6 +8,7 @@ import type {
   TestOrder
 } from '../../../shared/types'
 import type { ILisRepository } from './ILisRepository'
+import { normalizeTestNameKey } from '../mapping/MappingEngine'
 import { logger } from '../logger'
 
 type MssqlModule = typeof import('mssql')
@@ -25,6 +26,32 @@ export class SqlLisRepository implements ILisRepository {
   private pool: MssqlPool | null = null
   private writes: LisResultWrite[] = []
   private readonly maxWrites = 200
+
+  /**
+   * Advance the sample's worksheet status exactly like Noble's UpdateSampleResult:
+   * count measurable rows (testtype not Head/Profile) vs. those now holding a
+   * value, and move only 2 (Registered) -> 4 (Partially Tested) -> 5 (Tested).
+   * The IN (2,4) guard means Synapse never downgrades or touches Rejected (3),
+   * Authorized (6/7), Printed (8/9) or Pending (10), nor auto-authorizes. Shared
+   * verbatim by every write path; expects @matched and @vailid in scope.
+   */
+  private readonly statusRecomputeSql = `
+      IF @matched > 0
+      BEGIN
+        DECLARE @total int, @filled int;
+        SELECT
+          @total  = COUNT(*),
+          @filled = SUM(CASE WHEN LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
+                             THEN 1 ELSE 0 END)
+        FROM tbl_med_mcc_patient_test_result
+        WHERE vailid = @vailid AND testtype NOT IN ('Head', 'Profile');
+
+        IF @filled > 0
+          UPDATE tbl_med_mcc_patient_samples
+          SET sample_status = CASE WHEN @filled >= @total THEN 5 ELSE 4 END,
+              lastmodified_date = GETDATE()
+          WHERE vailid = @vailid AND sample_status IN (2, 4);
+      END`
 
   constructor(private readonly settings: LisConnectionSettings) {}
 
@@ -383,6 +410,22 @@ export class SqlLisRepository implements ILisRepository {
         SET @matched = @@ROWCOUNT;
       END
 
+      -- Tier 2b: the mapping pins a paramid (the analyte is a panel parameter in
+      -- most labs), but THIS lab registered it as a standalone test-level row
+      -- (paramid NULL, testtype 'Test') keyed by the same testid + testcode —
+      -- e.g. ALT/ALP ordered as individual tests instead of Liver-panel params.
+      -- Fill that single row by testid + testcode. The "paramid IS NULL" guard
+      -- means this can never touch a real parameter row (panel members carry
+      -- their own paramid and a shared parent testcode), so sibling fractions
+      -- like the three Bilirubin rows are left untouched.
+      IF @matched = 0 AND @paramid IS NOT NULL AND @testcode <> ''
+      BEGIN
+        UPDATE tbl_med_mcc_patient_test_result ${setCols}
+        WHERE vailid = @vailid AND testid = @testid AND testcode = @testcode
+          AND (paramid IS NULL OR paramid = 0) AND testtype NOT IN ('Head', 'Profile');
+        SET @matched = @@ROWCOUNT;
+      END
+
       -- Tier 3: same test by code (profile members keep the member test's code).
       -- Only for test-level mappings (no paramid) so a panel can't be overwritten.
       IF @matched = 0 AND @testcode <> '' AND @paramid IS NULL
@@ -401,33 +444,23 @@ export class SqlLisRepository implements ILisRepository {
         SET @matched = @@ROWCOUNT;
       END
 
-      IF @matched > 0
-      BEGIN
-        -- Recompute sample_status exactly like Noble's UpdateSampleResult: count
-        -- measurable rows (testtype not Head/Profile) vs. those now holding a
-        -- value. Advance only 2 (Registered) -> 4 (Partially Tested) -> 5 (Tested).
-        -- The IN (2,4) guard means Synapse never downgrades or touches Rejected
-        -- (3), Authorized (6/7), Printed (8/9) or Pending (10), nor auto-authorizes.
-        DECLARE @total int, @filled int;
-        SELECT
-          @total  = COUNT(*),
-          @filled = SUM(CASE WHEN LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
-                             THEN 1 ELSE 0 END)
-        FROM tbl_med_mcc_patient_test_result
-        WHERE vailid = @vailid AND testtype NOT IN ('Head', 'Profile');
-
-        IF @filled > 0
-          UPDATE tbl_med_mcc_patient_samples
-          SET sample_status = CASE WHEN @filled >= @total THEN 5 ELSE 4 END,
-              lastmodified_date = GETDATE()
-          WHERE vailid = @vailid AND sample_status IN (2, 4);
-      END
+      ${this.statusRecomputeSql}
 
       SELECT @matched AS matched;
     `)
 
     const matched = Number(result.recordset?.[0]?.matched ?? 0)
     if (matched === 0) {
+      // Tier 5: the testid/paramid/testcode/exact-name tiers all missed because
+      // the mapped LIS target is a DIFFERENT catalog entry than the one this
+      // sample was ordered under (e.g. a standalone "Total Protein" test mapped,
+      // but ordered as the panel parameter "Protein Total  Serum"). Fall back to
+      // the same token-set name resolution the host-query order side uses.
+      if (await this.writeByNameKey(write)) {
+        this.writes.unshift(write)
+        if (this.writes.length > this.maxWrites) this.writes.pop()
+        return 'written'
+      }
       // Dump the sample's rows so a genuine "not ordered" is debuggable, and any
       // profile layout the tiers don't yet cover is immediately visible in Logs.
       let rowsDump = ''
@@ -460,6 +493,83 @@ export class SqlLisRepository implements ILisRepository {
       `Wrote ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}=${write.value} ${write.unit ?? ''}`
     )
     return 'written'
+  }
+
+  /**
+   * Tier-5 fallback for writeResult: resolve the target result row by an
+   * order-independent, specimen-suffix-tolerant token-set name key — the SAME
+   * normalization the host-query reverse mapping uses to ORDER these analytes
+   * (MappingEngine.normalizeTestNameKey). This bridges the common case where the
+   * analyte's mapped LIS label differs cosmetically from the row the lab actually
+   * registered for the sample:
+   *   - "Total Protein" (mapped test) -> "Protein Total  Serum" (ordered param)
+   *   - "Bilirubin Conjugated (Direct) - SERUM" -> "Bilirubin Conjugated"
+   *
+   * Safety: only acts when the key resolves to EXACTLY ONE measurable analyte row
+   * (testtype not Head/Profile). Token-set equality (not substring) plus the
+   * unique-target gate means it can never bleed a value into a sibling analyte or
+   * guess between ambiguous candidates. Returns true only when a row was filled.
+   */
+  private async writeByNameKey(write: LisResultWrite): Promise<boolean> {
+    const key = normalizeTestNameKey(write.testName || '')
+    if (!key) return false
+
+    const pool = await this.getPool()
+    const mssql = await this.getMssql()
+
+    const rows = await pool
+      .request()
+      .input('v', mssql.VarChar, write.vailid)
+      .query(
+        `SELECT testid, paramid, testname FROM tbl_med_mcc_patient_test_result
+         WHERE vailid = @v AND testtype NOT IN ('Head', 'Profile')`
+      )
+
+    const targets = new Map<string, { testid: number; paramid: number | null }>()
+    for (const r of rows.recordset as Array<Record<string, unknown>>) {
+      if (normalizeTestNameKey(String(r.testname ?? '')) !== key) continue
+      const testid = Number(r.testid)
+      const paramid = r.paramid == null ? null : Number(r.paramid)
+      targets.set(`${testid}|${paramid ?? '-'}`, { testid, paramid })
+    }
+    // Ambiguous (or no) match — never guess which analyte to fill.
+    if (targets.size !== 1) return false
+    const target = [...targets.values()][0]
+
+    const setCols = write.valueOnly
+      ? 'SET value = @value, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
+      : 'SET value = @value, abnormal = @abnormal, machine_name = @machine, UploadFlag = @upload, addeddate = @addeddate'
+    const where =
+      target.paramid != null
+        ? 'vailid = @vailid AND testid = @testid AND paramid = @paramid'
+        : 'vailid = @vailid AND testid = @testid AND (paramid IS NULL OR paramid = 0)'
+
+    const req = pool.request()
+    req.input('vailid', mssql.VarChar, write.vailid)
+    req.input('testid', mssql.Int, target.testid)
+    req.input('paramid', mssql.Int, target.paramid)
+    req.input('value', mssql.VarChar, write.value)
+    req.input('abnormal', mssql.Bit, write.abnormal ? 1 : 0)
+    req.input('machine', mssql.VarChar, write.machineName.slice(0, 50))
+    req.input('upload', mssql.VarChar, write.uploadFlag)
+    req.input('addeddate', mssql.DateTime, new Date(write.addedDate))
+
+    const res = await req.query(`
+      DECLARE @matched int = 0;
+      UPDATE tbl_med_mcc_patient_test_result ${setCols}
+      WHERE ${where} AND testtype NOT IN ('Head', 'Profile');
+      SET @matched = @@ROWCOUNT;
+      ${this.statusRecomputeSql}
+      SELECT @matched AS matched;
+    `)
+
+    if (Number(res.recordset?.[0]?.matched ?? 0) === 0) return false
+    logger.info(
+      'lis-sql',
+      `Wrote ${write.vailid} ${write.testCode} via name-key "${key}" ` +
+        `(testid ${target.testid}, paramid ${target.paramid ?? 'null'})=${write.value} ${write.unit ?? ''}`
+    )
+    return true
   }
 
   async recentWrites(): Promise<LisResultWrite[]> {

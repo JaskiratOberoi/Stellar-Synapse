@@ -16,7 +16,8 @@ import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
-import { buildAuOrderResponse, auOnlineTestNo } from '../drivers/beckmanAu'
+import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
+import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
 import { getDriver } from '../drivers/registry'
 import { fingerprintInstrument } from '../discovery/fingerprint'
@@ -89,6 +90,24 @@ export class Orchestrator extends EventEmitter {
     // One-time hygiene: keep a single bilirubin method per AU analyte so the host
     // query never double-orders the DCA + BuBc variants (matches the reference).
     this.mapping.migrateAuSingleBilirubinMethod()
+
+    // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
+    // AMH II, …). Restrict the host query to exactly those channels so unrelated
+    // catalog analytes (ATG, CEA, AFP, …) can never be queried or written, no
+    // matter what a fuzzy auto-map landed on. Must run BEFORE resolveUnmapped so
+    // those non-panel analytes are 'ignored' rather than freshly resolved.
+    if (persist.getInstruments().some((i) => i.driverId === 'maglumi-x3')) {
+      this.mapping.restrictLisScope('maglumi-x3', Object.keys(MAGLUMI_X3_CHANNELS))
+    }
+
+    // Fill any still-unmapped analytes (e.g. immunoassay channels whose LIS names
+    // only carry the mnemonic) BEFORE the first host query, so an analyzer that
+    // queries immediately on connect gets the full ordered set. Only touches
+    // unmapped rows — curated 'auto'/'manual' mappings are left as-is.
+    const added2 = await this.mapping
+      .resolveUnmappedForDrivers(persist.getInstruments().map((i) => i.driverId))
+      .catch(() => 0)
+    if (added2 > 0) this.emit('mappings', this.mapping.list())
 
     // Auto-start enabled instruments CONCURRENTLY: a slow or unreachable analyzer
     // (and its connect timeout) must not delay the others — sequential awaits here
@@ -665,15 +684,54 @@ export class Orchestrator extends EventEmitter {
     }
 
     const { value: writeValue, unit: writeUnit } = convertForLis(result, rule)
+
+    // Variant channels (e.g. AU Glucose / RF): the mapping rule pins ONE LIS
+    // variant, but the lab may have ordered a different one (Fasting vs PP vs
+    // Random; RF Nephelometry vs IgM …). The analyzer reports a single value, so
+    // fill whichever variant was actually ordered for this sample. Resolve it
+    // from the order and retarget the write by code+name; drop the rule's fixed
+    // testId so the repository matches the ordered variant's row (by testcode /
+    // testname) instead of the pinned one. Falls back to the rule on any miss.
+    let writeTestId = rule.lisTestId
+    let writeTestCode = rule.lisTestCode ?? ''
+    let writeTestName = rule.lisParamName ?? rule.lisTestName ?? ''
+    const variant = auVariantGroup(result.analyteCode)
+    if (variant && !rule.lisParamId && this.lis.mode === 'sql') {
+      try {
+        const order = await this.lis.getOrder(result.sampleId)
+        const idx = order ? order.testNames.findIndex((n) => variant.matches(n)) : -1
+        if (order && idx >= 0) {
+          const orderedCode = (order.testCodes[idx] ?? '').trim()
+          const orderedName = (order.testNames[idx] ?? '').trim()
+          if (orderedName && orderedName.toUpperCase() !== writeTestName.toUpperCase()) {
+            logger.info(
+              'engine',
+              `${def.name}: ${result.analyteCode} variant — filling ordered "${orderedName}" (${orderedCode}) instead of mapped "${writeTestName}"`
+            )
+          }
+          if (orderedCode) writeTestCode = orderedCode
+          if (orderedName) writeTestName = orderedName
+          // Pinned testId belongs to the mapped variant, not the ordered one;
+          // neutralize it (0 matches no row) so tier-1 can't fill the wrong
+          // variant — the repository then matches by ordered testcode/testname.
+          if (orderedCode && orderedCode.toUpperCase() !== (rule.lisTestCode ?? '').toUpperCase()) {
+            writeTestId = 0
+          }
+        }
+      } catch {
+        // Order unavailable (LIS down) — keep the rule's fixed target.
+      }
+    }
+
     const write: LisResultWrite = {
       vailid: result.sampleId,
-      testId: rule.lisTestId,
+      testId: writeTestId,
       paramId: rule.lisParamId,
-      testCode: rule.lisTestCode ?? '',
+      testCode: writeTestCode,
       // Noble labels parameter rows by the parameter name; this is only used when
       // inserting a brand-new row. Existing rows keep their LIS label (the
       // repository UPDATE never touches testname/testcode/testunit).
-      testName: rule.lisParamName ?? rule.lisTestName ?? '',
+      testName: writeTestName,
       value: writeValue,
       unit: writeUnit,
       abnormal: !!result.flag && result.flag !== 'N',

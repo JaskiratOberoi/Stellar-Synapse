@@ -80,6 +80,57 @@ export function auOnlineTestNo(code: string): number | null {
   return AU_NO_BY_CODE.get(code.trim().toUpperCase()) ?? null
 }
 
+/**
+ * Some AU "Online" channels measure ONE analyte that the LIS catalogs as several
+ * ordering VARIANTS — e.g. a single Glucose channel vs. LIS "Glucose - Fasting /
+ * Post Prandial / Random", or one RF channel vs. several RA-factor methods. The
+ * analyzer reports a single value; whichever variant the doctor ordered for the
+ * sample is the one to query and fill. A fixed 1:1 mapping therefore misses the
+ * order whenever a different variant was chosen.
+ *
+ * Each group matches its variants by (case-insensitive) LIS test name so both
+ * host-query reverse-mapping and result-writing can resolve to the actually
+ * ordered variant instead of the single hard-coded test on the mapping rule.
+ * Matching is deliberately conservative (anchored to the analyte, excluding
+ * unrelated panels) so it never bleeds into a different test.
+ */
+export interface AuVariantGroup {
+  /** AU analyte/online code this group applies to (e.g. 'GLU', 'RF'). */
+  code: string
+  /** True when a LIS test name is one of this channel's orderable variants. */
+  matches: (lisTestName: string) => boolean
+}
+
+export const AU_VARIANT_GROUPS: AuVariantGroup[] = [
+  {
+    code: 'GLU',
+    // Point glucose measurements only (Fasting / Post Prandial / Random and the
+    // bare serum/plasma glucose). Exclude tolerance & challenge panels, G6PD,
+    // urine glucose, and timed GTT samples — those are separate workflows the AU
+    // glucose channel must not silently satisfy.
+    matches: (name): boolean => {
+      const n = name.toLowerCase()
+      if (/tolerance|challenge|g6pd|gtt|gct|urine|\d\s*hr|hr\)/.test(n)) return false
+      return /\bglucose\b/.test(n)
+    }
+  },
+  {
+    code: 'RF',
+    // Any rheumatoid-factor method variant (Nephelometry / IgM / IgG / Latex):
+    // the AU RF channel reports one quantitative value for whichever was ordered.
+    matches: (name): boolean => /rheumatoid arthritis factor|\bra factor\b/i.test(name)
+  }
+]
+
+const AU_VARIANT_BY_CODE = new Map<string, AuVariantGroup>(
+  AU_VARIANT_GROUPS.map((g) => [g.code.toUpperCase(), g])
+)
+
+/** Variant group for an instrument analyte code, if that channel has one. */
+export function auVariantGroup(code: string): AuVariantGroup | undefined {
+  return AU_VARIANT_BY_CODE.get(code.trim().toUpperCase())
+}
+
 /** Driver analyte panel for the Beckman AU family (full configured menu). */
 export const BECKMAN_AU: DriverAnalyte[] = AU_ONLINE_TESTS.map((t) => ({
   code: t.code,

@@ -3,6 +3,7 @@ import type { CanonicalResult, LisParameter, LisTest, MappingRule } from '../../
 import type { ILisRepository } from '../lis/ILisRepository'
 import { getDriver } from '../drivers/registry'
 import { maglumiX3Channel } from '../drivers/maglumi'
+import { auVariantGroup } from '../drivers/beckmanAu'
 import { persist } from '../../store'
 import { logger } from '../logger'
 
@@ -159,6 +160,23 @@ export class MappingEngine {
       }
     }
 
+    // 2b) Abbreviation match: many LIS tests carry the analyzer's mnemonic in the
+    // name itself — either parenthesized ("Free T3 (FT3)", "Anti - Mullerian
+    // Hormone (AMH)") or as a leading token ("T3 (Tri Iodothyronine)", "T4
+    // (Thyroxine)"). Matching the instrument CODE against these is far more
+    // precise than a loose substring on the name (it won't map T3 to "Free T3",
+    // since that one carries "(FT3)" / leads with "Free"), so it correctly
+    // resolves the immunoassay channels a plain fuzzy pass leaves unmapped.
+    const abbr = matchTestByCodeAbbreviation(c, tests)
+    if (abbr) {
+      return {
+        lisTestId: abbr.id,
+        lisTestCode: abbr.testCode,
+        lisTestName: abbr.testName,
+        confidence: 0.9
+      }
+    }
+
     // 3) Fuzzy: test name contains the analyte name token. Require both sides to
     // be >= 4 chars so a test literally named "M" can't swallow "Monocytes".
     if (name && name.trim().length >= 4) {
@@ -229,6 +247,49 @@ export class MappingEngine {
         'mapping',
         `AU bilirubin hygiene: un-mapped ${changed} redundant BuBc method row(s) (single DCA method retained)`
       )
+    }
+    return changed
+  }
+
+  /**
+   * Resolve ONLY currently-unmapped rows for the given drivers, leaving every
+   * 'auto', 'manual' and 'ignored' rule untouched. Run at startup so analytes
+   * that seeding could not match (e.g. immunoassay channels whose LIS names only
+   * carry the mnemonic) are filled BEFORE the first host query, without churning
+   * mappings an operator already curated. Best-effort: a missing LIS is ignored.
+   */
+  async resolveUnmappedForDrivers(driverIds: string[]): Promise<number> {
+    const unique = [...new Set(driverIds)]
+    if (unique.length === 0) return 0
+    if (!this.rules.some((r) => unique.includes(r.driverId) && r.status === 'unmapped')) return 0
+    let tests: LisTest[] = []
+    let params: LisParameter[] = []
+    try {
+      tests = await this.lis.getTests()
+      params = await this.lis.getParameters()
+    } catch {
+      return 0 // LIS unavailable — leave unmapped, retried on result receive
+    }
+    let changed = 0
+    for (const rule of this.rules) {
+      if (!unique.includes(rule.driverId) || rule.status !== 'unmapped') continue
+      const target = this.suggest(rule.instrumentCode, rule.instrumentName, tests, params)
+      if (!target) continue
+      Object.assign(rule, {
+        status: 'auto',
+        confidence: target.confidence,
+        lisTestId: target.lisTestId,
+        lisTestCode: target.lisTestCode,
+        lisTestName: target.lisTestName,
+        lisParamId: target.lisParamId,
+        lisParamName: target.lisParamName,
+        updatedAt: new Date().toISOString()
+      })
+      changed++
+    }
+    if (changed > 0) {
+      this.save()
+      logger.info('mapping', `Resolved ${changed} previously-unmapped analyte(s) for [${unique.join(', ')}]`)
     }
     return changed
   }
@@ -349,7 +410,13 @@ export class MappingEngine {
       const keyHit =
         (!!r.lisTestName && wantNameKeys.has(normalizeTestNameKey(r.lisTestName))) ||
         (!!r.lisParamName && wantNameKeys.has(normalizeTestNameKey(r.lisParamName)))
-      if (!codeHit && !nameHit && !keyHit) continue
+      // Variant channels (e.g. AU Glucose / RF): the rule pins ONE LIS variant,
+      // but the analyzer's single channel satisfies any ordered variant. Treat it
+      // as a hit when the order carries a variant this channel measures, so the
+      // online test no. is queried regardless of which variant the doctor chose.
+      const variant = auVariantGroup(r.instrumentCode)
+      const variantHit = !!variant && lisTestNames.some((n) => variant.matches(n))
+      if (!codeHit && !nameHit && !keyHit && !variantHit) continue
       const key = String(r.lisTestId ?? r.lisTestCode ?? r.instrumentCode).toUpperCase()
       const group = byTest.get(key) ?? []
       group.push(r)
@@ -442,7 +509,7 @@ const NAME_FILLER_TOKENS = new Set(['serum', 'plasma', 'blood', 'direct'])
  * of two keys means the names carry the same analyte tokens regardless of word
  * order or specimen suffix — strict enough to avoid substring false positives.
  */
-function normalizeTestNameKey(name: string): string {
+export function normalizeTestNameKey(name: string): string {
   const tokens = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
@@ -450,6 +517,41 @@ function normalizeTestNameKey(name: string): string {
     .map((t) => t.trim())
     .filter((t) => t.length > 0 && !NAME_FILLER_TOKENS.has(t))
   return [...new Set(tokens)].sort().join(' ')
+}
+
+/**
+ * Resolve an instrument analyte code to a LIS test whose NAME advertises that
+ * exact mnemonic, using two high-precision signals only:
+ *   (a) parenthesized abbreviation equal to the code — "... (AMH)", "... (FT3)"
+ *   (b) the name begins with the code at a word boundary — "T3 (Tri ...)"
+ * Both are anchored so near-neighbours don't collide (code "T3" matches "T3
+ * (Tri Iodothyronine)" but NOT "Free T3 (FT3)"). Prefers (a) over (b), then the
+ * shortest name. Returns null when no confident single match exists.
+ */
+function matchTestByCodeAbbreviation(code: string, tests: LisTest[]): LisTest | null {
+  const c = code.trim().toUpperCase()
+  if (c.length < 2) return null // avoid 1-char codes matching too eagerly
+  const parenHits: LisTest[] = []
+  const leadHits: LisTest[] = []
+  for (const t of tests) {
+    // Noble pads many test names with leading/trailing spaces (e.g.
+    // " T3 (Tri Iodothyronine ) "), which silently broke startsWith — so the
+    // thyroid-profile T3/T4 channels never resolved. Trim before matching.
+    const name = t.testName.trim().toUpperCase()
+    // (a) "(CODE)" anywhere in the name.
+    if (name.includes(`(${c})`)) {
+      parenHits.push(t)
+      continue
+    }
+    // (b) name starts with CODE followed by a non-alphanumeric boundary.
+    const rest = name.startsWith(c) ? name.charAt(c.length) : ''
+    if (name.startsWith(c) && (rest === '' || !/[A-Z0-9]/.test(rest))) {
+      leadHits.push(t)
+    }
+  }
+  const pick = (arr: LisTest[]): LisTest | null =>
+    arr.length === 0 ? null : arr.sort((a, b) => a.testName.trim().length - b.testName.trim().length)[0]
+  return pick(parenHits) ?? pick(leadHits)
 }
 
 /** Lowercase a name and collapse separators/punctuation for tolerant matching. */
