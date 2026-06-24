@@ -30,6 +30,8 @@ interface PersistShape {
   migratedLisLive?: boolean
   /** One-time migration: backfill the Noble SQL password for blank installs. */
   migratedLisPassword?: boolean
+  /** One-time migration: collapse duplicate AU bilirubin method variants. */
+  migratedAuSingleBilirubin?: boolean
 }
 
 const MAX_MONITOR_HISTORY = 2000
@@ -75,6 +77,11 @@ export const persist = {
 
   getMappings: (): MappingRule[] => store().get('mappings'),
   setMappings: (v: MappingRule[]): void => store().set('mappings', v),
+
+  /** Read/raise a one-time migration flag (generic, keyed by name). */
+  getMigrationFlag: (key: 'migratedAuSingleBilirubin'): boolean => !!store().get(key),
+  setMigrationFlag: (key: 'migratedAuSingleBilirubin', value: boolean): void =>
+    store().set(key, value),
 
   getSettings: (): AppSettings => {
     const s = store().get('settings')

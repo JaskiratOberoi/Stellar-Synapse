@@ -181,6 +181,58 @@ export class MappingEngine {
     return null
   }
 
+  /**
+   * One-time hygiene: a Beckman AU configures two methods for each bilirubin
+   * analyte — DCA (DBILC/TBILC, online nos 6/8) and BuBc (DBILB/TBILB, nos 7/9) —
+   * and both can end up mapped to the SAME LIS test. The host query would then
+   * order both methods (6+7, 8+9), whereas the live reference interface orders
+   * only one. A lab runs a single bilirubin method, so when the DCA variant is
+   * mapped we drop the redundant BuBc variant (back to 'unmapped'). Guarded by a
+   * persisted flag and only fires when the DCA counterpart is actually mapped, so
+   * a site that deliberately uses ONLY BuBc (DBILB mapped, DBILC not) is left
+   * untouched, and an operator's later manual re-map is never reverted.
+   */
+  migrateAuSingleBilirubinMethod(): number {
+    if (persist.getMigrationFlag('migratedAuSingleBilirubin')) return 0
+    const pairs: Array<[primary: string, secondary: string]> = [
+      ['DBILC', 'DBILB'],
+      ['TBILC', 'TBILB']
+    ]
+    const isMapped = (r?: MappingRule): boolean =>
+      !!r && (r.status === 'auto' || r.status === 'manual') && (!!r.lisTestId || !!r.lisTestCode)
+    let changed = 0
+    for (const rule of this.rules) {
+      if (rule.driverId !== 'beckman-au480') continue
+      const pair = pairs.find(([, secondary]) => secondary === rule.instrumentCode)
+      if (!pair) continue
+      if (!isMapped(rule)) continue
+      const primary = this.rules.find(
+        (r) => r.driverId === 'beckman-au480' && r.instrumentCode === pair[0]
+      )
+      if (!isMapped(primary)) continue // DCA not in use here — leave BuBc as the lab set it
+      Object.assign(rule, {
+        status: 'unmapped',
+        confidence: undefined,
+        lisTestId: undefined,
+        lisTestCode: undefined,
+        lisTestName: undefined,
+        lisParamId: undefined,
+        lisParamName: undefined,
+        updatedAt: new Date().toISOString()
+      })
+      changed++
+    }
+    persist.setMigrationFlag('migratedAuSingleBilirubin', true)
+    if (changed > 0) {
+      this.save()
+      logger.info(
+        'mapping',
+        `AU bilirubin hygiene: un-mapped ${changed} redundant BuBc method row(s) (single DCA method retained)`
+      )
+    }
+    return changed
+  }
+
   /** Re-run auto-mapping for a driver's currently unmapped rows. */
   async autoMap(driverId: string): Promise<MappingRule[]> {
     const tests = await this.lis.getTests()
@@ -271,6 +323,15 @@ export class MappingEngine {
   ): string[] {
     const wantCodes = new Set(lisTestCodes.map((c) => c.trim().toUpperCase()).filter(Boolean))
     const wantNames = new Set(lisTestNames.map((n) => n.trim().toUpperCase()).filter(Boolean))
+    // Word-order/specimen-suffix tolerant name keys. A lab frequently labels the
+    // same analyte differently from the instrument menu — "Total Protein" vs
+    // "Protein Total Serum", "Bilirubin Conjugated (Direct) - SERUM" vs the
+    // parameter "Bilirubin Conjugated". Comparing sorted token SETS (with generic
+    // specimen/method filler words dropped) bridges those without the false
+    // positives of a substring match (e.g. "Iron" never swallows "Iron Binding
+    // Capacity"). Exact-name hits are a strict subset of this, so it only ever
+    // ADDS correct matches, never removes one.
+    const wantNameKeys = new Set(lisTestNames.map(normalizeTestNameKey).filter(Boolean))
 
     // Collect matching rules grouped by the LIS test they resolve to. A single
     // LIS test can have both a generic catalog row (code "TSH", auto) and a
@@ -282,8 +343,13 @@ export class MappingEngine {
       if (r.driverId !== driverId) continue
       if (r.status === 'unmapped' || r.status === 'ignored') continue
       const codeHit = r.lisTestCode && wantCodes.has(r.lisTestCode.toUpperCase())
-      const nameHit = r.lisTestName && wantNames.has(r.lisTestName.toUpperCase())
-      if (!codeHit && !nameHit) continue
+      const nameHit =
+        (r.lisTestName && wantNames.has(r.lisTestName.toUpperCase())) ||
+        (r.lisParamName && wantNames.has(r.lisParamName.toUpperCase()))
+      const keyHit =
+        (!!r.lisTestName && wantNameKeys.has(normalizeTestNameKey(r.lisTestName))) ||
+        (!!r.lisParamName && wantNameKeys.has(normalizeTestNameKey(r.lisParamName)))
+      if (!codeHit && !nameHit && !keyHit) continue
       const key = String(r.lisTestId ?? r.lisTestCode ?? r.instrumentCode).toUpperCase()
       const group = byTest.get(key) ?? []
       group.push(r)
@@ -357,6 +423,33 @@ const CBC_PARAM_ALIASES: Record<string, string[]> = {
   'MON#': ['absolute monocyte count', 'monocytes absolute', 'absolute monocytes'],
   'EOS#': ['absolute eosinophil count', 'eosinophils absolute', 'absolute eosinophils'],
   'BAS#': ['absolute basophil count', 'basophils absolute', 'absolute basophils']
+}
+
+/**
+ * Generic specimen/method filler words that distinguish a label cosmetically but
+ * not the analyte itself. Dropped before comparing token sets so "Albumin -
+ * Serum" == "Albumin" and "Bilirubin Conjugated (Direct)" == "Bilirubin
+ * Conjugated". Kept deliberately small — anything that could change the analyte
+ * identity (e.g. "total", "free", "direct" as in LDL-Direct already match by
+ * code) must NOT be here.
+ */
+const NAME_FILLER_TOKENS = new Set(['serum', 'plasma', 'blood', 'direct'])
+
+/**
+ * Reduce a LIS test/parameter name to an order-independent token-set key for
+ * tolerant equality matching: lowercase, strip punctuation, drop filler tokens,
+ * de-duplicate, and sort. Returns '' when nothing meaningful remains. Equality
+ * of two keys means the names carry the same analyte tokens regardless of word
+ * order or specimen suffix — strict enough to avoid substring false positives.
+ */
+function normalizeTestNameKey(name: string): string {
+  const tokens = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(' ')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0 && !NAME_FILLER_TOKENS.has(t))
+  return [...new Set(tokens)].sort().join(' ')
 }
 
 /** Lowercase a name and collapse separators/punctuation for tolerant matching. */

@@ -86,6 +86,10 @@ export class Orchestrator extends EventEmitter {
     // with a large model catalog). May hit the LIS, but no longer blocks the list.
     await this.mapping.seedDrivers(persist.getInstruments().map((i) => i.driverId))
 
+    // One-time hygiene: keep a single bilirubin method per AU analyte so the host
+    // query never double-orders the DCA + BuBc variants (matches the reference).
+    this.mapping.migrateAuSingleBilirubinMethod()
+
     // Auto-start enabled instruments CONCURRENTLY: a slow or unreachable analyzer
     // (and its connect timeout) must not delay the others — sequential awaits here
     // were a second source of the startup stall.

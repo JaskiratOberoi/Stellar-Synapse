@@ -124,10 +124,18 @@ export class SqlLisRepository implements ILisRepository {
     // individual assays, so expand any profile codes to their member tests before
     // returning — this is what lets the host-query order TSH/T3/T4 when a doctor
     // ordered the thyroid profile.
-    const { codes, names } = await this.expandProfiles(
+    const expanded = await this.expandProfiles(
       splitCsv(String(row.testcodes ?? '')),
       splitCsv(String(row.testnames ?? ''))
     )
+    // Many panels resolve to a COMPOSITE parent test that itself holds the real
+    // measurable analytes as parameters (e.g. "Bilirubin (Total Direct &
+    // Indirect)" -> params "Bilirubin Total", "Bilirubin Conjugated"; "Total
+    // protein (with albumin and globulin)" -> "Protein Total Serum", "Albumin").
+    // An analyzer's online menu maps to those individual analytes, not the parent
+    // container, so descend parameter-bearing tests into their parameters too —
+    // otherwise host-query reverse-mapping never sees the orderable analytes.
+    const { codes, names } = await this.expandParameters(expanded.codes, expanded.names)
 
     return {
       vailid: String(row.vailid),
@@ -231,6 +239,80 @@ export class SqlLisRepository implements ILisRepository {
       `Expanded ${members.size} profile(s) [${[...members.keys()].join(', ')}] -> ${outCodes.length} tests`
     )
     return { codes: outCodes, names: outNames }
+  }
+
+  /**
+   * For any ordered test that is a parameter-bearing container (Has_Parameters),
+   * append its measurable parameters (parameter Code + Name) to the order. The
+   * parent test rows are kept (Noble may still file results against them), but
+   * adding the parameter codes/names is what lets host-query reverse-mapping find
+   * the analyzer's per-analyte channels (an instrument orders "Bilirubin Total",
+   * never the "Bilirubin (Total Direct & Indirect)" container). Non-parameter
+   * tests pass through unchanged. Best-effort: any failure leaves the order as-is.
+   */
+  private async expandParameters(
+    codes: string[],
+    names: string[]
+  ): Promise<{ codes: string[]; names: string[] }> {
+    if (codes.length === 0) return { codes, names }
+    try {
+      const pool = await this.getPool()
+      const mssql = await this.getMssql()
+      const req = pool.request()
+      const placeholders = codes.map((c, i) => {
+        req.input(`t${i}`, mssql.VarChar, c)
+        return `@t${i}`
+      })
+      const res = await req.query(`
+        SELECT t.TestCode AS parentCode, p.Code AS paramCode, p.Name AS paramName
+        FROM tbl_med_test_master t
+        JOIN tbl_med_parameter_master p ON p.TestCode = t.id
+        WHERE t.TestCode IN (${placeholders.join(',')})
+          AND t.Has_Parameters = 1
+          AND p.IsActive = 1
+      `)
+      if (res.recordset.length === 0) return { codes, names }
+
+      const params = new Map<string, { code: string; name: string }[]>()
+      for (const r of res.recordset as Array<Record<string, unknown>>) {
+        const pc = String(r.parentCode)
+        const arr = params.get(pc) ?? []
+        arr.push({ code: String(r.paramCode ?? '').trim(), name: String(r.paramName ?? '').trim() })
+        params.set(pc, arr)
+      }
+
+      const outCodes = [...codes]
+      const outNames = [...names]
+      const seen = new Set(codes.map((c) => c.trim().toUpperCase()))
+      let added = 0
+      for (const [, members] of params) {
+        for (const m of members) {
+          const key = m.code.toUpperCase()
+          if (m.code && !seen.has(key)) {
+            seen.add(key)
+            outCodes.push(m.code)
+            outNames.push(m.name)
+            added++
+          } else if (!m.code && m.name) {
+            // Parameter with no code: still surface the name so a name-based
+            // reverse-map can resolve it.
+            outCodes.push('')
+            outNames.push(m.name)
+            added++
+          }
+        }
+      }
+      if (added > 0) {
+        logger.info(
+          'lis',
+          `Expanded ${params.size} parameter-bearing test(s) -> +${added} parameter analyte(s)`
+        )
+      }
+      return { codes: outCodes, names: outNames }
+    } catch (err) {
+      logger.warn('lis', `Parameter expansion skipped: ${(err as Error).message}`)
+      return { codes, names }
+    }
   }
 
   /**
