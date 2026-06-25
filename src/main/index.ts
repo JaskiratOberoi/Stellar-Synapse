@@ -189,8 +189,9 @@ function createWindow(): BrowserWindow {
 }
 
 // Single-instance lock: as a background service the app must not run twice (two
-// processes would fight over serial ports / the LIS). A second launch just
-// surfaces the already-running window.
+// processes would fight over serial ports / the LIS). A second launch hands off
+// to the primary (its 'second-instance' handler surfaces the existing window)
+// and exits — WITHOUT ever creating a window of its own.
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 if (!gotSingleInstanceLock) {
   app.quit()
@@ -202,6 +203,12 @@ app.on('before-quit', () => {
 })
 
 app.whenReady().then(() => {
+  // Losing instance: app.quit() was already called above, but whenReady can still
+  // fire before the async quit completes. Bail BEFORE createWindow — otherwise the
+  // dying second instance pops a blank, half-loaded window (and the close-to-tray
+  // close handler then snags its teardown), which is exactly the blank-screen bug.
+  if (!gotSingleInstanceLock) return
+
   ensureLd560()
 
   // Reconcile the OS login item with the saved preference each launch.
