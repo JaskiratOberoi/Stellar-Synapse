@@ -32,7 +32,11 @@ interface PersistShape {
   migratedLisPassword?: boolean
   /** One-time migration: collapse duplicate AU bilirubin method variants. */
   migratedAuSingleBilirubin?: boolean
+  /** One-time migration: re-enable LD-560 calculated-eAG LIS posting. */
+  migratedLd560EnableEag?: boolean
 }
+
+type MigrationFlagKey = 'migratedAuSingleBilirubin' | 'migratedLd560EnableEag'
 
 const MAX_MONITOR_HISTORY = 2000
 
@@ -79,9 +83,8 @@ export const persist = {
   setMappings: (v: MappingRule[]): void => store().set('mappings', v),
 
   /** Read/raise a one-time migration flag (generic, keyed by name). */
-  getMigrationFlag: (key: 'migratedAuSingleBilirubin'): boolean => !!store().get(key),
-  setMigrationFlag: (key: 'migratedAuSingleBilirubin', value: boolean): void =>
-    store().set(key, value),
+  getMigrationFlag: (key: MigrationFlagKey): boolean => !!store().get(key),
+  setMigrationFlag: (key: MigrationFlagKey, value: boolean): void => store().set(key, value),
 
   getSettings: (): AppSettings => {
     const s = store().get('settings')

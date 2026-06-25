@@ -1166,18 +1166,29 @@ export class Orchestrator extends EventEmitter {
     let errors = 0
     const now = new Date().toISOString()
 
-    for (const a of sample.analytes) {
-      if (!lisAnalytes.has(a.code)) continue
-      const result: CanonicalResult = {
-        id: randomUUID(),
-        instrumentId,
-        sampleId: sample.barcode,
-        analyteCode: a.code,
-        value: a.value,
-        unit: a.unit,
-        flag: 'N',
-        receivedAt: now
-      }
+    let results: CanonicalResult[] = sample.analytes.map((a) => ({
+      id: randomUUID(),
+      instrumentId,
+      sampleId: sample.barcode,
+      analyteCode: a.code,
+      value: a.value,
+      unit: a.unit,
+      flag: 'N' as const,
+      receivedAt: now
+    }))
+    // Apply the SAME HbA1c/eAG derivation as the live pipeline so this backfill
+    // posts the Synapse-CALCULATED eAG (mg/dL) — not the analyzer's own eAG —
+    // keeping both write paths byte-for-byte consistent.
+    const driver = getDriver(def.driverId)
+    if (driver?.info.derivesEag) {
+      results = applyHba1cDerivations(results, {
+        autoEag: def.connection.autoEag !== false,
+        instrumentId
+      })
+    }
+
+    for (const result of results) {
+      if (!lisAnalytes.has(result.analyteCode)) continue
       const outcome = await this.processResult(def, def.driverId, result, normalized, {
         forceWrite: true
       })

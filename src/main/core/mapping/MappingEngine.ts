@@ -329,6 +329,35 @@ export class MappingEngine {
    * Manual and already-ignored/unmapped rules are left untouched, so an operator
    * can re-enable an analyte from the UI without it being reverted on restart.
    */
+  /**
+   * One-time: re-enable LD-560 calculated-eAG LIS posting. Earlier builds locked
+   * the LD-560 LIS scope to HbA1c only, leaving the eAG rule 'ignored' even
+   * though it already resolves to Noble's "Estimated Average Glucose (eAG)"
+   * parameter. Now the calculated eAG is posted alongside HbA1c, so flip a
+   * mapped-but-ignored eAG rule back to 'auto'. Guarded by a persisted flag, and
+   * only touches a rule that already has a LIS target — so an operator's later
+   * manual ignore is never reverted.
+   */
+  migrateLd560EnableEag(): number {
+    if (persist.getMigrationFlag('migratedLd560EnableEag')) return 0
+    let changed = 0
+    for (const rule of this.rules) {
+      if (rule.driverId !== 'landwind-ld-560') continue
+      if (rule.instrumentCode.toLowerCase() !== 'eag') continue
+      if (rule.status !== 'ignored') continue
+      if (!rule.lisTestId && !rule.lisTestCode && !rule.lisParamId && !rule.lisParamName) continue
+      rule.status = 'auto'
+      rule.updatedAt = new Date().toISOString()
+      changed++
+    }
+    persist.setMigrationFlag('migratedLd560EnableEag', true)
+    if (changed > 0) {
+      this.save()
+      logger.info('mapping', `LD-560 calculated-eAG LIS posting re-enabled (${changed} rule)`)
+    }
+    return changed
+  }
+
   restrictLisScope(driverId: string, allowedCodes: readonly string[]): number {
     const allow = new Set(allowedCodes.map((c) => c.toUpperCase()))
     let changed = 0

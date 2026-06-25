@@ -229,8 +229,11 @@ app.whenReady().then(() => {
   orchestrator
     .init()
     .then(() => {
-      // Only HbA1c is propagated to the Noble LIS; keep all other LD-560 analytes
-      // (eAG, S-A1c, ...) in Synapse but never write them to the LIS.
+      // HbA1c (measured) and the Synapse-calculated eAG are propagated to Noble;
+      // every other LD-560 analyte (including the instrument's own eAG) stays in
+      // Synapse only. migrate… re-enables the eAG rule on installs that had it
+      // locked to HbA1c-only before restrictLisScope re-applies the scope.
+      orchestrator.mapping.migrateLd560EnableEag()
       orchestrator.mapping.restrictLisScope('landwind-ld-560', LD560_LIS_ANALYTES)
       if (persist.getLis().live) {
         return orchestrator.mapping.autoMap('landwind-ld-560').then(() => undefined)

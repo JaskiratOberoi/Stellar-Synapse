@@ -1,9 +1,27 @@
 /**
- * Analytes propagated to Noble LIS. Only HbA1c is posted; every other LD-560
- * analyte (eAG, S-A1c, HbA1a/b, HbF, L-A1c, HbA0, ...) is kept in Synapse for
- * review but never written to the LIS.
+ * Analytes propagated to Noble LIS: HbA1c (measured) and the Synapse-CALCULATED
+ * eAG (ADAG, written in mg/dL). Every other LD-560 analyte — including the
+ * instrument's OWN reported eAG, S-A1c, HbA1a/b, HbF, L-A1c, HbA0 — is kept in
+ * Synapse for review but never written to the LIS.
  */
-export const LD560_LIS_ANALYTES = ['HbA1c'] as const
+export const LD560_LIS_ANALYTES = ['HbA1c', 'eAG'] as const
+
+/**
+ * Estimated Average Glucose (mg/dL) from HbA1c %, per the ADAG/Nathan 2008
+ * equation eAG = 28.7 × HbA1c − 46.7, rounded to one decimal. Returns null
+ * outside the clinically valid 4–20% HbA1c range. Canonical for BOTH the LIS
+ * write (main) and the Received-Results display (renderer), so the value the lab
+ * sees equals the value posted to Noble.
+ */
+export function eagMgDlFromHba1c(hba1cPercent: number): number | null {
+  if (!Number.isFinite(hba1cPercent) || hba1cPercent < 4 || hba1cPercent > 20) return null
+  return Math.round((28.7 * hba1cPercent - 46.7) * 10) / 10
+}
+
+/** Convert a glucose value in mg/dL to mmol/L (÷ 18.0182), one decimal. */
+export function mgDlToMmolL(mgDl: number): number {
+  return Math.round((mgDl / 18.0182) * 10) / 10
+}
 
 export type Ld560LisWriteStatus = 'none' | 'partial' | 'done'
 

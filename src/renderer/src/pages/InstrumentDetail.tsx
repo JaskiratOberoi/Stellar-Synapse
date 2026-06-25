@@ -11,7 +11,42 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime, timeAgo } from '@/lib/utils'
 import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
-import { normalizeLd560Raw, parseLd560SampleFromRaw, ld560FrameLisStatus } from '@shared/ld560Transmit'
+import {
+  normalizeLd560Raw,
+  parseLd560SampleFromRaw,
+  ld560FrameLisStatus,
+  eagMgDlFromHba1c,
+  mgDlToMmolL
+} from '@shared/ld560Transmit'
+
+/**
+ * Build the LD-560 result rows: the analyzer's analytes (its own eAG relabelled
+ * "eAG (Instrument)"), plus a derived "eAG (Calculated)" row from HbA1c shown in
+ * BOTH mg/dL (the value posted to the LIS) and mmol/L (directly comparable to the
+ * instrument's own eAG).
+ */
+function buildLd560Rows(
+  ld: string,
+  analytes: { code: string; value: string; unit: string }[]
+): { id: string; analyteCode: string; value: string; unit?: string }[] {
+  const rows = analytes.map((a) => ({
+    id: `${ld}-${a.code}`,
+    analyteCode: a.code === 'eAG' ? 'eAG (Instrument)' : a.code,
+    value: a.value,
+    unit: a.unit
+  }))
+  const hba1c = analytes.find((a) => a.code === 'HbA1c')
+  const mgdl = hba1c ? eagMgDlFromHba1c(parseFloat(hba1c.value)) : null
+  if (mgdl !== null) {
+    rows.push({
+      id: `${ld}-eAG-calc`,
+      analyteCode: 'eAG (Calculated)',
+      value: mgdl.toFixed(1),
+      unit: `mg/dL · ${mgDlToMmolL(mgdl).toFixed(1)} mmol/L`
+    })
+  }
+  return rows
+}
 
 export function InstrumentDetail() {
   const { id } = useParams()
@@ -56,12 +91,7 @@ export function InstrumentDetail() {
             raw: ld,
             kind: 'ld560',
             lisStatus: ld560FrameLisStatus(monitor, id ?? '', ld),
-            rows: parsed.analytes.map((a) => ({
-              id: `${ld}-${a.code}`,
-              analyteCode: a.code,
-              value: a.value,
-              unit: a.unit
-            }))
+            rows: buildLd560Rows(ld, parsed.analytes)
           })
           continue
         }

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { CanonicalResult, ResultFlag } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
+import { eagMgDlFromHba1c } from '../../../shared/ld560Transmit'
 
 function normFlag(raw?: string): ResultFlag | undefined {
   if (!raw) return undefined
@@ -104,8 +105,9 @@ export function parseAstm(message: ProtocolMessage, instrumentId: string): Canon
  * outside the clinically valid 4–20% HbA1c range (no eAG is derived).
  */
 export function eagFromHba1c(hba1cPercent: number): number | null {
-  if (!Number.isFinite(hba1cPercent) || hba1cPercent < 4 || hba1cPercent > 20) return null
-  return Math.round((28.7 * hba1cPercent - 46.7) * 10) / 10
+  // Single source of truth (shared) so the calculated eAG written to the LIS
+  // exactly matches the value shown in the Received-Results panel.
+  return eagMgDlFromHba1c(hba1cPercent)
 }
 
 /** Round a numeric value string to a single decimal; non-numerics pass through. */
