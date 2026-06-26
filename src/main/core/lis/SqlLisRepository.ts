@@ -382,9 +382,21 @@ export class SqlLisRepository implements ILisRepository {
     // under the profile, so the fixed testid the mapping carries no longer matches.
     // Never touch testcode/testname/testunit (Noble owns those labels) and never
     // INSERT: a genuine miss means the test was not ordered for this sample.
+    // Never touch a Head/Profile CONTAINER row. Noble gives a profile and its
+    // first member the SAME testid (the container row carries paramid NULL), so
+    // the paramid-NULL branch below would otherwise fill BOTH the real Test row
+    // and the profile header — the duplicate value seen on reports. Every other
+    // tier already excludes Head/Profile; Tier 1 must too.
     const exactWhere = write.paramId
-      ? 'vailid = @vailid AND testid = @testid AND paramid = @paramid'
-      : 'vailid = @vailid AND testid = @testid AND (paramid IS NULL OR paramid = 0)'
+      ? "vailid = @vailid AND testid = @testid AND paramid = @paramid AND testtype NOT IN ('Head', 'Profile')"
+      : "vailid = @vailid AND testid = @testid AND (paramid IS NULL OR paramid = 0) AND testtype NOT IN ('Head', 'Profile')"
+
+    // Fill-blanks-only guard (every instrument): only write into a result cell
+    // that is currently EMPTY. A re-run that re-sends the whole panel must never
+    // overwrite values already in the LIS — labs re-run a sample to capture ONE
+    // missed analyte and expect the rest to stay exactly as reported.
+    const blankOnly =
+      'AND (value IS NULL OR LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) = 0)'
     // Value-only drivers (e.g. Agappe Mispa Maestro HbA1c) write just the value
     // plus bookkeeping — never the abnormal flag — so Noble keeps its own
     // reference-range determination instead of having it overwritten.
@@ -396,7 +408,7 @@ export class SqlLisRepository implements ILisRepository {
       DECLARE @matched int = 0;
 
       -- Tier 1: the exact ordered row (testid + paramid) — a direct order.
-      UPDATE tbl_med_mcc_patient_test_result ${setCols} WHERE ${exactWhere};
+      UPDATE tbl_med_mcc_patient_test_result ${setCols} WHERE ${exactWhere} ${blankOnly};
       SET @matched = @@ROWCOUNT;
 
       -- Tier 2: same parameter, regardless of grouping. A parameter_master row is
@@ -406,7 +418,7 @@ export class SqlLisRepository implements ILisRepository {
       IF @matched = 0 AND @paramid IS NOT NULL
       BEGIN
         UPDATE tbl_med_mcc_patient_test_result ${setCols}
-        WHERE vailid = @vailid AND paramid = @paramid AND testtype NOT IN ('Head', 'Profile');
+        WHERE vailid = @vailid AND paramid = @paramid AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
         SET @matched = @@ROWCOUNT;
       END
 
@@ -422,7 +434,7 @@ export class SqlLisRepository implements ILisRepository {
       BEGIN
         UPDATE tbl_med_mcc_patient_test_result ${setCols}
         WHERE vailid = @vailid AND testid = @testid AND testcode = @testcode
-          AND (paramid IS NULL OR paramid = 0) AND testtype NOT IN ('Head', 'Profile');
+          AND (paramid IS NULL OR paramid = 0) AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
         SET @matched = @@ROWCOUNT;
       END
 
@@ -431,7 +443,7 @@ export class SqlLisRepository implements ILisRepository {
       IF @matched = 0 AND @testcode <> '' AND @paramid IS NULL
       BEGIN
         UPDATE tbl_med_mcc_patient_test_result ${setCols}
-        WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile');
+        WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
         SET @matched = @@ROWCOUNT;
       END
 
@@ -440,16 +452,37 @@ export class SqlLisRepository implements ILisRepository {
       IF @matched = 0 AND @testname <> ''
       BEGIN
         UPDATE tbl_med_mcc_patient_test_result ${setCols}
-        WHERE vailid = @vailid AND testname = @testname AND testtype NOT IN ('Head', 'Profile');
+        WHERE vailid = @vailid AND testname = @testname AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
         SET @matched = @@ROWCOUNT;
       END
 
+      -- Distinguish "nothing matched because the cell is ALREADY FILLED" (expected
+      -- skip — fill-blanks-only) from a genuine "not ordered" miss, so the former
+      -- doesn't trip the not-ordered warning or the name-key fallback below.
+      DECLARE @existed int = 0;
+      IF @matched = 0
+        SELECT @existed = COUNT(*) FROM tbl_med_mcc_patient_test_result
+        WHERE vailid = @vailid AND testtype NOT IN ('Head', 'Profile')
+          AND value IS NOT NULL AND LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
+          AND ( (@paramid IS NOT NULL AND paramid = @paramid)
+                OR (@paramid IS NULL AND @testcode <> '' AND testcode = @testcode
+                    AND (paramid IS NULL OR paramid = 0)) );
+
       ${this.statusRecomputeSql}
 
-      SELECT @matched AS matched;
+      SELECT @matched AS matched, @existed AS existed;
     `)
 
     const matched = Number(result.recordset?.[0]?.matched ?? 0)
+    const alreadyFilled = Number(result.recordset?.[0]?.existed ?? 0) > 0
+    if (matched === 0 && alreadyFilled) {
+      logger.info(
+        'lis-sql',
+        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''} — ` +
+          `value already present in LIS, left unchanged (fill-blanks-only)`
+      )
+      return 'skipped'
+    }
     if (matched === 0) {
       // Tier 5: the testid/paramid/testcode/exact-name tiers all missed because
       // the mapped LIS target is a DIFFERENT catalog entry than the one this
@@ -557,7 +590,8 @@ export class SqlLisRepository implements ILisRepository {
     const res = await req.query(`
       DECLARE @matched int = 0;
       UPDATE tbl_med_mcc_patient_test_result ${setCols}
-      WHERE ${where} AND testtype NOT IN ('Head', 'Profile');
+      WHERE ${where} AND testtype NOT IN ('Head', 'Profile')
+        AND (value IS NULL OR LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) = 0);
       SET @matched = @@ROWCOUNT;
       ${this.statusRecomputeSql}
       SELECT @matched AS matched;
