@@ -11,6 +11,9 @@ coverage/
 *.local
 *.tsbuildinfo
 
+# Local LIS cleanup backups (contain patient result values — never commit)
+*-backup.json
+
 # electron-builder output dirs (installers must not be committed)
 installer/
 pkg*/
