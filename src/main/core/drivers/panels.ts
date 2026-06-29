@@ -222,6 +222,59 @@ export const EDAN_H60: DriverAnalyte[] = [
   a('LIC%', 'Large Immature Cells', '%', 0, 2.5, 1)
 ]
 
+/**
+ * HORIBA Yumizen H550 / H550E CBC + 5-part-DIFF menu — instrument codes EXACTLY
+ * as the analyzer transmits them in the ASTM Universal Test ID (field 9.3,
+ * component 4), e.g. "^^^MON%^5905-5" -> code "MON%". Note Horiba uses hyphens
+ * (RDW-SD, RDW-CV, P-LCC, P-LCR) where the EDAN H60 uses underscores; the codes
+ * must match the wire format verbatim or the mapping engine won't resolve them.
+ * Units follow the analyzer's default "Conventional" unit system (counts as
+ * 10^3/uL — sent on the wire as "1E03/mm3"; RBC as 10^6/uL; HGB/MCHC g/dL).
+ * Seeds the mapping screen + simulator; the live unit is read from the frame.
+ */
+export const HORIBA_YUMIZEN: DriverAnalyte[] = [
+  a('WBC', 'White Blood Cell Count', '10^3/uL', 4.0, 11.0, 2),
+  a('RBC', 'Red Blood Cell Count', '10^6/uL', 4.5, 5.9, 2),
+  a('HGB', 'Hemoglobin', 'g/dL', 13.0, 17.0, 1),
+  a('HCT', 'Hematocrit', '%', 40, 50, 1),
+  a('MCV', 'Mean Corpuscular Volume', 'fL', 80, 100, 1),
+  a('MCH', 'Mean Corpuscular Hemoglobin', 'pg', 27, 33, 1),
+  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/dL', 32, 36, 1),
+  a('RDW-SD', 'RDW (SD)', 'fL', 37, 54, 1),
+  a('RDW-CV', 'RDW (CV)', '%', 11.5, 14.5, 1),
+  a('MIC', 'Microcytic RBC (% vs RBC)', '%', 0, 5, 1),
+  a('MAC', 'Macrocytic RBC (% vs RBC)', '%', 0, 5, 1),
+  a('PLT', 'Platelet Count', '10^3/uL', 150, 400, 0),
+  a('PCT', 'Plateletcrit', '%', 0.15, 0.40, 2),
+  a('PDW', 'Platelet Distribution Width', '%', 10, 18, 1),
+  a('MPV', 'Mean Platelet Volume', 'fL', 7.5, 11.5, 1),
+  a('P-LCC', 'Platelet Large Cell Count', '10^3/uL', 30, 90, 0),
+  a('P-LCR', 'Platelet Large Cell Ratio', '%', 18, 50, 1),
+  a('LYM#', 'Lymphocytes (abs)', '10^3/uL', 1.0, 3.7, 2),
+  a('LYM%', 'Lymphocytes', '%', 20, 40, 1),
+  a('MON#', 'Monocytes (abs)', '10^3/uL', 0.1, 0.9, 2),
+  a('MON%', 'Monocytes', '%', 2, 8, 1),
+  a('NEU#', 'Neutrophils (abs)', '10^3/uL', 2.0, 7.0, 2),
+  a('NEU%', 'Neutrophils', '%', 40, 70, 1),
+  a('EOS#', 'Eosinophils (abs)', '10^3/uL', 0.02, 0.5, 2),
+  a('EOS%', 'Eosinophils', '%', 1, 6, 1),
+  a('BAS#', 'Basophils (abs)', '10^3/uL', 0, 0.1, 2),
+  a('BAS%', 'Basophils', '%', 0, 1, 1),
+  a('IMG#', 'Immature Granulocytes (abs)', '10^3/uL', 0, 0.06, 2),
+  a('IMG%', 'Immature Granulocytes', '%', 0, 0.7, 1),
+  a('IMM#', 'Immature Monocytic Cells (abs)', '10^3/uL', 0, 0.06, 2),
+  a('IMM%', 'Immature Monocytic Cells', '%', 0, 0.7, 1),
+  a('IML#', 'Immature Lymphocytic Cells (abs)', '10^3/uL', 0, 0.06, 2),
+  a('IML%', 'Immature Lymphocytic Cells', '%', 0, 0.7, 1),
+  a('ALY#', 'Atypical Lymphocytes (abs)', '10^3/uL', 0, 0.1, 2),
+  a('ALY%', 'Atypical Lymphocytes', '%', 0, 2, 1),
+  a('LIC#', 'Large Immature Cells (abs)', '10^3/uL', 0, 0.1, 2),
+  a('LIC%', 'Large Immature Cells', '%', 0, 3, 1)
+]
+
+/** ESR add-on reported by the Yumizen H550E only (ASTM code "ESR", mm/h). */
+export const HORIBA_ESR: DriverAnalyte[] = [a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)]
+
 export const URINALYSIS: DriverAnalyte[] = [
   a('UGLU', 'Urine Glucose', 'mg/dL', 0, 15, 0),
   a('UPRO', 'Urine Protein', 'mg/dL', 0, 10, 0),

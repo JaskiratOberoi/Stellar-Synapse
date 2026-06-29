@@ -10,6 +10,8 @@ import {
   FIA_PANEL,
   HBA1C_HPLC,
   HBA1C_MAESTRO,
+  HORIBA_ESR,
+  HORIBA_YUMIZEN,
   IMMUNOASSAY_FULL,
   INTEGRATED,
   URINALYSIS,
@@ -445,6 +447,44 @@ const agappe = [
 ]
 
 // ---------------------------------------------------------------------------
+// HORIBA Medical - Yumizen H550 / H550E hematology (ASTM LIS2-A2, analyzer = TCP client)
+// ---------------------------------------------------------------------------
+const horiba = [
+  mk(
+    'horiba-yumizen-h550',
+    'HORIBA Yumizen H550',
+    'HORIBA Medical',
+    'Hematology (CBC)',
+    'Yumizen H550 auto hematology analyzer (CBC / 5-part DIFF). ASTM E1394 (LIS01-A2 + ' +
+      'LIS2-A2) over Ethernet or RS232 serial (serial: 38400 8-N-1). On the analyzer set ' +
+      'Home > Settings > System > General Communication > Host to the ASTM format and Network ' +
+      'mode, then enter this server\'s IP + port in the Host Settings area (the analyzer ' +
+      'connects out to the Host, so Synapse listens as a TCP server). Results upload as ' +
+      'H/P/O/R/L records; each analyte is keyed by the Universal Test ID code in R field 9.3 ' +
+      'component 4 (e.g. "^^^MON%^5905-5" -> MON%), the accession barcode rides in the O ' +
+      'record Specimen ID, units follow the analyzer\'s Conventional unit system. The device ' +
+      'also supports bidirectional host-query (Q/order download) and an HL7 format; this driver ' +
+      'handles ASTM result upload first.',
+    HORIBA_YUMIZEN,
+    { port: 9160, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+  ),
+  mk(
+    'horiba-yumizen-h550e',
+    'HORIBA Yumizen H550E',
+    'HORIBA Medical',
+    'Hematology (CBC + ESR)',
+    'Yumizen H550E auto hematology analyzer — same CBC / 5-part DIFF menu as the H550 plus an ' +
+      'integrated ESR (Erythrocyte Sedimentation Rate, ASTM code "ESR", mm/h). ASTM E1394 ' +
+      '(LIS01-A2 + LIS2-A2) over Ethernet or RS232 serial. Configure the analyzer Host to ASTM ' +
+      '+ Network and point it at this server\'s IP + port (Synapse listens as a TCP server). ' +
+      'Results upload as H/P/O/R/L records keyed by the Universal Test ID code (R field 9.3 ' +
+      'component 4); the accession barcode rides in the O record Specimen ID.',
+    combine(HORIBA_YUMIZEN, HORIBA_ESR),
+    { port: 9160, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Generic fallback (keeps id 'generic-astm')
 // ---------------------------------------------------------------------------
 const generic = [
@@ -468,5 +508,6 @@ export const CATALOG: ModelDefinition[] = [
   ...beckman,
   ...landwind,
   ...agappe,
+  ...horiba,
   ...generic
 ]
