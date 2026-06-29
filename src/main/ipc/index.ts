@@ -85,6 +85,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   ipcMain.handle(IPC.instrumentRemove, (_e, id: string) => orchestrator.removeInstrument(id))
   ipcMain.handle(IPC.instrumentStart, (_e, id: string) => orchestrator.startInstrument(id))
   ipcMain.handle(IPC.instrumentStop, (_e, id: string) => orchestrator.stopInstrument(id))
+  ipcMain.handle(IPC.instrumentClearErrors, (_e, id: string) => orchestrator.resetErrors(id))
 
   // Serial — enumerate host COM ports for the picker. Lazy-loads `serialport`
   // the same way SerialTransport does, so a missing/unbuilt native module

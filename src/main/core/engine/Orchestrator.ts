@@ -20,6 +20,7 @@ import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers
 import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
 import { getDriver } from '../drivers/registry'
+import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine } from '../mapping/MappingEngine'
@@ -59,6 +60,12 @@ export class Orchestrator extends EventEmitter {
   private consolidateTimers = new Map<string, NodeJS.Timeout>()
   private readonly consolidateGraceMs = 12000
   private pollSchedulers = new Map<string, InstrumentPollScheduler>()
+  // Reconnect catch-up: which instruments have connected at least once this
+  // session, and when each last dropped — so a re-connect can pull results the
+  // analyzer buffered while we were offline (lab techs sometimes forget to
+  // manually re-send reports after a link drop).
+  private connectedOnce = new Set<string>()
+  private offlineSince = new Map<string, number>()
 
   constructor(private readonly lis: ILisRepository) {
     super()
@@ -242,6 +249,27 @@ export class Orchestrator extends EventEmitter {
         return
       }
       this.patchRuntime(id, { status, peer })
+
+      // Reconnect catch-up: a fresh 'online' for an instrument we've already seen
+      // connected this session means the link dropped and came back. Pull any
+      // results the analyzer buffered while we were gone (where the protocol
+      // allows). 'listening'/'offline'/'error' mark the start of an offline gap.
+      if (status === 'online') {
+        const offlineAt = this.offlineSince.get(id)
+        this.offlineSince.delete(id)
+        const isReconnect = this.connectedOnce.has(id)
+        this.connectedOnce.add(id)
+        if (isReconnect) this.handleReconnect(id, def, driver, offlineAt)
+      } else if (
+        status === 'offline' ||
+        status === 'error' ||
+        status === 'listening' ||
+        status === 'connecting'
+      ) {
+        // Mark the start of the offline window (TcpClient reports a drop as
+        // 'connecting' while it retries; a TCP server reports it as 'listening').
+        if (!this.offlineSince.has(id)) this.offlineSince.set(id, Date.now())
+      }
     })
     transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
     transport.on('data', (chunk: Buffer) => {
@@ -324,6 +352,11 @@ export class Orchestrator extends EventEmitter {
   async stopInstrument(id: string): Promise<InstrumentRuntime> {
     this.pollSchedulers.get(id)?.stop()
     this.pollSchedulers.delete(id)
+    // Operator-initiated stop: forget reconnect state so the next start is a clean
+    // first connect (its scheduler already fires an initial catch-up poll), not a
+    // "reconnect" that would double up.
+    this.connectedOnce.delete(id)
+    this.offlineSince.delete(id)
     const conn = this.connections.get(id)
     if (conn) {
       await conn.transport.stop().catch(() => undefined)
@@ -333,6 +366,84 @@ export class Orchestrator extends EventEmitter {
     this.patchRuntime(id, { status: 'offline', peer: undefined })
     this.emitInstruments()
     return this.runtimes.get(id)!
+  }
+
+  /** Reset the per-instrument error counter (operator clears it from the UI). */
+  resetErrors(id: string): InstrumentRuntime | undefined {
+    if (!this.runtimes.has(id)) return undefined
+    this.patchRuntime(id, { errors: 0 })
+    logger.info('engine', `Cleared error count for ${this.runtimes.get(id)?.name ?? id}`)
+    return this.runtimes.get(id)
+  }
+
+  /**
+   * Called when an instrument that was previously connected this session comes
+   * back online — i.e. the link dropped and reconnected. Where the protocol
+   * allows, nudge the analyzer to re-transmit results it buffered while we were
+   * offline so reports generated during the gap aren't lost to a missed manual
+   * re-send. Analyzers that only push (no pull command) can't be queried; for
+   * those we just flag the gap so the lab verifies nothing was missed.
+   */
+  private handleReconnect(
+    id: string,
+    def: InstrumentDefinition,
+    driver: IInstrumentDriver,
+    offlineAtMs?: number
+  ): void {
+    // Read-only taps must never transmit; transient-connection analyzers open a
+    // fresh socket per batch and push on their own — a pull is wrong for both.
+    if (def.connection.passive || driver.transientConnection) return
+
+    const offlineFor =
+      offlineAtMs != null ? Math.max(0, Math.round((Date.now() - offlineAtMs) / 1000)) : null
+    const gap = offlineFor != null ? ` after ~${offlineFor}s offline` : ''
+    const lastData = this.runtimes.get(id)?.lastMessageAt
+    const since = lastData ? `; last data was ${lastData}` : ''
+    const cmds = def.connection.pollCommands ?? []
+    const base = {
+      instrumentId: id,
+      instrumentName: def.name,
+      sampleId: '-',
+      analyteCode: 'RECONNECT',
+      analyteName: 'Reconnect catch-up',
+      value: '',
+      timestamp: new Date().toISOString()
+    }
+
+    if (cmds.length === 0) {
+      // Nothing to pull with — surface the gap so a human can double-check.
+      this.pushMonitor({
+        ...base,
+        id: randomUUID(),
+        stage: 'skipped',
+        message: `Reconnected${gap} — no pull command configured for this analyzer; verify no reports were missed while offline${since}`
+      })
+      return
+    }
+
+    // Let the freshly-reconnected session settle, then re-send the analyzer's
+    // result-request command(s) once. The reply flows back through the normal
+    // decode pipeline, so any buffered results are imported/written as usual.
+    setTimeout(() => {
+      const conn = this.connections.get(id)
+      if (!conn || !conn.transport.isRunning()) return
+      for (const cmd of cmds) {
+        conn.transport.write(cmd)
+        this.pushRawSent(id, def.name, Buffer.from(cmd, 'latin1'))
+      }
+      this.pollSchedulers.get(id)?.touchInbound()
+      logger.info(
+        'engine',
+        `${def.name}: reconnect catch-up — sent ${cmds.length} result-request command(s)`
+      )
+    }, 600)
+
+    this.pushMonitor({
+      ...base,
+      id: randomUUID(),
+      stage: 'received',
+      message: `Reconnected${gap} — requesting any results the analyzer buffered while offline${since}`
+    })
   }
 
   // ----- pipeline ------------------------------------------------------------
@@ -397,8 +508,11 @@ export class Orchestrator extends EventEmitter {
       })
     }
     await this.reconcileSampleId(def, results)
+    // One message can carry several samples; dedupe SIDs within this batch so each
+    // sample counts as a single result.
+    const countedSids = new Set<string>()
     for (const result of results) {
-      await this.processResult(def, driver.info.id, result, message.raw)
+      await this.processResult(def, driver.info.id, result, message.raw, countedSids)
     }
   }
 
@@ -610,6 +724,10 @@ export class Orchestrator extends EventEmitter {
     driverId: string,
     result: CanonicalResult,
     raw: string,
+    // Tracks which SIDs have already been counted for the current message batch so
+    // a multi-analyte sample counts as one result (its params still tally
+    // separately via `resultParamsProcessed`).
+    countedSids: Set<string>,
     options?: { forceWrite?: boolean }
   ): Promise<'written' | 'skipped' | 'suppressed' | 'error' | 'queued'> {
     const base = {
@@ -658,9 +776,7 @@ export class Orchestrator extends EventEmitter {
 
     // Passive tap: import into Synapse only. Never write to the LIS/Noble DB.
     if (def.connection.passive) {
-      this.patchRuntime(def.id, {
-        resultsProcessed: (this.runtimes.get(def.id)?.resultsProcessed ?? 0) + 1
-      })
+      this.countResult(def.id, result.sampleId, countedSids)
       this.pushMonitor({
         ...base,
         id: randomUUID(),
@@ -769,9 +885,7 @@ export class Orchestrator extends EventEmitter {
         })
         return 'skipped'
       }
-      this.patchRuntime(def.id, {
-        resultsProcessed: (this.runtimes.get(def.id)?.resultsProcessed ?? 0) + 1
-      })
+      this.countResult(def.id, result.sampleId, countedSids)
       this.pushMonitor({ ...base, id: randomUUID(), stage: 'written', mappedTo })
       return 'written'
     } catch (err) {
@@ -796,6 +910,22 @@ export class Orchestrator extends EventEmitter {
       this.pushMonitor({ ...base, id: randomUUID(), stage: 'error', mappedTo, message })
       return 'error'
     }
+  }
+
+  /**
+   * Tally a counted (written or imported) param. Each call bumps the per-param
+   * counter; the sample (SID) counter bumps only the first time a SID is seen in
+   * the current message batch, so one sample = one result regardless of how many
+   * analytes it carried.
+   */
+  private countResult(id: string, sampleId: string, countedSids: Set<string>): void {
+    const rt = this.runtimes.get(id)
+    const newSid = !countedSids.has(sampleId)
+    if (newSid) countedSids.add(sampleId)
+    this.patchRuntime(id, {
+      resultParamsProcessed: (rt?.resultParamsProcessed ?? 0) + 1,
+      ...(newSid ? { resultsProcessed: (rt?.resultsProcessed ?? 0) + 1 } : {})
+    })
   }
 
   // ----- offline LIS write queue --------------------------------------------
@@ -1087,6 +1217,7 @@ export class Orchestrator extends EventEmitter {
       status,
       messagesReceived: saved?.messagesReceived ?? 0,
       resultsProcessed: saved?.resultsProcessed ?? 0,
+      resultParamsProcessed: saved?.resultParamsProcessed ?? 0,
       errors: saved?.errors ?? 0,
       lastMessageAt: saved?.lastMessageAt
     }
@@ -1100,12 +1231,14 @@ export class Orchestrator extends EventEmitter {
     if (
       'messagesReceived' in patch ||
       'resultsProcessed' in patch ||
+      'resultParamsProcessed' in patch ||
       'lastMessageAt' in patch ||
       'errors' in patch
     ) {
       persist.setInstrumentStats(id, {
         messagesReceived: next.messagesReceived,
         resultsProcessed: next.resultsProcessed,
+        resultParamsProcessed: next.resultParamsProcessed,
         errors: next.errors,
         lastMessageAt: next.lastMessageAt
       })
@@ -1187,9 +1320,10 @@ export class Orchestrator extends EventEmitter {
       })
     }
 
+    const countedSids = new Set<string>()
     for (const result of results) {
       if (!lisAnalytes.has(result.analyteCode)) continue
-      const outcome = await this.processResult(def, def.driverId, result, normalized, {
+      const outcome = await this.processResult(def, def.driverId, result, normalized, countedSids, {
         forceWrite: true
       })
       if (outcome === 'written') written++

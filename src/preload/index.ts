@@ -27,6 +27,7 @@ const api: StellarApi = {
     remove: (id) => ipcRenderer.invoke(IPC.instrumentRemove, id),
     start: (id) => ipcRenderer.invoke(IPC.instrumentStart, id),
     stop: (id) => ipcRenderer.invoke(IPC.instrumentStop, id),
+    clearErrors: (id) => ipcRenderer.invoke(IPC.instrumentClearErrors, id),
     onChanged: (cb) => on<InstrumentRuntime[]>(IPC_EVENT.instrumentsChanged, cb)
   },
   serial: {

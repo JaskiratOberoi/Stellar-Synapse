@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput } from 'lucide-react'
+import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput, Eraser } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -355,7 +355,13 @@ export function InstrumentDetail() {
           <CardContent className="space-y-3">
             <Counter label="Messages received" value={inst.messagesReceived} tone="text-foreground" />
             <Counter label="Results processed" value={inst.resultsProcessed} tone="text-success" />
-            <Counter label="Errors" value={inst.errors} tone={inst.errors ? 'text-destructive' : 'text-foreground'} />
+            <Counter label="Result param count" value={inst.resultParamsProcessed} tone="text-success" />
+            <Counter
+              label="Errors"
+              value={inst.errors}
+              tone={inst.errors ? 'text-destructive' : 'text-foreground'}
+              onClear={() => window.api.instruments.clearErrors(inst.id)}
+            />
           </CardContent>
         </Card>
         </motion.div>
@@ -548,13 +554,38 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-function Counter({ label, value, tone }: { label: string; value: number; tone: string }) {
+function Counter({
+  label,
+  value,
+  tone,
+  onClear
+}: {
+  label: string
+  value: number
+  tone: string
+  /** When provided, renders a "Clear" button that resets this counter. */
+  onClear?: () => void
+}) {
   return (
     <div className="flex items-center justify-between rounded-lg bg-secondary/30 px-4 py-3">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={cn('text-2xl font-bold', tone)}>
-        <AnimatedNumber value={value} />
-      </span>
+      <div className="flex items-center gap-3">
+        {onClear && value > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={onClear}
+            title="Reset this counter to zero"
+          >
+            <Eraser className="h-3.5 w-3.5" />
+            Clear
+          </Button>
+        )}
+        <span className={cn('text-2xl font-bold', tone)}>
+          <AnimatedNumber value={value} />
+        </span>
+      </div>
     </div>
   )
 }

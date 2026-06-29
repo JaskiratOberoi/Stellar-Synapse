@@ -11,7 +11,10 @@ import type {
 /** Cumulative counters per instrument, restored after restart. */
 export interface InstrumentPersistStats {
   messagesReceived: number
+  /** Distinct samples (SIDs) processed. */
   resultsProcessed: number
+  /** Individual analyte params processed (legacy "results" count). */
+  resultParamsProcessed: number
   errors: number
   lastMessageAt?: string
 }

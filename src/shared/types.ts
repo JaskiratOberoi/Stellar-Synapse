@@ -134,7 +134,12 @@ export interface InstrumentRuntime extends InstrumentDefinition {
   status: ConnectionStatus
   lastMessageAt?: string
   messagesReceived: number
+  /** Distinct samples (SIDs) processed — one sample counts once regardless of how
+   *  many analyte params it carried. */
   resultsProcessed: number
+  /** Individual analyte params processed across all samples (a sample with 8
+   *  analytes adds 8 here but 1 to `resultsProcessed`). */
+  resultParamsProcessed: number
   errors: number
   /** Remote peer description when connected (ip:port). */
   peer?: string

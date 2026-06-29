@@ -38,6 +38,7 @@ export const IPC = {
   instrumentRemove: 'instruments:remove',
   instrumentStart: 'instruments:start',
   instrumentStop: 'instruments:stop',
+  instrumentClearErrors: 'instruments:clear-errors',
 
   // Serial
   serialListPorts: 'serial:list-ports',
@@ -102,6 +103,8 @@ export interface StellarApi {
     remove(id: string): Promise<void>
     start(id: string): Promise<InstrumentRuntime>
     stop(id: string): Promise<InstrumentRuntime>
+    /** Reset this instrument's error counter to zero. */
+    clearErrors(id: string): Promise<InstrumentRuntime>
     onChanged(cb: (instruments: InstrumentRuntime[]) => void): () => void
   }
   serial: {
