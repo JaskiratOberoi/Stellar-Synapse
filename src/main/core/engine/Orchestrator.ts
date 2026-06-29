@@ -746,6 +746,13 @@ export class Orchestrator extends EventEmitter {
 
     this.pushMonitor({ ...base, id: randomUUID(), stage: 'decoded' })
 
+    // Count the result the moment it's received and decoded — independent of the
+    // downstream LIS outcome (mapped/written/skipped/queued). A result that
+    // arrives and parses is a received result even if it's unmapped or LIS
+    // auto-write is off; the per-SID tally (resultsProcessed) and per-analyte
+    // tally (resultParamsProcessed) should reflect everything the analyzer sent.
+    this.countResult(def.id, result.sampleId, countedSids)
+
     let rule = this.mapping.resolve(result, driverId)
     if (
       (!rule || rule.status === 'unmapped' || !rule.lisTestId) &&
@@ -776,7 +783,6 @@ export class Orchestrator extends EventEmitter {
 
     // Passive tap: import into Synapse only. Never write to the LIS/Noble DB.
     if (def.connection.passive) {
-      this.countResult(def.id, result.sampleId, countedSids)
       this.pushMonitor({
         ...base,
         id: randomUUID(),
@@ -885,7 +891,6 @@ export class Orchestrator extends EventEmitter {
         })
         return 'skipped'
       }
-      this.countResult(def.id, result.sampleId, countedSids)
       this.pushMonitor({ ...base, id: randomUUID(), stage: 'written', mappedTo })
       return 'written'
     } catch (err) {
