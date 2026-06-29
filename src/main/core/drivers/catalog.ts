@@ -466,7 +466,9 @@ const horiba = [
       'also supports bidirectional host-query (Q/order download) and an HL7 format; this driver ' +
       'handles ASTM result upload first.',
     HORIBA_YUMIZEN,
-    { port: 9160, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+    // Default host port 5678 — HORIBA's factory default for the ASTM/Network host
+    // link (the analyzer Host tab ships pointing at :5678). Synapse listens here.
+    { port: 5678, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
   ),
   mk(
     'horiba-yumizen-h550e',
@@ -480,7 +482,9 @@ const horiba = [
       'Results upload as H/P/O/R/L records keyed by the Universal Test ID code (R field 9.3 ' +
       'component 4); the accession barcode rides in the O record Specimen ID.',
     combine(HORIBA_YUMIZEN, HORIBA_ESR),
-    { port: 9160, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+    // Default host port 5678 — HORIBA's factory default for the ASTM/Network host
+    // link (the analyzer Host tab ships pointing at :5678). Synapse listens here.
+    { port: 5678, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
   )
 ]
 
