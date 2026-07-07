@@ -5,6 +5,7 @@ import type { DriverAnalyte, IInstrumentDriver } from './IInstrumentDriver'
 import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
 import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
+import { buildMindrayAstmSample, parseMindrayAstm } from './mindray'
 import { parseAstm, parseHl7, parseSimple } from './parsing'
 import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
 
@@ -21,6 +22,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     const {
       analytes: _analytes,
       hl7Dialect: _hl7Dialect,
+      astmDialect: _astmDialect,
       lisValueOnly: _lisValueOnly,
       astmFlushOnTerminator: _astmFlushOnTerminator,
       transientConnection: _transientConnection,
@@ -31,6 +33,10 @@ export class DefinitionDriver implements IInstrumentDriver {
 
   get lisValueOnly(): boolean | undefined {
     return this.def.lisValueOnly
+  }
+
+  get astmDialect(): 'mindray' | undefined {
+    return this.def.astmDialect
   }
 
   get astmFlushOnTerminator(): boolean | undefined {
@@ -55,6 +61,9 @@ export class DefinitionDriver implements IInstrumentDriver {
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
     if (message.protocol === 'beckman-au') return parseBeckmanAu(message, instrumentId)
+    // Mindray BS-series ASTM uses a non-standard field layout (barcode in the O
+    // Specimen ID field 4, analyte code/value in component 1).
+    if (this.def.astmDialect === 'mindray') return parseMindrayAstm(message, instrumentId)
     return parseAstm(message, instrumentId)
   }
 
@@ -66,6 +75,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     }
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)
     if (this.def.protocol === 'beckman-au') return buildBeckmanAuSample(sampleId, analytes)
+    if (this.def.astmDialect === 'mindray') return buildMindrayAstmSample(sampleId, this.def.name, analytes)
     return buildAstmSample(sampleId, this.def.name, analytes)
   }
 }

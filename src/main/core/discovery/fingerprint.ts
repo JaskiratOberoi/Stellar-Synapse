@@ -72,7 +72,18 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /DXC\s*700/i, id: 'beckman-dxc-700-au', strong: true },
   { re: /DXC\s*500\s*I/i, id: 'beckman-dxc-500i', strong: true },
   { re: /DXC\s*500/i, id: 'beckman-dxc-500-au', strong: true },
-  { re: /BECKMAN|COULTER/i, id: 'beckman-coulter', strong: false }
+  { re: /BECKMAN|COULTER/i, id: 'beckman-coulter', strong: false },
+  // Mindray - BS-series clinical chemistry (H record self-identifies as "Mindry")
+  { re: /BS[\s-]*480/i, id: 'mindray-bs-480', strong: true },
+  { re: /BS[\s-]*430/i, id: 'mindray-bs-430', strong: true },
+  { re: /BS[\s-]*420/i, id: 'mindray-bs-420', strong: true },
+  { re: /BS[\s-]*400/i, id: 'mindray-bs-400', strong: true },
+  { re: /BS[\s-]*380/i, id: 'mindray-bs-380', strong: true },
+  { re: /BS[\s-]*350/i, id: 'mindray-bs-350', strong: true },
+  { re: /BS[\s-]*330/i, id: 'mindray-bs-330', strong: true },
+  { re: /BS[\s-]*240/i, id: 'mindray-bs-240', strong: true },
+  { re: /BS[\s-]*200/i, id: 'mindray-bs-200', strong: true },
+  { re: /MINDRAY|MINDRY/i, id: 'mindray-bs-430', strong: false }
 ]
 
 /** Detect the wire protocol from raw bytes (text). */

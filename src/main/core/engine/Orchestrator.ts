@@ -15,6 +15,7 @@ import { InstrumentPollScheduler } from '../connection/InstrumentPollScheduler'
 import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
+import { buildMindrayOrderRecords, frameMindrayMessage } from '../drivers/mindray'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
@@ -612,12 +613,20 @@ export class Orchestrator extends EventEmitter {
     // analyzer's own query header is intentionally NOT echoed — the working
     // interface ignores it and the X3 accepts the order anyway.
     void header
+    const dialect = getDriver(driverId)?.astmDialect
     try {
-      // The MAGLUMI X3 expects SNIBE's "simple" host-download framing (verified
-      // on a live unit): <ENQ> <STX> <all records CR-separated> <ETX> <EOT> with
-      // NO frame numbers and NO checksums. Standard E1381 frames (numbered +
-      // checksummed) make the X3 read the SID but silently refuse the order.
-      await sender.sendFrames(frameAstmSimple(buildAstmOrderRecords(sid, codes)))
+      if (dialect === 'mindray') {
+        // Mindray BS-series: answer with the "SA" order download in a single
+        // standard E1381 frame (frame no. 1 + checksum, CR before ETX), all tests
+        // in one O record as CODE^^2^1 — verified against the eLABS BS430 capture.
+        await sender.sendFrames(frameMindrayMessage(buildMindrayOrderRecords(sid, codes)))
+      } else {
+        // The MAGLUMI X3 expects SNIBE's "simple" host-download framing (verified
+        // on a live unit): <ENQ> <STX> <all records CR-separated> <ETX> <EOT> with
+        // NO frame numbers and NO checksums. Standard E1381 frames (numbered +
+        // checksummed) make the X3 read the SID but silently refuse the order.
+        await sender.sendFrames(frameAstmSimple(buildAstmOrderRecords(sid, codes)))
+      }
       logger.info('host-query', `${def.name}: answered ${sid} with ${codes.length} test(s): [${codes.join(', ')}]`)
       this.pushMonitor({
         ...baseEvent,

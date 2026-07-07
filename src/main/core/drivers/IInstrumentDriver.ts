@@ -23,6 +23,12 @@ export interface IInstrumentDriver {
   readonly lisValueOnly?: boolean
   /** When true, the analyzer uses bare ASTM framing (no <EOT>); flush on the L terminator. */
   readonly astmFlushOnTerminator?: boolean
+  /**
+   * ASTM record-layout dialect for non-standard analyzers. 'mindray' selects the
+   * BS-series layout (barcode in the O Specimen ID field 4, analyte code/value in
+   * component 1) and its "SA" order-download format. Undefined = standard ASTM.
+   */
+  readonly astmDialect?: 'mindray'
   /** When true, the analyzer reconnects per result batch; keep the UI status 'online' between batches. */
   readonly transientConnection?: boolean
   /** Analytes this instrument can report. */

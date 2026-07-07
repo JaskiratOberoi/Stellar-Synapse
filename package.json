@@ -18,6 +18,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "verify:mindray": "esbuild scripts/verify-mindray.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mindray.mjs && node scripts/.verify-mindray.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },

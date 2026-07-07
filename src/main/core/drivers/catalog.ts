@@ -1,5 +1,6 @@
 import type { InstrumentDriverInfo, InterfaceMode, ProtocolKind, TransportKind } from '../../../shared/types'
 import { BECKMAN_AU } from './beckmanAu'
+import { MINDRAY_BS_CHEM } from './mindray'
 import type { DriverAnalyte } from './IInstrumentDriver'
 import {
   CBC,
@@ -28,6 +29,12 @@ export type ModelDefinition = InstrumentDriverInfo & {
    */
   hl7Dialect?: 'generic' | 'getein' | 'edan'
   /**
+   * ASTM record-layout dialect for `protocol: 'astm'` models (default standard).
+   * 'mindray' selects the Mindray BS-series layout (barcode in the O Specimen ID
+   * field 4, analyte code/value in component 1) and its "SA" order-download.
+   */
+  astmDialect?: 'mindray'
+  /**
    * When true, LIS writes for this model send only the result value (never the
    * abnormal flag), leaving Noble to apply its own reference range. Used by the
    * Agappe Mispa Maestro HbA1c integration (map by SID, send the value only).
@@ -54,6 +61,7 @@ interface MkOpts {
   maturity?: InstrumentDriverInfo['maturity']
   transports?: TransportKind[]
   hl7Dialect?: ModelDefinition['hl7Dialect']
+  astmDialect?: ModelDefinition['astmDialect']
   lisValueOnly?: boolean
   derivesEag?: boolean
   astmFlushOnTerminator?: boolean
@@ -83,6 +91,7 @@ function mk(
     maturity: opts.maturity ?? 'skeleton',
     ...(opts.derivesEag ? { derivesEag: true } : {}),
     ...(opts.hl7Dialect ? { hl7Dialect: opts.hl7Dialect } : {}),
+    ...(opts.astmDialect ? { astmDialect: opts.astmDialect } : {}),
     ...(opts.lisValueOnly ? { lisValueOnly: true } : {}),
     ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
     ...(opts.transientConnection ? { transientConnection: true } : {})
@@ -489,6 +498,48 @@ const horiba = [
 ]
 
 // ---------------------------------------------------------------------------
+// Mindray - BS-series clinical chemistry (ASTM E1394, "mindray" dialect)
+// ---------------------------------------------------------------------------
+const mindray = [
+  ...family(
+    [
+      ['mindray-bs-200', 'Mindray BS-200'],
+      ['mindray-bs-240', 'Mindray BS-240'],
+      ['mindray-bs-330', 'Mindray BS-330E'],
+      ['mindray-bs-350', 'Mindray BS-350E'],
+      ['mindray-bs-380', 'Mindray BS-380'],
+      ['mindray-bs-400', 'Mindray BS-400'],
+      ['mindray-bs-420', 'Mindray BS-420'],
+      ['mindray-bs-430', 'Mindray BS-430'],
+      ['mindray-bs-480', 'Mindray BS-480']
+    ],
+    'Mindray',
+    'Clinical Chemistry',
+    'Mindray BS-series automatic biochemistry analyzer. ASTM E1381/E1394 over RS-232 serial ' +
+      '(default 9600 8-N-1) or TCP/IP. Bidirectional host-query: the analyzer sends an ASTM ' +
+      'Query (H "RQ" + Q record) with the sample barcode, Synapse looks the barcode up in the ' +
+      'Noble LIS and answers with an "SA" order download (all ordered tests in a single O record, ' +
+      'each as CODE^^2^1). Results upload as H "PR" + P/O/R records — the accession barcode rides ' +
+      'in the O record Specimen ID (field 4), and each analyte code/value is component 1 of the R ' +
+      'record test-id / value fields. Verified against a live eLABS BS430 interface capture.',
+    MINDRAY_BS_CHEM,
+    {
+      // Host link is RS-232 serial on the analyzer (COM port); reach it over LAN
+      // via a serial-to-Ethernet device server, or use TCP where supported.
+      port: 9104,
+      protocol: 'astm',
+      mode: 'bidirectional',
+      transports: ['serial', 'tcp-server', 'tcp-client'],
+      astmDialect: 'mindray',
+      maturity: 'skeleton'
+    },
+    // BS-430 is the model validated against captured traffic; the siblings share
+    // the identical ASTM dialect but are not individually verified yet.
+    ['mindray-bs-430']
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Generic fallback (keeps id 'generic-astm')
 // ---------------------------------------------------------------------------
 const generic = [
@@ -513,5 +564,6 @@ export const CATALOG: ModelDefinition[] = [
   ...landwind,
   ...agappe,
   ...horiba,
+  ...mindray,
   ...generic
 ]
