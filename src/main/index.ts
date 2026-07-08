@@ -13,6 +13,10 @@ import { LD560_LIS_ANALYTES } from '../shared/ld560Transmit'
 
 const isDev = !app.isPackaged
 
+// Some Windows GPUs crash Chromium's network/GPU service on launch, which paints
+// a blank renderer. Disabling hardware acceleration avoids that failure mode.
+app.disableHardwareAcceleration()
+
 // Tray + window lifecycle state. The app runs as a background service: closing
 // the window hides it to the tray (interfacing keeps running); it only truly
 // exits via the tray's "Quit" item (which sets `isQuitting`).
