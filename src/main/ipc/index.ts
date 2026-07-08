@@ -10,6 +10,7 @@ import type {
   SerialPortInfo
 } from '../../shared/types'
 import { listDriverInfos } from '../core/drivers/registry'
+import { listPresets } from '../core/presets/registry'
 import type { Orchestrator } from '../core/engine/Orchestrator'
 import type { Simulator } from '../core/simulator/Simulator'
 import type { ILisRepository } from '../core/lis/ILisRepository'
@@ -73,6 +74,9 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
 
   // Drivers
   ipcMain.handle(IPC.driversList, () => listDriverInfos())
+
+  // Location presets
+  ipcMain.handle(IPC.presetsList, () => listPresets())
 
   // Instruments
   ipcMain.handle(IPC.instrumentsList, () => orchestrator.listInstruments())

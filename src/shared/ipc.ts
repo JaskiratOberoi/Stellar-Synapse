@@ -19,6 +19,7 @@ import type {
   LisParameter,
   LisResultWrite,
   LisTest,
+  LocationPreset,
   LogEntry,
   MappingRule,
   MonitorEvent,
@@ -30,6 +31,9 @@ import type {
 export const IPC = {
   // Driver catalog
   driversList: 'drivers:list',
+
+  // Location presets (bundled per-lab settings templates)
+  presetsList: 'presets:list',
 
   // Instruments
   instrumentsList: 'instruments:list',
@@ -95,6 +99,10 @@ export const IPC_EVENT = {
 export interface StellarApi {
   drivers: {
     list(): Promise<InstrumentDriverInfo[]>
+  }
+  presets: {
+    /** Bundled location presets (per-lab instrument settings templates). */
+    list(): Promise<LocationPreset[]>
   }
   instruments: {
     list(): Promise<InstrumentRuntime[]>

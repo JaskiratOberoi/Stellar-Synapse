@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { CanonicalResult, ResultFlag } from '../../../shared/types'
+import type { AuOnlineTestNo, CanonicalResult, ResultFlag } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
 import {
   type AuFormat,
@@ -74,10 +74,47 @@ const AU_TEST_BY_NO = new Map<number, AuTest>(AU_ONLINE_TESTS.map((t) => [t.no, 
 export const AU_NO_BY_CODE = new Map<string, number>(
   AU_ONLINE_TESTS.map((t) => [t.code.toUpperCase(), t.no])
 )
+/** Instrument code -> default assay (for unit/name lookup under a site override). */
+const AU_TEST_BY_CODE = new Map<string, AuTest>(
+  AU_ONLINE_TESTS.map((t) => [t.code.toUpperCase(), t])
+)
 
-/** Resolve an instrument analyte code to its configured Online Test No. (or null). */
-export function auOnlineTestNo(code: string): number | null {
-  return AU_NO_BY_CODE.get(code.trim().toUpperCase()) ?? null
+/**
+ * A site's Online Test No. table (from a location preset). When supplied it fully
+ * replaces the default AU_ONLINE_TESTS numbering — labs renumber this table per
+ * analyzer, so the same wire number decodes to a different analyte at each lab.
+ */
+export type AuOnlineOverride = AuOnlineTestNo[]
+
+/** Resolved decode row shared by the default table and a per-site override. */
+interface AuDecoded {
+  code: string
+  name: string
+  unit: string
+}
+
+/** Build a per-site Online Test No. -> decode-row map, filling unit/name from the
+ *  default menu when the site's code is a known analyte (unknown codes carry no unit). */
+function buildAuByNo(override: AuOnlineOverride): Map<number, AuDecoded> {
+  const m = new Map<number, AuDecoded>()
+  for (const e of override) {
+    const def = AU_TEST_BY_CODE.get(e.code.trim().toUpperCase())
+    m.set(e.no, { code: e.code, name: e.name ?? def?.name ?? e.code, unit: def?.unit ?? '' })
+  }
+  return m
+}
+
+/**
+ * Resolve an instrument analyte code to its configured Online Test No. (or null),
+ * honoring a per-site override (host-query order building) when present.
+ */
+export function auOnlineTestNo(code: string, override?: AuOnlineOverride): number | null {
+  const c = code.trim().toUpperCase()
+  if (override && override.length) {
+    const hit = override.find((e) => e.code.trim().toUpperCase() === c)
+    return hit ? hit.no : null
+  }
+  return AU_NO_BY_CODE.get(c) ?? null
 }
 
 /**
@@ -157,7 +194,8 @@ function auFlag(marks: string): ResultFlag | undefined {
 export function parseBeckmanAu(
   message: ProtocolMessage,
   instrumentId: string,
-  fmt: AuFormat = DEFAULT_AU_FORMAT
+  fmt: AuFormat = DEFAULT_AU_FORMAT,
+  override?: AuOnlineOverride
 ): CanonicalResult[] {
   const distinction = message.records[0]?.[0] ?? ''
   // Only result-data messages carry analyte values; ignore R…/S…/DB/DE markers.
@@ -168,6 +206,10 @@ export function parseBeckmanAu(
   const groupWidth = auGroupWidth(fmt)
   const now = new Date().toISOString()
   const results: CanonicalResult[] = []
+  // Per-site Online Test No. table (from a location preset) fully replaces the
+  // default numbering when present — otherwise the same wire number decodes to a
+  // different analyte at labs that renumbered their AU Online Test No. table.
+  const overrideByNo = override && override.length ? buildAuByNo(override) : null
 
   // Iterate the repeating result groups. A truncated final group (the analyzer's
   // zero-suppress can drop trailing pad spaces) is padded back to full width.
@@ -185,7 +227,7 @@ export function parseBeckmanAu(
     const marks = take(fmt.marks)
 
     if (!Number.isFinite(testNo) || testNo <= 0) break // padding / end of groups
-    const test = AU_TEST_BY_NO.get(testNo)
+    const test = overrideByNo ? overrideByNo.get(testNo) : AU_TEST_BY_NO.get(testNo)
     if (!test) continue // configured on the analyzer but unknown to us — skip
     if (!rawValue || Number.isNaN(parseFloat(rawValue))) continue // masked / no result
 

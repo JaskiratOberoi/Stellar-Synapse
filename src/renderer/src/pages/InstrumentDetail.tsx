@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput, Eraser } from 'lucide-react'
+import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput, Eraser, Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { Switch } from '@/components/ui/Switch'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { EditInstrumentModal } from '@/components/EditInstrumentModal'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime, timeAgo } from '@/lib/utils'
 import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
@@ -55,6 +56,7 @@ export function InstrumentDetail() {
   const drivers = useAppStore((s) => s.drivers)
   const monitor = useAppStore((s) => s.monitor.filter((m) => m.instrumentId === id))
   const lisLive = useAppStore((s) => s.lisSettings?.live)
+  const [editing, setEditing] = useState(false)
   const [logView, setLogView] = useState<'parsed' | 'raw'>('parsed')
   const [parsingRaw, setParsingRaw] = useState<string | null>(null)
   const [parsingAll, setParsingAll] = useState(false)
@@ -257,6 +259,9 @@ export function InstrumentDetail() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+            <Pencil className="h-4 w-4" /> Edit Config
+          </Button>
           <Button variant="outline" size="sm" onClick={emitSample} disabled={!running}>
             <Beaker className="h-4 w-4" /> Emit Test Sample
           </Button>
@@ -541,6 +546,8 @@ export function InstrumentDetail() {
         </CardContent>
       </Card>
       </motion.div>
+
+      <EditInstrumentModal open={editing} onClose={() => setEditing(false)} instrument={inst} />
     </motion.div>
   )
 }

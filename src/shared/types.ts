@@ -118,6 +118,20 @@ export interface SerialPortInfo {
   pnpId?: string
 }
 
+/**
+ * One Beckman AU "Online" Test No. assignment: the 2-3 digit number the analyzer
+ * transmits on the wire, and the Synapse analyte code it decodes to. Labs renumber
+ * this table per analyzer, so it is captured per site (see location presets).
+ */
+export interface AuOnlineTestNo {
+  /** Online Test No. transmitted on the wire (1-120). */
+  no: number
+  /** Synapse AU analyte code this number decodes to, e.g. "AST". */
+  code: string
+  /** Display name (used for analytes outside the driver's default AU menu). */
+  name?: string
+}
+
 export interface InstrumentDefinition {
   id: string
   /** User-facing name, e.g. "Maglumi X3 - Bench 2". */
@@ -127,6 +141,13 @@ export interface InstrumentDefinition {
   connection: InstrumentConnectionConfig
   enabled: boolean
   createdAt: string
+  /**
+   * Beckman AU "Online" per-site decode table (Online Test No. -> analyte code),
+   * applied from a location preset. When present it OVERRIDES the driver's default
+   * AU_ONLINE_TESTS numbering for BOTH result parsing and host-query order
+   * responses — the same wire number means a different analyte at each lab.
+   */
+  auOnline?: { testNos: AuOnlineTestNo[] }
 }
 
 /** A configured instrument plus its live runtime state (sent to the UI). */
@@ -143,6 +164,39 @@ export interface InstrumentRuntime extends InstrumentDefinition {
   errors: number
   /** Remote peer description when connected (ip:port). */
   peer?: string
+}
+
+// ---------------------------------------------------------------------------
+// Location presets (bundled per-lab configuration templates)
+// ---------------------------------------------------------------------------
+
+export interface PresetSerial {
+  baudRate?: number
+  dataBits?: 7 | 8
+  parity?: 'none' | 'even' | 'odd'
+  stopBits?: 1 | 2
+}
+
+/** One analyzer's settings within a location preset. */
+export interface PresetInstrument {
+  driverId: string
+  /** Model label for display in the preset picker. */
+  model: string
+  /** Recommended transport for this site (first of the driver's supported set). */
+  transport?: TransportKind
+  port?: number
+  serial?: PresetSerial
+  /** Beckman AU per-site Online Test No. decode table (AU analyzers only). */
+  auOnlineTestNos?: AuOnlineTestNo[]
+}
+
+/** A named, location-scoped bundle of instrument settings applied at onboarding. */
+export interface LocationPreset {
+  /** Slug, e.g. "haldwani". */
+  preset: string
+  /** Display location, e.g. "Haldwani". */
+  location: string
+  instruments: PresetInstrument[]
 }
 
 // ---------------------------------------------------------------------------

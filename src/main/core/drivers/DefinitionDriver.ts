@@ -1,7 +1,7 @@
 import type { CanonicalResult, InstrumentDriverInfo } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
 import type { ModelDefinition } from './catalog'
-import type { DriverAnalyte, IInstrumentDriver } from './IInstrumentDriver'
+import type { DriverAnalyte, DriverParseContext, IInstrumentDriver } from './IInstrumentDriver'
 import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
 import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
@@ -51,7 +51,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     return this.def.analytes
   }
 
-  parse(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
+  parse(message: ProtocolMessage, instrumentId: string, ctx?: DriverParseContext): CanonicalResult[] {
     if (message.protocol === 'hl7') {
       // Getein Metis uses OBR-2 (barcode) / OBX-3 (item id) instead of the
       // generic OBR-3 / OBX-3-component layout — route to its own parser.
@@ -60,7 +60,10 @@ export class DefinitionDriver implements IInstrumentDriver {
       return parseHl7(message, instrumentId)
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
-    if (message.protocol === 'beckman-au') return parseBeckmanAu(message, instrumentId)
+    // A per-site Online Test No. table (location preset) overrides the default AU
+    // numbering for this instrument.
+    if (message.protocol === 'beckman-au')
+      return parseBeckmanAu(message, instrumentId, undefined, ctx?.auOnline?.testNos)
     // Mindray BS-series ASTM uses a non-standard field layout (barcode in the O
     // Specimen ID field 4, analyte code/value in component 1).
     if (this.def.astmDialect === 'mindray') return parseMindrayAstm(message, instrumentId)

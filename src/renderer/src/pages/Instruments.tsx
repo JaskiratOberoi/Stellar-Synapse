@@ -1,22 +1,25 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Play, Square, Trash2, Cpu, Radio, ArrowRight } from 'lucide-react'
+import { Plus, Play, Square, Trash2, Cpu, Radio, ArrowRight, Pencil } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { AddInstrumentModal } from '@/components/AddInstrumentModal'
+import { EditInstrumentModal } from '@/components/EditInstrumentModal'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, timeAgo } from '@/lib/utils'
 import { fadeInUp, staggerContainer } from '@/lib/motion'
+import type { InstrumentRuntime } from '@shared/types'
 
 export function Instruments() {
   const instruments = useAppStore((s) => s.instruments)
   const drivers = useAppStore((s) => s.drivers)
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<InstrumentRuntime | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
   const driverName = (id: string): string => drivers.find((d) => d.id === id)?.name ?? id
@@ -141,6 +144,17 @@ export function Instruments() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation()
+                        setEditing(inst)
+                      }}
+                      title="Edit configuration"
+                    >
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
                         remove(inst.id)
                       }}
                     >
@@ -180,6 +194,9 @@ export function Instruments() {
       </motion.div>
 
       <AddInstrumentModal open={open} onClose={() => setOpen(false)} />
+      {editing && (
+        <EditInstrumentModal open={!!editing} onClose={() => setEditing(null)} instrument={editing} />
+      )}
     </motion.div>
   )
 }

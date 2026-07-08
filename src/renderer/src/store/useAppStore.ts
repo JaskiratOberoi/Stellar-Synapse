@@ -7,6 +7,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisTest,
+  LocationPreset,
   LogEntry,
   MappingRule,
   MonitorEvent
@@ -16,6 +17,7 @@ interface AppState {
   ready: boolean
   error: string | null
   drivers: InstrumentDriverInfo[]
+  presets: LocationPreset[]
   instruments: InstrumentRuntime[]
   mappings: MappingRule[]
   monitor: MonitorEvent[]
@@ -37,6 +39,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   ready: false,
   error: null,
   drivers: [],
+  presets: [],
   instruments: [],
   mappings: [],
   monitor: [],
@@ -58,9 +61,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       return
     }
     try {
-      const [drivers, instruments, mappings, monitor, logs, tests, parameters, settings, lisSettings, stats] =
+      const [drivers, presets, instruments, mappings, monitor, logs, tests, parameters, settings, lisSettings, stats] =
         await Promise.all([
           api.drivers.list(),
+          api.presets.list(),
           api.instruments.list(),
           api.mappings.list(),
           api.monitor.recent(),
@@ -73,6 +77,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         ])
       set({
         drivers,
+        presets,
         instruments,
         mappings,
         monitor,

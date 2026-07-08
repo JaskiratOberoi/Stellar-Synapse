@@ -6,7 +6,7 @@ import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
 import { useAppStore } from '@/store/useAppStore'
-import type { InstrumentDriverInfo, SerialPortInfo, TransportKind } from '@shared/types'
+import type { AuOnlineTestNo, InstrumentDriverInfo, SerialPortInfo, TransportKind } from '@shared/types'
 
 const maturityTone = { stable: 'success', beta: 'warning', skeleton: 'muted' } as const
 
@@ -27,9 +27,12 @@ export function AddInstrumentModal({
   prefill?: InstrumentPrefill
 }) {
   const drivers = useAppStore((s) => s.drivers)
+  const presets = useAppStore((s) => s.presets)
   const [step, setStep] = useState(1)
   const [driver, setDriver] = useState<InstrumentDriverInfo | null>(null)
   const [name, setName] = useState('')
+  const [presetKey, setPresetKey] = useState('')
+  const [auOnlineTestNos, setAuOnlineTestNos] = useState<AuOnlineTestNo[] | undefined>(undefined)
   const [transport, setTransport] = useState<TransportKind>('tcp-server')
   const [host, setHost] = useState('127.0.0.1')
   const [port, setPort] = useState('9100')
@@ -70,6 +73,8 @@ export function AddInstrumentModal({
     setStep(1)
     setDriver(null)
     setName('')
+    setPresetKey('')
+    setAuOnlineTestNos(undefined)
     setTransport('tcp-server')
     setHost('127.0.0.1')
     setPort('9100')
@@ -126,22 +131,52 @@ export function AddInstrumentModal({
     }
   }, [step, transport, portsScanned, portsLoading])
 
+  // Presets that carry settings for the currently selected driver.
+  const driverPresets = useMemo(
+    () => (driver ? presets.filter((p) => p.instruments.some((i) => i.driverId === driver.id)) : []),
+    [presets, driver]
+  )
+
+  /** Apply a location preset's settings to the config form (or clear on ''). */
+  const applyPreset = (slug: string): void => {
+    setPresetKey(slug)
+    if (!slug || !driver) {
+      setAuOnlineTestNos(undefined)
+      return
+    }
+    const preset = presets.find((p) => p.preset === slug)
+    const inst = preset?.instruments.find((i) => i.driverId === driver.id)
+    if (!preset || !inst) {
+      setAuOnlineTestNos(undefined)
+      return
+    }
+    if (inst.transport) setTransport(inst.transport)
+    if (inst.port != null) setPort(String(inst.port))
+    if (inst.serial) {
+      if (inst.serial.baudRate != null) setBaudRate(String(inst.serial.baudRate))
+      if (inst.serial.dataBits != null) setDataBits(String(inst.serial.dataBits))
+      if (inst.serial.parity) setParity(inst.serial.parity)
+      if (inst.serial.stopBits != null) setStopBits(String(inst.serial.stopBits))
+    }
+    // The per-site Beckman AU Online Test No. map travels with the instrument so
+    // results decode under THIS lab's numbering, not the driver default.
+    setAuOnlineTestNos(inst.auOnlineTestNos?.length ? inst.auOnlineTestNos : undefined)
+    setName(`${driver.name} — ${preset.location}`)
+  }
+
   const choose = (d: InstrumentDriverInfo): void => {
     setDriver(d)
     setName(`${d.name}`)
+    setPresetKey('')
+    setAuOnlineTestNos(undefined)
     setTransport(d.transports[0])
     setPort(String(d.defaultPort ?? 9100))
     setHostQuery(d.mode === 'bidirectional')
-    // Beckman AU "Online" serial link is 7-N-1; most other ASTM serial is 8-N-1.
-    if (d.protocol === 'beckman-au') {
-      setDataBits('7')
-      setParity('none')
-      setStopBits('1')
-    } else {
-      setDataBits('8')
-      setParity('none')
-      setStopBits('1')
-    }
+    // Real AU480 "Online" host links run 8-N-1 (confirmed on-analyzer); a location
+    // preset can still override this. Most other ASTM serial is also 8-N-1.
+    setDataBits('8')
+    setParity('none')
+    setStopBits('1')
     setStep(2)
   }
 
@@ -166,7 +201,8 @@ export function AddInstrumentModal({
           hostQuery: passive ? false : hostQuery,
           passive,
           autoIdentify: passive
-        }
+        },
+        auOnline: auOnlineTestNos ? { testNos: auOnlineTestNos } : undefined
       })
       reset()
       onClose()
@@ -267,6 +303,27 @@ export function AddInstrumentModal({
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">{driver?.description}</p>
           </div>
+
+          {driverPresets.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Preset (lab location)</Label>
+              <Select value={presetKey} onChange={(e) => applyPreset(e.target.value)}>
+                <option value="">Manual configuration</option>
+                {driverPresets.map((p) => (
+                  <option key={p.preset} value={p.preset}>
+                    {p.location}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {presetKey
+                  ? `Applied ${driverPresets.find((p) => p.preset === presetKey)?.location} settings` +
+                    (auOnlineTestNos ? ` + ${auOnlineTestNos.length}-test AU Online map` : '') +
+                    '. Adjust below if needed.'
+                  : 'Auto-fill connection, serial, and (Beckman AU) the site Online Test No. map from a saved location.'}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Instrument Name</Label>

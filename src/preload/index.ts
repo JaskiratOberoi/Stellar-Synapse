@@ -20,6 +20,9 @@ const api: StellarApi = {
   drivers: {
     list: () => ipcRenderer.invoke(IPC.driversList)
   },
+  presets: {
+    list: () => ipcRenderer.invoke(IPC.presetsList)
+  },
   instruments: {
     list: () => ipcRenderer.invoke(IPC.instrumentsList),
     add: (def) => ipcRenderer.invoke(IPC.instrumentAdd, def),

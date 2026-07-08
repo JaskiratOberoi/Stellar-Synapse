@@ -1,4 +1,4 @@
-import type { CanonicalResult, InstrumentDriverInfo } from '../../../shared/types'
+import type { AuOnlineTestNo, CanonicalResult, InstrumentDriverInfo } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
 
 /** A known analyte a driver can report (seeds the mapping catalog + simulator). */
@@ -8,6 +8,15 @@ export interface DriverAnalyte {
   unit?: string
   /** Plausible value range used by the simulator. */
   sim?: { min: number; max: number; decimals?: number; ref?: string }
+}
+
+/**
+ * Per-instrument context passed to parse(): configuration that varies between two
+ * instruments sharing the same driver (e.g. a per-site Beckman AU Online Test No.
+ * table from a location preset). Optional — most drivers ignore it.
+ */
+export interface DriverParseContext {
+  auOnline?: { testNos: AuOnlineTestNo[] }
 }
 
 /**
@@ -34,7 +43,7 @@ export interface IInstrumentDriver {
   /** Analytes this instrument can report. */
   analytes(): DriverAnalyte[]
   /** Normalize a decoded protocol message into canonical results. */
-  parse(message: ProtocolMessage, instrumentId: string): CanonicalResult[]
+  parse(message: ProtocolMessage, instrumentId: string, ctx?: DriverParseContext): CanonicalResult[]
   /**
    * Produce a realistic raw protocol frame for a sample (used by the simulator).
    * Returns text in the driver's native protocol (ASTM rows or HL7 segments).

@@ -1,0 +1,119 @@
+{
+  "preset": "jammu",
+  "location": "Jammu",
+  "capturedAt": "2026-07-07",
+  "capturedFrom": "Photos of the AU480 System > Online screens (Set Up / Protocol / Format Configuration / Online Test No.), 07-Jul-2026 20:19.",
+  "_verifyNote": "The onlineTestNoMap below was TRANSCRIBED FROM PHOTOS. Before using for live result decoding, re-verify against the analyzer's own printout (Online Test No. tab > Print). Photo-read numbers are patient-safety-critical: one wrong digit mislabels an analyte.",
+  "instruments": [
+    {
+      "driverId": "beckman-au480",
+      "model": "Beckman Coulter AU480",
+      "vendor": "Beckman Coulter",
+      "category": "Clinical Chemistry",
+      "protocol": "beckman-au",
+      "mode": "bidirectional",
+      "defaultPort": 9111,
+      "transports": ["serial", "tcp-client", "tcp-server"],
+      "source": "Jammu AU480 live Online configuration (on-analyzer screens).",
+      "serial": {
+        "_source": "Protocol tab > Lower Protocol > Character Format + Communication Control",
+        "baudRate": 9600,
+        "dataBits": 8,
+        "parity": "none",
+        "stopBits": 1,
+        "_note": "CONFIRMED 8-N-1 @ 9600 on the analyzer. This resolves the earlier ambiguity: the AU480 'Online' link here is 8-N-1, NOT the 7-N-1 that Synapse currently defaults to for beckman-au. Haldwani should be confirmed to match."
+      },
+      "protocol_online": {
+        "_source": "Protocol tab",
+        "triReceiveErrorControl": "Continue",
+        "resultsTransferErrorControl": "Continue",
+        "startCode": "02h STX",
+        "endCode": "03h ETX",
+        "textLengthBytes": 1024,
+        "deviceNo": false,
+        "etbControl": false,
+        "class": "Class B",
+        "retry": 3,
+        "bccCheck": false,
+        "timeoutsX100ms": { "T1": 20, "T2": 15, "T3": 15, "T4": 20, "T5": 20, "T6": 10, "T7": 20 }
+      },
+      "onlineFormat": {
+        "_source": "Format Configuration tab. Matches Synapse DEFAULT_AU_FORMAT (header 64, result group testNo(3)+result(6)+marks(2)=11).",
+        "systemNo": 0,
+        "rack": 4,
+        "cup": 2,
+        "sampleType": 1,
+        "sampleId": 19,
+        "dummy": 31,
+        "dataClass": 0,
+        "sex": 0,
+        "testNo": 3,
+        "diluent": 0,
+        "result": 6,
+        "marks": 2,
+        "bcc": false,
+        "_used": { "rackCupPos": true, "type": true, "dilutionInf": false, "reagentInf": false, "r1r2Use": false, "zeroSuppress": true },
+        "_calNoDigit": 3,
+        "_note": "sampleId(19) and dummy(31) were not shown on the Format screen (barcode width is set elsewhere); assumed identical to the calibrated default since every visible field matches. Verify barcode width if S/D frames misalign."
+      },
+      "transferSetup": {
+        "_source": "Set Up tab",
+        "testRequisitionReceive": {
+          "routineNormal": "Realtime", "routineRepeat": "None",
+          "emergencyNormal": "None", "emergencyRepeat": "None",
+          "statNormal": "Realtime", "statRepeat": "None"
+        },
+        "resultTransfer": {
+          "routineNormal": "Realtime", "routineRepeat": "None",
+          "emergencyNormal": "Realtime", "emergencyRepeat": "None",
+          "statNormal": "Realtime", "statRepeat": "None", "statQuick": "None",
+          "reagentBlank": "None", "calibration": "None", "qc": "Realtime"
+        }
+      },
+      "onlineTestNoMap": {
+        "_doc": "analyzerCode -> Online Test No. (the number transmitted on the wire). synapseCode is the matching Synapse AU driver analyte code (null = not in the current AU_ONLINE_TESTS menu; needs a new driver analyte + LIS mapping).",
+        "entries": [
+          { "onlineNo": 6,  "analyzerCode": "GLUC",   "synapseCode": "GLU",    "name": "Glucose" },
+          { "onlineNo": 7,  "analyzerCode": "UREA",   "synapseCode": "UREA",   "name": "Urea (BUN)" },
+          { "onlineNo": 8,  "analyzerCode": "CRE",    "synapseCode": "CREAT",  "name": "Creatinine" },
+          { "onlineNo": 9,  "analyzerCode": "IRON",   "synapseCode": "IRON",   "name": "Iron" },
+          { "onlineNo": 10, "analyzerCode": "UIBC",   "synapseCode": "UIBC",   "name": "Unsaturated Iron Binding Capacity" },
+          { "onlineNo": 11, "analyzerCode": "TBILC",  "synapseCode": "TBILC",  "name": "Total Bilirubin (DCA)" },
+          { "onlineNo": 13, "analyzerCode": "DBILC",  "synapseCode": "DBILC",  "name": "Direct Bilirubin (DCA)" },
+          { "onlineNo": 14, "analyzerCode": "TP",     "synapseCode": "TP",     "name": "Total Protein" },
+          { "onlineNo": 15, "analyzerCode": "ALB",    "synapseCode": "ALB",    "name": "Albumin" },
+          { "onlineNo": 16, "analyzerCode": "AST",    "synapseCode": "AST",    "name": "Aspartate Aminotransferase" },
+          { "onlineNo": 17, "analyzerCode": "ALT",    "synapseCode": "ALT",    "name": "Alanine Aminotransferase" },
+          { "onlineNo": 18, "analyzerCode": "ALP04",  "synapseCode": "ALP",    "name": "Alkaline Phosphatase" },
+          { "onlineNo": 19, "analyzerCode": "GGT20",  "synapseCode": "GGT",    "name": "Gamma GT" },
+          { "onlineNo": 20, "analyzerCode": "PHOS",   "synapseCode": "PHOS",   "name": "Phosphorus" },
+          { "onlineNo": 21, "analyzerCode": "CALA",   "synapseCode": "CALA",   "name": "Calcium" },
+          { "onlineNo": 22, "analyzerCode": "CHOL",   "synapseCode": "CHOL",   "name": "Total Cholesterol" },
+          { "onlineNo": 23, "analyzerCode": "HDL-C",  "synapseCode": "HDL-C",  "name": "HDL Cholesterol" },
+          { "onlineNo": 24, "analyzerCode": "LDL-C",  "synapseCode": "LDL-C",  "name": "LDL Cholesterol" },
+          { "onlineNo": 25, "analyzerCode": "TRIG",   "synapseCode": "TRIG",   "name": "Triglycerides" },
+          { "onlineNo": 26, "analyzerCode": "AMY",    "synapseCode": "AMY",    "name": "Amylase" },
+          { "onlineNo": 27, "analyzerCode": "LIP",    "synapseCode": "LIPASE", "name": "Lipase" },
+          { "onlineNo": 28, "analyzerCode": "UALB",   "synapseCode": null,     "name": "Microalbumin (Urine Albumin)" },
+          { "onlineNo": 34, "analyzerCode": "CK NAC", "synapseCode": null,     "name": "Creatine Kinase (CK-NAC)" },
+          { "onlineNo": 37, "analyzerCode": "UA",     "synapseCode": "UA",     "name": "Uric Acid" },
+          { "onlineNo": 38, "analyzerCode": "LDH28",  "synapseCode": null,     "name": "Lactate Dehydrogenase" },
+          { "onlineNo": 39, "analyzerCode": "DDIM",   "synapseCode": null,     "name": "D-Dimer" },
+          { "onlineNo": 44, "analyzerCode": "CRPHS",  "synapseCode": "CRPHS",  "name": "C-Reactive Protein (hs)", "_verify": "Screen is cramped near CRPHS/CRPN — confirm 044 is CRP-HS and not CRP-N." },
+          { "onlineNo": 46, "analyzerCode": "RF",     "synapseCode": "RF",     "name": "Rheumatoid Factor" },
+          { "onlineNo": 63, "analyzerCode": "TBILB",  "synapseCode": "TBILB",  "name": "Total Bilirubin (BuBc)" },
+          { "onlineNo": 65, "analyzerCode": "DBILB",  "synapseCode": "DBILB",  "name": "Direct Bilirubin (BuBc)" },
+          { "onlineNo": 96, "analyzerCode": "LIH",    "synapseCode": "LIH",    "name": "Serum Index (Lipemia/Icterus/Hemolysis)" },
+          { "onlineNo": 97, "analyzerCode": "Na",     "synapseCode": "Na",     "name": "Sodium" },
+          { "onlineNo": 98, "analyzerCode": "K",      "synapseCode": "K",      "name": "Potassium" },
+          { "onlineNo": 99, "analyzerCode": "Cl",     "synapseCode": "Cl",     "name": "Chloride" }
+        ],
+        "_newAnalytes": "UALB(28), CK NAC(34), LDH28(38), DDIM(39) are NOT in Synapse's AU_ONLINE_TESTS chemistry menu — they need a new driver analyte entry + a Noble LIS mapping before they can be decoded/written.",
+        "_onMenuButUnassigned": "These tests are on the analyzer's test list with NO Online Test No. assigned (so they will NOT transmit online): CRPN, MG, HCY, APOB, ASO, HAPT, APO A1, LAC, IGE, HbA1c(70), Li, UCSFP, plus spare AMY slots 34/35.",
+        "_hba1cNote": "HbA1c is on the menu (slot 70) but has NO online number — the AU480 will not transmit HbA1c online at Jammu."
+      },
+      "mappings": [],
+      "_mappingsNote": "Analyte -> Noble LIS mappings are per-site and not captured here. Export the beckman-au480 rules from the Jammu install's %APPDATA%\\stellar-synapse\\stellar-synapse.json once configured, and paste them here."
+    }
+  ]
+}

@@ -499,7 +499,7 @@ export class Orchestrator extends EventEmitter {
       }
     }
 
-    let results = driver.parse(message, instrumentId)
+    let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })
     // HbA1c HPLC analyzers (Agappe Mispa Maestro): round to a single decimal and,
     // when enabled, derive Estimated Average Glucose to write alongside HbA1c.
     if (driver.info.derivesEag) {
@@ -678,7 +678,13 @@ export class Orchestrator extends EventEmitter {
     const codes = order
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
       : []
-    const testNos = [...new Set(codes.map((c) => auOnlineTestNo(c)).filter((n): n is number => n != null))]
+    const testNos = [
+      ...new Set(
+        codes
+          .map((c) => auOnlineTestNo(c, def.auOnline?.testNos))
+          .filter((n): n is number => n != null)
+      )
+    ]
 
     if (testNos.length === 0) {
       // Replicate the live ElabAssistLite behaviour exactly: when nothing is
