@@ -73,6 +73,10 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /DXC\s*500\s*I/i, id: 'beckman-dxc-500i', strong: true },
   { re: /DXC\s*500/i, id: 'beckman-dxc-500-au', strong: true },
   { re: /BECKMAN|COULTER/i, id: 'beckman-coulter', strong: false },
+  // Boule - Swelab Lumi / Medonic M51 (HL7 MSH self-identifies as BM500 / Boule)
+  { re: /SWELAB\s*LUMI/i, id: 'swelab-lumi', strong: true },
+  { re: /MEDONIC\s*M\s*51/i, id: 'medonic-m51', strong: true },
+  { re: /SWELAB|BM500|BOULE|MEDONIC/i, id: 'swelab-lumi', strong: false },
   // Mindray - BS-series clinical chemistry (H record self-identifies as "Mindry")
   { re: /BS[\s-]*480/i, id: 'mindray-bs-480', strong: true },
   { re: /BS[\s-]*430/i, id: 'mindray-bs-430', strong: true },

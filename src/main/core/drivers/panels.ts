@@ -275,6 +275,45 @@ export const HORIBA_YUMIZEN: DriverAnalyte[] = [
 /** ESR add-on reported by the Yumizen H550E only (ASTM code "ESR", mm/h). */
 export const HORIBA_ESR: DriverAnalyte[] = [a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)]
 
+/**
+ * Boule Swelab Lumi / Medonic M51 CBC + 5-part-DIFF menu — instrument codes are
+ * the short mnemonic Boule sends in OBX-3 component 2 (e.g. `6690-2^WBC^LN` ->
+ * "WBC"), with the leading "*" research marker stripped (ALY#, LIC#). Units use
+ * the analyzer's wire notation ("10*9/L" = 10^9/L; HGB/MCHC in g/L). Seeds the
+ * mapping screen + simulator; the live unit is read from OBX-6 of each frame.
+ */
+export const BOULE_CBC: DriverAnalyte[] = [
+  a('WBC', 'White Blood Cell Count', '10*9/L', 4.0, 10.0, 2),
+  a('NEU%', 'Neutrophils', '%', 50, 70, 1),
+  a('LYM%', 'Lymphocytes', '%', 20, 40, 1),
+  a('MON%', 'Monocytes', '%', 3, 12, 1),
+  a('EOS%', 'Eosinophils', '%', 0.5, 5, 1),
+  a('BAS%', 'Basophils', '%', 0, 1, 1),
+  a('NEU#', 'Neutrophils (abs)', '10*9/L', 2.0, 7.0, 2),
+  a('LYM#', 'Lymphocytes (abs)', '10*9/L', 0.8, 4.0, 2),
+  a('MON#', 'Monocytes (abs)', '10*9/L', 0.12, 1.2, 2),
+  a('EOS#', 'Eosinophils (abs)', '10*9/L', 0.02, 0.5, 2),
+  a('BAS#', 'Basophils (abs)', '10*9/L', 0, 0.1, 2),
+  a('ALY#', 'Atypical Lymphocytes (abs)', '10*9/L', 0, 0.2, 2),
+  a('ALY%', 'Atypical Lymphocytes', '%', 0, 2, 1),
+  a('LIC#', 'Large Immature Cells (abs)', '10*9/L', 0, 0.2, 2),
+  a('LIC%', 'Large Immature Cells', '%', 0, 2.5, 1),
+  a('RBC', 'Red Blood Cell Count', '10*12/L', 4.0, 5.5, 2),
+  a('HGB', 'Hemoglobin', 'g/L', 120, 160, 0),
+  a('HCT', 'Hematocrit', '%', 40, 54, 1),
+  a('MCV', 'Mean Corpuscular Volume', 'fL', 80, 100, 1),
+  a('MCH', 'Mean Corpuscular Hemoglobin', 'pg', 27, 34, 1),
+  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/L', 320, 360, 0),
+  a('RDW-CV', 'RDW (CV)', '%', 11, 16, 1),
+  a('RDW-SD', 'RDW (SD)', 'fL', 35, 56, 1),
+  a('PLT', 'Platelet Count', '10*9/L', 100, 300, 0),
+  a('MPV', 'Mean Platelet Volume', 'fL', 6.5, 12, 1),
+  a('PDW', 'Platelet Distribution Width', '', 15, 17, 1),
+  a('PCT', 'Plateletcrit', '%', 0.108, 0.282, 3),
+  a('P-LCR', 'Platelet Large Cell Ratio', '%', 13, 43, 1),
+  a('P-LCC', 'Platelet Large Cell Count', '10*9/L', 30, 90, 0)
+]
+
 export const URINALYSIS: DriverAnalyte[] = [
   a('UGLU', 'Urine Glucose', 'mg/dL', 0, 15, 0),
   a('UPRO', 'Urine Protein', 'mg/dL', 0, 10, 0),

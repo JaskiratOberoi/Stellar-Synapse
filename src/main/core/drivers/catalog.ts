@@ -3,6 +3,7 @@ import { BECKMAN_AU } from './beckmanAu'
 import { MINDRAY_BS_CHEM } from './mindray'
 import type { DriverAnalyte } from './IInstrumentDriver'
 import {
+  BOULE_CBC,
   CBC,
   CHEMISTRY,
   COAGULATION,
@@ -25,9 +26,11 @@ export type ModelDefinition = InstrumentDriverInfo & {
   /**
    * HL7 parsing dialect for `protocol: 'hl7'` models (default 'generic').
    * 'getein' selects the Metis OBR-2 (barcode) / OBX-3 (item id) layout;
-   * 'edan' selects the H60 OBR-2 (sample id) / OBX-4 (analyte mnemonic) layout.
+   * 'edan' selects the H60 OBR-2 (sample id) / OBX-4 (analyte mnemonic) layout;
+   * 'boule' selects the BM500 OBR-3 (barcode) / OBX-3 component-2 (mnemonic)
+   * layout (Swelab Lumi / Medonic M51).
    */
-  hl7Dialect?: 'generic' | 'getein' | 'edan'
+  hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule'
   /**
    * ASTM record-layout dialect for `protocol: 'astm'` models (default standard).
    * 'mindray' selects the Mindray BS-series layout (barcode in the O Specimen ID
@@ -297,6 +300,33 @@ const edan = [
 ]
 
 // ---------------------------------------------------------------------------
+// Boule Diagnostics - Swelab Lumi / Medonic M51 hematology (HL7 v2.3.1 over
+// MLLP, analyzer = TCP client)
+// ---------------------------------------------------------------------------
+const boule = [
+  ...family(
+    [
+      ['swelab-lumi', 'Swelab Lumi'],
+      ['medonic-m51', 'Medonic M51']
+    ],
+    'Boule Diagnostics',
+    'Hematology (CBC)',
+    'Swelab Lumi / Medonic M51 auto hematology analyzer (CBC / 5-part DIFF). HL7 ' +
+      'v2.3.1 over MLLP (the BM500 LIS protocol). The analyzer connects out to this ' +
+      'server as a TCP client and uploads results as ORU^R01 (sending application ' +
+      'BM500, facility Boule) — set the analyzer\'s LIS/host IP + port to this server ' +
+      'and enable automatic communication. The accession barcode rides in OBR-3 ' +
+      '(Filler Order Number) and each analyte is keyed by the OBX-3 component-2 ' +
+      'mnemonic (e.g. `6690-2^WBC^LN` -> WBC), with the leading "*" research marker ' +
+      'stripped; MSH-11=Q (QC) frames and histogram/scattergram bitmap rows are ' +
+      'ignored. Bidirectional host-query (ORM^O01/ORR^O02 order download) is ' +
+      'supported by the device but pending a captured sample.',
+    BOULE_CBC,
+    { port: 9106, protocol: 'hl7', hl7Dialect: 'boule', mode: 'unidirectional', transports: ['tcp-server'], maturity: 'beta' }
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Beckman Coulter - DxH (hematology), AU/DxC (chemistry), Access/DxI (immuno),
 // integrated and urinalysis
 // ---------------------------------------------------------------------------
@@ -560,6 +590,7 @@ export const CATALOG: ModelDefinition[] = [
   ...getein,
   ...geteinMetis,
   ...edan,
+  ...boule,
   ...beckman,
   ...landwind,
   ...agappe,

@@ -3,6 +3,7 @@ import type { ProtocolMessage } from '../protocols/IProtocol'
 import type { ModelDefinition } from './catalog'
 import type { DriverAnalyte, DriverParseContext, IInstrumentDriver } from './IInstrumentDriver'
 import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
+import { buildBouleHl7Sample, parseBouleHl7 } from './boule'
 import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
 import { buildMindrayAstmSample, parseMindrayAstm } from './mindray'
@@ -57,6 +58,9 @@ export class DefinitionDriver implements IInstrumentDriver {
       // generic OBR-3 / OBX-3-component layout — route to its own parser.
       if (this.def.hl7Dialect === 'getein') return parseGeteinHl7(message, instrumentId)
       if (this.def.hl7Dialect === 'edan') return parseEdanHl7(message, instrumentId)
+      // Boule BM500 (Swelab Lumi / Medonic M51): barcode in OBR-3, analyte keyed
+      // by the OBX-3 component-2 mnemonic, QC (MSH-11=Q) frames skipped.
+      if (this.def.hl7Dialect === 'boule') return parseBouleHl7(message, instrumentId)
       return parseHl7(message, instrumentId)
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
@@ -74,6 +78,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     if (this.def.protocol === 'hl7') {
       if (this.def.hl7Dialect === 'getein') return buildGeteinHl7Sample(sampleId, this.def.name, analytes)
       if (this.def.hl7Dialect === 'edan') return buildEdanHl7Sample(sampleId, this.def.name, analytes)
+      if (this.def.hl7Dialect === 'boule') return buildBouleHl7Sample(sampleId, this.def.name, analytes)
       return buildHl7Sample(sampleId, this.def.name, analytes)
     }
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)
