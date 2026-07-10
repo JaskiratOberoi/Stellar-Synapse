@@ -73,6 +73,9 @@ const api: StellarApi = {
     get: () => ipcRenderer.invoke(IPC.settingsGet),
     save: (settings) => ipcRenderer.invoke(IPC.settingsSave, settings)
   },
+  system: {
+    lanIp: () => ipcRenderer.invoke(IPC.systemLanIp)
+  },
   simulator: {
     start: () => ipcRenderer.invoke(IPC.simulatorStart),
     stop: () => ipcRenderer.invoke(IPC.simulatorStop),

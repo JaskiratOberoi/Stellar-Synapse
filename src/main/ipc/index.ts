@@ -214,4 +214,12 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   ipcMain.handle(IPC.discoverySubnets, () => scanner.getSubnets())
   ipcMain.handle(IPC.discoveryScan, (_e, cidr: string) => scanner.scan(cidr))
   ipcMain.handle(IPC.discoveryStop, () => scanner.stop())
+
+  // System / host info — the primary LAN IPv4 shown in the sidebar. Reuse the
+  // scanner's interface enumeration (non-internal IPv4, physical adapters first)
+  // and take the top candidate; null when the host has no usable LAN address.
+  ipcMain.handle(IPC.systemLanIp, (): string | null => {
+    const subnets = scanner.getSubnets()
+    return subnets.find((s) => !s.isVirtual)?.address ?? subnets[0]?.address ?? null
+  })
 }

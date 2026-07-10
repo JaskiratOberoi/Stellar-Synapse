@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -31,6 +32,22 @@ export function Sidebar() {
   const instruments = useAppStore((s) => s.instruments)
   const online = instruments.filter((i) => i.status === 'online' || i.status === 'listening').length
 
+  // This host's LAN IPv4 — the address analyzers connect to. Shown under the
+  // version so it's readable straight off the machine during onboarding.
+  const [lanIp, setLanIp] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    window.api.system
+      .lanIp()
+      .then((ip) => {
+        if (alive) setLanIp(ip)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
+
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-border/60 bg-card/40">
       <div className="flex items-center gap-3 px-5 py-5">
@@ -43,6 +60,14 @@ export function Sidebar() {
           <div className="text-[10px] font-medium tabular-nums text-muted-foreground/70">
             v{__APP_VERSION__}
           </div>
+          {lanIp && (
+            <div
+              className="text-[10px] font-medium tabular-nums text-muted-foreground/70"
+              title="This machine's LAN IPv4 address"
+            >
+              {lanIp}
+            </div>
+          )}
         </div>
       </div>
 

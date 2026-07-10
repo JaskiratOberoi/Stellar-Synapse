@@ -74,6 +74,9 @@ export const IPC = {
   settingsGet: 'settings:get',
   settingsSave: 'settings:save',
 
+  // System / host info
+  systemLanIp: 'system:lan-ip',
+
   // Simulator
   simulatorStart: 'simulator:start',
   simulatorStop: 'simulator:stop',
@@ -165,6 +168,10 @@ export interface StellarApi {
   settings: {
     get(): Promise<AppSettings>
     save(settings: Partial<AppSettings>): Promise<AppSettings>
+  }
+  system: {
+    /** Primary LAN IPv4 of this host (physical adapter preferred); null if none. */
+    lanIp(): Promise<string | null>
   }
   simulator: {
     start(): Promise<void>
