@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type { CanonicalResult, LisParameter, LisTest, MappingRule } from '../../../shared/types'
+import type {
+  CanonicalResult,
+  LisParameter,
+  LisTest,
+  MappingRule,
+  PresetMapping
+} from '../../../shared/types'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { getDriver } from '../drivers/registry'
 import { maglumiX3Channel } from '../drivers/maglumi'
@@ -398,6 +404,55 @@ export class MappingEngine {
   remove(id: string): void {
     this.rules = this.rules.filter((r) => r.id !== id)
     this.save()
+  }
+
+  /**
+   * Apply a location preset's curated analyte -> LIS mappings for one driver.
+   * Each preset row overwrites (or creates) the matching driver+instrumentCode
+   * rule and is locked as 'manual' so the auto-mapper never reverts it. Preserves
+   * the existing row's id/instrumentName/analyzerCode/unit when present. Rows
+   * without any LIS target are skipped (nothing to apply). Returns rows changed.
+   */
+  applyPresetMappings(driverId: string, mappings: readonly PresetMapping[]): number {
+    const now = new Date().toISOString()
+    let changed = 0
+    for (const m of mappings) {
+      const code = m.instrumentCode?.trim()
+      if (!code) continue
+      const hasTarget =
+        m.lisTestId != null || m.lisTestCode || m.lisParamId != null || m.lisParamName
+      if (!hasTarget) continue
+      const idx = this.rules.findIndex(
+        (r) => r.driverId === driverId && r.instrumentCode.toUpperCase() === code.toUpperCase()
+      )
+      const base = idx >= 0 ? this.rules[idx] : undefined
+      const next: MappingRule = {
+        id: base?.id ?? randomUUID(),
+        driverId,
+        instrumentCode: base?.instrumentCode ?? code,
+        instrumentName: base?.instrumentName,
+        analyzerCode: base?.analyzerCode,
+        // Preset mappings are site-curated and verified — lock them so a later
+        // auto-map (on-receive/startup) can never overwrite the site's choice.
+        status: 'manual',
+        confidence: 1,
+        lisTestId: m.lisTestId,
+        lisTestCode: m.lisTestCode,
+        lisTestName: m.lisTestName,
+        lisParamId: m.lisParamId,
+        lisParamName: m.lisParamName,
+        unit: base?.unit,
+        updatedAt: now
+      }
+      if (idx >= 0) this.rules[idx] = next
+      else this.rules.push(next)
+      changed++
+    }
+    if (changed > 0) {
+      this.save()
+      logger.info('mapping', `Applied ${changed} preset mapping(s) for ${driverId}`)
+    }
+    return changed
   }
 
   /**

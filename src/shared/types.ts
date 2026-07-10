@@ -177,6 +177,22 @@ export interface PresetSerial {
   stopBits?: 1 | 2
 }
 
+/**
+ * One analyte -> Noble LIS mapping carried by a preset. Applied at onboarding so
+ * a site's curated mappings are reproduced on a fresh install without re-mapping.
+ * `lisTestName`/`lisParamName` may be supplied via a shorthand `name` key in the
+ * preset JSON (the registry fills the appropriate field from it).
+ */
+export interface PresetMapping {
+  instrumentCode: string
+  status?: 'auto' | 'manual'
+  lisTestId?: number
+  lisTestCode?: string
+  lisTestName?: string
+  lisParamId?: number
+  lisParamName?: string
+}
+
 /** One analyzer's settings within a location preset. */
 export interface PresetInstrument {
   driverId: string
@@ -188,6 +204,8 @@ export interface PresetInstrument {
   serial?: PresetSerial
   /** Beckman AU per-site Online Test No. decode table (AU analyzers only). */
   auOnlineTestNos?: AuOnlineTestNo[]
+  /** Per-site analyte -> Noble LIS mappings, applied at onboarding. */
+  mappings?: PresetMapping[]
 }
 
 /** A named, location-scoped bundle of instrument settings applied at onboarding. */

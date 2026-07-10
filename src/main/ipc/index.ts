@@ -135,6 +135,15 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     win.webContents.send(IPC_EVENT.mappingsChanged, orchestrator.mapping.list())
     return rules
   })
+  ipcMain.handle(IPC.mappingApplyPreset, (_e, driverId: string, presetKey: string) => {
+    const preset = listPresets().find((p) => p.preset === presetKey)
+    const inst = preset?.instruments.find((i) => i.driverId === driverId)
+    const applied = inst?.mappings?.length
+      ? orchestrator.mapping.applyPresetMappings(driverId, inst.mappings)
+      : 0
+    if (applied > 0) win.webContents.send(IPC_EVENT.mappingsChanged, orchestrator.mapping.list())
+    return applied
+  })
 
   // LIS catalog + connection
   ipcMain.handle(IPC.lisTests, () => lis.getTests())

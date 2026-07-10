@@ -52,6 +52,7 @@ export const IPC = {
   mappingUpsert: 'mappings:upsert',
   mappingRemove: 'mappings:remove',
   mappingAutoMap: 'mappings:auto-map',
+  mappingApplyPreset: 'mappings:apply-preset',
 
   // LIS catalog + connection
   lisTests: 'lis:tests',
@@ -124,6 +125,11 @@ export interface StellarApi {
     upsert(rule: MappingRule): Promise<MappingRule>
     remove(id: string): Promise<void>
     autoMap(driverId: string): Promise<MappingRule[]>
+    /**
+     * Apply a location preset's curated mappings for a driver (at onboarding).
+     * Returns the number of mapping rows created/updated.
+     */
+    applyPreset(driverId: string, presetKey: string): Promise<number>
     onChanged(cb: (rules: MappingRule[]) => void): () => void
   }
   lis: {

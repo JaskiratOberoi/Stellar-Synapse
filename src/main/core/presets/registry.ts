@@ -2,6 +2,7 @@ import type {
   AuOnlineTestNo,
   LocationPreset,
   PresetInstrument,
+  PresetMapping,
   PresetSerial,
   TransportKind
 } from '../../../shared/types'
@@ -55,6 +56,31 @@ function readSerial(inst: any): PresetSerial | undefined {
   return Object.keys(out).length ? out : undefined
 }
 
+/** Per-site analyte -> Noble mappings. Accepts explicit lisTestName/lisParamName
+ * or a shorthand `name` (treated as the param name when a paramId is present,
+ * else the test name). Rows without an instrumentCode are dropped. */
+function readMappings(inst: any): PresetMapping[] | undefined {
+  const raw = inst.mappings
+  if (!Array.isArray(raw)) return undefined
+  const out: PresetMapping[] = []
+  for (const m of raw) {
+    const code = String(m?.instrumentCode ?? '').trim()
+    if (!code) continue
+    const hasParam = typeof m.lisParamId === 'number'
+    const name = m.name != null ? String(m.name) : undefined
+    out.push({
+      instrumentCode: code,
+      status: m.status === 'manual' ? 'manual' : m.status === 'auto' ? 'auto' : undefined,
+      lisTestId: typeof m.lisTestId === 'number' ? m.lisTestId : undefined,
+      lisTestCode: m.lisTestCode ? String(m.lisTestCode) : undefined,
+      lisTestName: m.lisTestName ? String(m.lisTestName) : hasParam ? undefined : name,
+      lisParamId: hasParam ? m.lisParamId : undefined,
+      lisParamName: m.lisParamName ? String(m.lisParamName) : hasParam ? name : undefined
+    })
+  }
+  return out.length ? out : undefined
+}
+
 function normalizeInstrument(inst: any): PresetInstrument {
   return {
     driverId: String(inst.driverId),
@@ -62,7 +88,8 @@ function normalizeInstrument(inst: any): PresetInstrument {
     transport: Array.isArray(inst.transports) ? (inst.transports[0] as TransportKind) : undefined,
     port: typeof inst.defaultPort === 'number' ? inst.defaultPort : undefined,
     serial: readSerial(inst),
-    auOnlineTestNos: readAuTestNos(inst)
+    auOnlineTestNos: readAuTestNos(inst),
+    mappings: readMappings(inst)
   }
 }
 

@@ -204,6 +204,15 @@ export function AddInstrumentModal({
         },
         auOnline: auOnlineTestNos ? { testNos: auOnlineTestNos } : undefined
       })
+      // When onboarding from a location preset, apply that site's curated
+      // analyte -> LIS mappings so they don't have to be re-mapped by hand.
+      if (presetKey) {
+        try {
+          await window.api.mappings.applyPreset(driver.id, presetKey)
+        } catch {
+          // Non-fatal: the instrument is added; mappings can still be set manually.
+        }
+      }
       reset()
       onClose()
     } finally {
@@ -319,8 +328,14 @@ export function AddInstrumentModal({
                 {presetKey
                   ? `Applied ${driverPresets.find((p) => p.preset === presetKey)?.location} settings` +
                     (auOnlineTestNos ? ` + ${auOnlineTestNos.length}-test AU Online map` : '') +
+                    ((): string => {
+                      const n = driverPresets
+                        .find((p) => p.preset === presetKey)
+                        ?.instruments.find((i) => i.driverId === driver?.id)?.mappings?.length
+                      return n ? ` + ${n} LIS mappings (applied on save)` : ''
+                    })() +
                     '. Adjust below if needed.'
-                  : 'Auto-fill connection, serial, and (Beckman AU) the site Online Test No. map from a saved location.'}
+                  : 'Auto-fill connection, serial, (Beckman AU) the site Online Test No. map, and the site LIS mappings from a saved location.'}
               </p>
             </div>
           )}

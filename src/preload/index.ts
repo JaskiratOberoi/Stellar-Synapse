@@ -41,6 +41,8 @@ const api: StellarApi = {
     upsert: (rule) => ipcRenderer.invoke(IPC.mappingUpsert, rule),
     remove: (id) => ipcRenderer.invoke(IPC.mappingRemove, id),
     autoMap: (driverId) => ipcRenderer.invoke(IPC.mappingAutoMap, driverId),
+    applyPreset: (driverId, presetKey) =>
+      ipcRenderer.invoke(IPC.mappingApplyPreset, driverId, presetKey),
     onChanged: (cb) => on<MappingRule[]>(IPC_EVENT.mappingsChanged, cb)
   },
   lis: {
