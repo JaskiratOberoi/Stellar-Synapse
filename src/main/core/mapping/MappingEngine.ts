@@ -616,7 +616,10 @@ function suggestCbcParam(
   tests: LisTest[],
   params: LisParameter[]
 ): MappingTarget | null {
-  const aliases = CBC_PARAM_ALIASES[code.trim().toUpperCase()]
+  // Alias keys use underscores (e.g. RDW_CV), but some drivers emit the same
+  // analyte hyphenated (Boule Swelab Lumi / Medonic M51 send RDW-CV / RDW-SD).
+  // Normalize '-' -> '_' so both spellings resolve to the same synonym list.
+  const aliases = CBC_PARAM_ALIASES[code.trim().toUpperCase().replace(/-/g, '_')]
   if (!aliases) return null
   const aliasNorm = aliases.map(normName)
   const testById = new Map(tests.map((t) => [t.id, t]))
