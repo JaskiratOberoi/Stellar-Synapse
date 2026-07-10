@@ -24,6 +24,9 @@ type MssqlPool = import('mssql').ConnectionPool
 export class SqlLisRepository implements ILisRepository {
   readonly mode = 'sql' as const
   private pool: MssqlPool | null = null
+  // In-flight connect, cached so concurrent callers await ONE connection instead
+  // of racing to open several global sockets (the previous bug).
+  private poolPromise: Promise<MssqlPool> | null = null
   private writes: LisResultWrite[] = []
   private readonly maxWrites = 200
 
@@ -76,18 +79,51 @@ export class SqlLisRepository implements ILisRepository {
     return mssql
   }
 
-  private async getPool(): Promise<MssqlPool> {
-    if (this.pool) return this.pool
-    const mssql = await this.getMssql()
-    this.pool = await mssql.connect({
+  private connectionConfig(): Record<string, unknown> {
+    return {
       server: this.settings.server,
       port: this.settings.port,
       database: this.settings.database,
       user: this.settings.user,
       password: this.settings.password,
       options: { encrypt: this.settings.encrypt, trustServerCertificate: true }
-    })
-    return this.pool
+    }
+  }
+
+  /**
+   * Return this repository's OWN connection pool. We deliberately use a dedicated
+   * `new ConnectionPool` rather than the module-global `mssql.connect()`: the
+   * global API shares a single process-wide connection between every
+   * SqlLisRepository instance, so one instance's `pool.close()` (e.g. a
+   * Test-Connection probe) would tear down the socket another instance is
+   * mid-query on — desyncing the TDS stream into "Unknown type: N" crashes.
+   *
+   * The in-flight connect is cached as a promise so concurrent callers share one
+   * connection attempt, and a pool-level `error` (socket reset / TDS desync) is
+   * logged and the pool dropped so the next call reconnects — it must never
+   * bubble up as an uncaughtException and crash the main process.
+   */
+  private async getPool(): Promise<MssqlPool> {
+    if (this.pool && this.pool.connected) return this.pool
+    if (!this.poolPromise) {
+      this.poolPromise = (async () => {
+        const mssql = await this.getMssql()
+        const pool = new mssql.ConnectionPool(this.connectionConfig() as never)
+        pool.on('error', (err: Error) => {
+          logger.warn('lis-sql', `SQL pool error (dropping pool): ${err.message}`)
+          if (this.pool === pool) this.pool = null
+          this.poolPromise = null
+        })
+        await pool.connect()
+        this.pool = pool
+        return pool
+      })().catch((err) => {
+        // Reset so a transient failure (server briefly down) can be retried.
+        this.poolPromise = null
+        throw err
+      })
+    }
+    return this.poolPromise
   }
 
   async getTests(): Promise<LisTest[]> {
@@ -611,18 +647,24 @@ export class SqlLisRepository implements ILisRepository {
   }
 
   async testConnection(settings: LisConnectionSettings): Promise<LisConnectionResult> {
+    // Probe with a DEDICATED throwaway pool and close only it. Never the global
+    // `mssql.connect()` — that shares (and this method's close() would tear down)
+    // the live backend's connection, corrupting any query in flight.
+    let pool: MssqlPool | null = null
     try {
       const mssql = await this.getMssql()
-      const pool = await mssql.connect({
+      pool = new mssql.ConnectionPool({
         server: settings.server,
         port: settings.port,
         database: settings.database,
         user: settings.user,
         password: settings.password,
         options: { encrypt: settings.encrypt, trustServerCertificate: true }
-      })
+      } as never)
+      // Swallow any late error on this short-lived pool so it can't crash main.
+      pool.on('error', () => undefined)
+      await pool.connect()
       await pool.request().query('SELECT 1 AS ok')
-      await pool.close()
       return {
         state: 'connected',
         message: `Connected to ${settings.database}@${settings.server}.`,
@@ -634,10 +676,13 @@ export class SqlLisRepository implements ILisRepository {
         message: `Connection failed: ${(err as Error).message}`,
         testedAt: new Date().toISOString()
       }
+    } finally {
+      if (pool) await pool.close().catch(() => undefined)
     }
   }
 
   async close(): Promise<void> {
+    this.poolPromise = null
     if (this.pool) {
       await this.pool.close().catch(() => undefined)
       this.pool = null

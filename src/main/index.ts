@@ -13,6 +13,22 @@ import { LD560_LIS_ANALYTES } from '../shared/ld560Transmit'
 
 const isDev = !app.isPackaged
 
+// This app is a background interfacing service: a stray async error — a dropped
+// SQL socket, a TDS stream desync, a serial glitch — must NOT surface Electron's
+// fatal "A JavaScript error occurred in the main process" dialog and take down
+// live interfacing. Log it and keep running; the stack is preserved in the logs
+// for diagnosis. (Connection-level failures are additionally handled at the pool
+// so they rarely reach here.)
+process.on('uncaughtException', (err) => {
+  logger.error('main', `Uncaught exception (kept alive): ${err?.stack ?? String(err)}`)
+})
+process.on('unhandledRejection', (reason) => {
+  logger.error(
+    'main',
+    `Unhandled rejection (kept alive): ${reason instanceof Error ? reason.stack : String(reason)}`
+  )
+})
+
 // Some Windows GPUs crash Chromium's network/GPU service on launch, which paints
 // a blank renderer. Disabling hardware acceleration avoids that failure mode.
 app.disableHardwareAcceleration()
