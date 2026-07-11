@@ -14,6 +14,7 @@ coverage/
 # Bundled output of on-demand verification scripts (regenerated on demand)
 scripts/.verify-mindray.mjs
 scripts/.verify-presets.mjs
+scripts/.verify-magicl.mjs
 
 # Local LIS cleanup backups (contain patient result values — never commit)
 *-backup.json

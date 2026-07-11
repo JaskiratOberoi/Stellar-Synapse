@@ -20,6 +20,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "verify:mindray": "esbuild scripts/verify-mindray.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mindray.mjs && node scripts/.verify-mindray.mjs",
     "verify:presets": "esbuild scripts/verify-presets.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-presets.mjs && node scripts/.verify-presets.mjs",
+    "verify:magicl": "esbuild scripts/verify-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-magicl.mjs && node scripts/.verify-magicl.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },

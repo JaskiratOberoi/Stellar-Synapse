@@ -214,28 +214,33 @@ const snibeOther = [
 // Getein - MAGICL (CLIA) and Getein/FIA (immunofluorescence POCT)
 // ---------------------------------------------------------------------------
 const getein = [
-  mk(
-    'magicl-6000',
-    'Getein MAGICL 6000',
-    'Getein Biotech',
-    'Immunoassay (CLIA)',
-    'Acridinium-ester chemiluminescence immunoassay analyzer (up to 200 T/H). LIS/HIS connectivity (ASTM/HL7).',
-    IMMUNOASSAY_FULL,
-    { port: 9101, protocol: 'astm' }
-  ),
   ...family(
     [
+      ['magicl-6000', 'Getein MAGICL 6000'],
       ['magicl-6000i', 'Getein MAGICL 6000i'],
       ['magicl-6100', 'Getein MAGICL 6100'],
       ['magicl-6200', 'Getein MAGICL 6200'],
+      ['magicl-6200i', 'Getein MAGICL 6200i'],
       ['magicl-6800', 'Getein MAGICL 6800'],
       ['magicl-8500', 'Getein MAGICL 8500']
     ],
     'Getein Biotech',
     'Immunoassay (CLIA)',
-    'Getein MAGICL-series chemiluminescence immunoassay analyzer. LIS/HIS connectivity (ASTM/HL7).',
+    'Getein MAGICL-series acridinium-ester chemiluminescence immunoassay analyzer (up to ~200 T/H; ' +
+      'thyroid, fertility, tumor, cardiac, infectious-disease, bone, anemia, diabetes and autoimmune ' +
+      'markers on serum/plasma/urine/whole blood). Talks ASTM E1394 — LIS01-A2 low-level framing ' +
+      '(ENQ/ACK, STX…ETX, checksum, EOT) plus LIS02-A2 records — over Ethernet TCP/IP or RS-232 ' +
+      'serial. On the analyzer set the LIS interface to ASTM + network/TCP and point it at this ' +
+      "server's IP and port; the analyzer dials out to the host, so Synapse listens as a TCP server. " +
+      'Results upload as H/P/O/R/L: the accession barcode rides in the O-record Specimen ID (field 3) ' +
+      'and each analyte is keyed by the ASTM Universal Test ID in R field 3 ("^^^TSH" → TSH), with ' +
+      'value/unit/reference-range in the following fields. Bidirectional host-query (Q record / order ' +
+      'download) is supported so the analyzer can ask the LIS which assays to run by barcode. Getein\'s ' +
+      'Metis biochemistry line uses HL7 instead — see the Metis drivers for those.',
     IMMUNOASSAY_FULL,
-    { port: 9101, protocol: 'astm' }
+    { port: 9101, protocol: 'astm', mode: 'bidirectional', transports: ['tcp-server', 'serial'] },
+    // Deployed/verified against the standard ASTM layout; others stay skeleton.
+    ['magicl-6000i', 'magicl-6200', 'magicl-6200i']
   ),
   ...family(
     [
