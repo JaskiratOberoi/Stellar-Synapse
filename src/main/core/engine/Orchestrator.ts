@@ -117,6 +117,12 @@ export class Orchestrator extends EventEmitter {
       .catch(() => 0)
     if (added2 > 0) this.emit('mappings', this.mapping.list())
 
+    // Reconcile each instrument's stored protocol with its driver's current
+    // catalog protocol BEFORE starting, so an instrument onboarded under an older
+    // driver protocol (e.g. the Mispa HX 58 before it moved ASTM -> HL7) builds
+    // the correct decoder after an app upgrade instead of silently dropping frames.
+    this.reconcileInstrumentProtocols()
+
     // Auto-start enabled instruments CONCURRENTLY: a slow or unreachable analyzer
     // (and its connect timeout) must not delay the others — sequential awaits here
     // were a second source of the startup stall.
@@ -131,6 +137,32 @@ export class Orchestrator extends EventEmitter {
     // Begin draining any results queued while the LIS was down, and keep retrying.
     this.startFlushLoop()
     void this.flushPendingWrites()
+  }
+
+  /**
+   * Align every instrument's stored `protocol` with its driver's current catalog
+   * value. An instrument definition freezes the driver's protocol at onboarding
+   * time; if a later release changes that model's protocol (the Mispa HX 58 moved
+   * ASTM -> HL7 between 0.2.49 and 0.2.50), the stale stored protocol would build
+   * the wrong decoder and drop every frame. The `generic-astm` fallback is skipped
+   * — there the protocol is a deliberate user choice, not a fixed driver trait.
+   */
+  private reconcileInstrumentProtocols(): void {
+    const all = persist.getInstruments()
+    let changed = false
+    for (const def of all) {
+      if (def.driverId === 'generic-astm') continue
+      const info = getDriver(def.driverId)?.info
+      if (info && def.protocol !== info.protocol) {
+        logger.info(
+          'engine',
+          `Reconciled ${def.name} protocol ${def.protocol} -> ${info.protocol} (driver ${def.driverId})`
+        )
+        def.protocol = info.protocol
+        changed = true
+      }
+    }
+    if (changed) persist.setInstruments(all)
   }
 
   // ----- instrument CRUD -----------------------------------------------------
