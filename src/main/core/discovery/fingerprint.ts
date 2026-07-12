@@ -77,6 +77,9 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /SWELAB\s*LUMI/i, id: 'swelab-lumi', strong: true },
   { re: /MEDONIC\s*M\s*51/i, id: 'medonic-m51', strong: true },
   { re: /SWELAB|BM500|BOULE|MEDONIC/i, id: 'swelab-lumi', strong: false },
+  // Agappe - Mispa HX 58 hematology (Dymind OEM; ASTM H record self-identifies)
+  { re: /MISPA\s*HX\s*58/i, id: 'agappe-mispa-hx58', strong: true },
+  { re: /MISPA\s*HX|DYMIND/i, id: 'agappe-mispa-hx58', strong: false },
   // Mindray - BS-series clinical chemistry (H record self-identifies as "Mindry")
   { re: /BS[\s-]*480/i, id: 'mindray-bs-480', strong: true },
   { re: /BS[\s-]*430/i, id: 'mindray-bs-430', strong: true },

@@ -14,6 +14,7 @@ import {
   HBA1C_MAESTRO,
   HORIBA_ESR,
   HORIBA_YUMIZEN,
+  HX58_CBC,
   IMMUNOASSAY_FULL,
   INTEGRATED,
   URINALYSIS,
@@ -462,9 +463,29 @@ const landwind = [
 ]
 
 // ---------------------------------------------------------------------------
-// Agappe - Mispa Maestro HPLC HbA1c (ASTM E1394-97, analyzer connects to us)
+// Agappe - Mispa Maestro HPLC HbA1c + Mispa HX 58 hematology (ASTM E1394)
 // ---------------------------------------------------------------------------
 const agappe = [
+  mk(
+    'agappe-mispa-hx58',
+    'Agappe Mispa HX 58',
+    'Agappe Diagnostics',
+    'Hematology (CBC)',
+    'Mispa HX 58 automatic 5-part-differential hematology analyzer (Dymind OEM; CBC / ' +
+      'CBC+DIFF, 24 report parameters plus WBC/RBC/PLT histograms and a 4-DIFF scattergram). ' +
+      'ASTM E1394 (LIS2-A2) over TCP/IP or RS-232 serial — this is the analyzer default; ' +
+      '"Strict compliance with HL7" is an optional, non-default mode. On the analyzer set ' +
+      'System > Settings > LIS: Server IP + Server port to THIS host and tick Enable LIS, so ' +
+      'it connects out and uploads H/P/O/R/L result records (Synapse listens as a TCP server). ' +
+      'The accession barcode rides in the O record Specimen ID and each analyte is keyed by ' +
+      'the R record Universal Test ID (e.g. "^^^WBC" -> WBC); units follow the analyzer SI ' +
+      'default (counts 10^9/L, RBC 10^12/L, HGB/MCHC g/L, MPV/PDW fL). Two-way host-query ' +
+      '(test mode + patient info) is supported by the device but pending a captured query ' +
+      'frame — result upload is handled first, and the exact wire codes should be confirmed ' +
+      'against a live capture.',
+    HX58_CBC,
+    { port: 9107, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'skeleton' }
+  ),
   mk(
     'agappe-mispa-maestro',
     'Agappe Mispa Maestro',

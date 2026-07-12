@@ -276,6 +276,40 @@ export const HORIBA_YUMIZEN: DriverAnalyte[] = [
 export const HORIBA_ESR: DriverAnalyte[] = [a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)]
 
 /**
+ * Agappe Mispa HX 58 CBC + 5-part-DIFF menu (Dymind OEM) — instrument codes are
+ * the analyzer's parameter abbreviations exactly as the HX 58 user manual lists
+ * them (NEUT#/LYMPH#/MONO#/EO#/BASO#, RDW-CV/RDW-SD, note the trailing "T"/"O"
+ * that differs from the EDAN/Horiba mnemonics). Units follow the analyzer's SI
+ * default per the manual body (counts 10^9/L, RBC 10^12/L, HGB/MCHC g/L, MPV/PDW
+ * fL); the live unit is read from the ASTM R record. Seeds mapping + simulator.
+ */
+export const HX58_CBC: DriverAnalyte[] = [
+  a('WBC', 'White Blood Cell Count', '10^9/L', 4.0, 10.0, 2),
+  a('NEUT#', 'Neutrophils (abs)', '10^9/L', 2.0, 7.0, 2),
+  a('NEUT%', 'Neutrophils', '%', 50, 70, 1),
+  a('LYMPH#', 'Lymphocytes (abs)', '10^9/L', 0.8, 4.0, 2),
+  a('LYMPH%', 'Lymphocytes', '%', 20, 40, 1),
+  a('MONO#', 'Monocytes (abs)', '10^9/L', 0.12, 1.2, 2),
+  a('MONO%', 'Monocytes', '%', 3, 12, 1),
+  a('EO#', 'Eosinophils (abs)', '10^9/L', 0.02, 0.5, 2),
+  a('EO%', 'Eosinophils', '%', 0.5, 5, 1),
+  a('BASO#', 'Basophils (abs)', '10^9/L', 0, 0.1, 2),
+  a('BASO%', 'Basophils', '%', 0, 1, 1),
+  a('RBC', 'Red Blood Cell Count', '10^12/L', 4.0, 5.5, 2),
+  a('HGB', 'Hemoglobin', 'g/L', 130, 175, 0),
+  a('HCT', 'Hematocrit', '%', 40, 50, 1),
+  a('MCV', 'Mean Corpuscular Volume', 'fL', 82, 100, 1),
+  a('MCH', 'Mean Corpuscular Hemoglobin', 'pg', 27, 34, 1),
+  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/L', 316, 354, 0),
+  a('RDW-CV', 'RDW (CV)', '%', 11.5, 14.5, 1),
+  a('RDW-SD', 'RDW (SD)', 'fL', 35, 56, 1),
+  a('PLT', 'Platelet Count', '10^9/L', 150, 400, 0),
+  a('MPV', 'Mean Platelet Volume', 'fL', 7.5, 11.5, 1),
+  a('PDW', 'Platelet Distribution Width', 'fL', 15, 17, 1),
+  a('PCT', 'Plateletcrit', '%', 0.108, 0.282, 3)
+]
+
+/**
  * Boule Swelab Lumi / Medonic M51 CBC + 5-part-DIFF menu — instrument codes are
  * the short mnemonic Boule sends in OBX-3 component 2 (e.g. `6690-2^WBC^LN` ->
  * "WBC"), with the leading "*" research marker stripped (ALY#, LIC#). Units use
