@@ -21,14 +21,18 @@ export class Hl7Protocol implements IProtocol {
     this.buffer = Buffer.concat([this.buffer, chunk])
     const messages: ProtocolMessage[] = []
 
-    let start = this.buffer.indexOf(VT)
+    // Frame on the <FS> end-block. The <VT> start-block is OPTIONAL: standard MLLP
+    // wraps a message as <VT> body <FS><CR>, but some analyzers (Agappe Mispa HX 58
+    // / "F 580") omit the <VT> and send `body <FS>`. When a <VT> precedes the <FS>
+    // we start just after it; otherwise the body is everything up to the <FS>.
     let end = this.buffer.indexOf(FS)
-    while (start !== -1 && end !== -1 && end > start) {
-      const body = this.buffer.subarray(start + 1, end).toString('utf8')
-      messages.push(this.buildMessage(body))
-      // Drop processed bytes (FS + trailing CR).
-      this.buffer = this.buffer.subarray(end + 2)
-      start = this.buffer.indexOf(VT)
+    while (end !== -1) {
+      const vt = this.buffer.indexOf(VT)
+      const bodyStart = vt !== -1 && vt < end ? vt + 1 : 0
+      const body = this.buffer.subarray(bodyStart, end).toString('utf8').trim()
+      if (body) messages.push(this.buildMessage(body))
+      // Consume through the <FS> and an optional trailing <CR>.
+      this.buffer = this.buffer.subarray(this.buffer[end + 1] === CR ? end + 2 : end + 1)
       end = this.buffer.indexOf(FS)
     }
 
@@ -41,12 +45,22 @@ export class Hl7Protocol implements IProtocol {
   }
 
   private buildMessage(body: string): ProtocolMessage {
-    const records = body
+    // Split into segments. Standard HL7 delimits segments with <CR>; some analyzers
+    // (Agappe Mispa HX 58 / "F 580") send a FLATTENED message with the segments
+    // simply concatenated (no <CR> between them). Insert a <CR> before any known
+    // segment header that directly follows a field separator so both the standard
+    // and flattened shapes split identically. (A `\rOBX|` in standard HL7 is not
+    // preceded by `|`, so real messages are left untouched.)
+    const normalized = body.replace(
+      /\|(?=(?:MSH|PID|PV1|PV2|OBR|OBX|NTE|ORC|SPM|NK1|AL1|DG1|PD1|GT1|IN1|MSA|QRD|QRF|ERR)\|)/g,
+      '|\r'
+    )
+    const records = normalized
       .split(/\r\n|\r|\n/)
       .map((seg) => seg.trim())
       .filter((seg) => seg.length > 0)
       .map((seg) => seg.split('|'))
-    return { protocol: 'hl7', records, raw: body.replace(/\r/g, '\n').trim() }
+    return { protocol: 'hl7', records, raw: normalized.replace(/\r/g, '\n').trim() }
   }
 
   reset(): void {
