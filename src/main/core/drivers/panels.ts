@@ -276,37 +276,43 @@ export const HORIBA_YUMIZEN: DriverAnalyte[] = [
 export const HORIBA_ESR: DriverAnalyte[] = [a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)]
 
 /**
- * Agappe Mispa HX 58 CBC + 5-part-DIFF menu (Dymind OEM) — instrument codes are
- * the analyzer's parameter abbreviations exactly as the HX 58 user manual lists
- * them (NEUT#/LYMPH#/MONO#/EO#/BASO#, RDW-CV/RDW-SD, note the trailing "T"/"O"
- * that differs from the EDAN/Horiba mnemonics). Units follow the analyzer's SI
- * default per the manual body (counts 10^9/L, RBC 10^12/L, HGB/MCHC g/L, MPV/PDW
- * fL); the live unit is read from the ASTM R record. Seeds mapping + simulator.
+ * Agappe Mispa HX 58 CBC + 5-part-DIFF menu (Dymind OEM) — the 26 report analytes
+ * the analyzer actually transmits, confirmed against a live LIS "Transmission
+ * Item" config AND a captured HL7 ORU^R01 frame. Codes are the OBX-3 component-2
+ * mnemonics verbatim (NEUT#/LYMPH#/MONO#/EO#/BASO#, RDW-CV/RDW-SD — note the
+ * trailing "T"/"O" that differs from the EDAN/Horiba mnemonics). The internal /
+ * research channels the device can emit but that a normal run omits (OTHERS#/%,
+ * BASO-C#/%, BASO-O#/%, DIFF-X/Y, WBC-I/O) are excluded. Units are the analyzer's
+ * conventional default as seen on the wire (counts 10^3/uL, HGB/MCHC g/dL, MCV/MPV
+ * fL); the live unit is read from OBX-6 of each frame. Seeds mapping + simulator.
  */
 export const HX58_CBC: DriverAnalyte[] = [
-  a('WBC', 'White Blood Cell Count', '10^9/L', 4.0, 10.0, 2),
-  a('NEUT#', 'Neutrophils (abs)', '10^9/L', 2.0, 7.0, 2),
+  a('WBC', 'White Blood Cell Count', '10^3/uL', 4.0, 10.0, 2),
+  a('NEUT#', 'Neutrophils (abs)', '10^3/uL', 2.0, 7.0, 2),
   a('NEUT%', 'Neutrophils', '%', 50, 70, 1),
-  a('LYMPH#', 'Lymphocytes (abs)', '10^9/L', 0.8, 4.0, 2),
+  a('LYMPH#', 'Lymphocytes (abs)', '10^3/uL', 0.8, 4.0, 2),
   a('LYMPH%', 'Lymphocytes', '%', 20, 40, 1),
-  a('MONO#', 'Monocytes (abs)', '10^9/L', 0.12, 1.2, 2),
+  a('MONO#', 'Monocytes (abs)', '10^3/uL', 0.12, 1.2, 2),
   a('MONO%', 'Monocytes', '%', 3, 12, 1),
-  a('EO#', 'Eosinophils (abs)', '10^9/L', 0.02, 0.5, 2),
+  a('EO#', 'Eosinophils (abs)', '10^3/uL', 0.02, 0.5, 2),
   a('EO%', 'Eosinophils', '%', 0.5, 5, 1),
-  a('BASO#', 'Basophils (abs)', '10^9/L', 0, 0.1, 2),
+  a('BASO#', 'Basophils (abs)', '10^3/uL', 0, 0.1, 2),
   a('BASO%', 'Basophils', '%', 0, 1, 1),
-  a('RBC', 'Red Blood Cell Count', '10^12/L', 4.0, 5.5, 2),
-  a('HGB', 'Hemoglobin', 'g/L', 130, 175, 0),
+  a('RBC#', 'Red Blood Cell Count', '10^6/uL', 4.0, 5.5, 2),
+  a('HGB', 'Hemoglobin', 'g/dL', 13.0, 17.5, 1),
   a('HCT', 'Hematocrit', '%', 40, 50, 1),
   a('MCV', 'Mean Corpuscular Volume', 'fL', 82, 100, 1),
   a('MCH', 'Mean Corpuscular Hemoglobin', 'pg', 27, 34, 1),
-  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/L', 316, 354, 0),
+  a('MCHC', 'Mean Corpuscular Hgb Conc', 'g/dL', 31.6, 35.4, 1),
   a('RDW-CV', 'RDW (CV)', '%', 11.5, 14.5, 1),
-  a('RDW-SD', 'RDW (SD)', 'fL', 35, 56, 1),
-  a('PLT', 'Platelet Count', '10^9/L', 150, 400, 0),
+  a('RDW-SD', 'RDW (SD)', 'fL', 37, 54, 1),
+  a('PLT', 'Platelet Count', '10^3/uL', 150, 400, 0),
   a('MPV', 'Mean Platelet Volume', 'fL', 7.5, 11.5, 1),
   a('PDW', 'Platelet Distribution Width', 'fL', 15, 17, 1),
-  a('PCT', 'Plateletcrit', '%', 0.108, 0.282, 3)
+  a('PCT', 'Plateletcrit', '%', 0.108, 0.282, 3),
+  a('P-LCR', 'Platelet Large Cell Ratio', '%', 10, 50, 1),
+  a('IG#', 'Immature Granulocytes (abs)', '10^3/uL', 0, 0.06, 2),
+  a('IG%', 'Immature Granulocytes', '%', 0, 0.7, 1)
 ]
 
 /**

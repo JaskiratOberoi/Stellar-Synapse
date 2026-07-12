@@ -36,6 +36,24 @@ function normFlag(raw?: string): ResultFlag | undefined {
 }
 
 /**
+ * Strip float32->float64 rendering noise from a numeric value without touching
+ * real precision. The Agappe Mispa HX 58 / "F 580" software casts its computed
+ * MCHC (a 32-bit float) to a double before stringifying, so it sends e.g.
+ * "30.600000381469727" on the wire for what is really 30.6. Rounding to 6
+ * significant figures — far beyond any real hematology precision — collapses the
+ * noise while leaving genuine values (and non-numeric flags/text) untouched.
+ */
+function cleanNumeric(value: string): string {
+  const t = value.trim()
+  if (!t) return value
+  const n = Number(t)
+  if (!Number.isFinite(n)) return value
+  const cleaned = String(parseFloat(n.toPrecision(6)))
+  // Never introduce exponential notation into a LIS value; keep the original.
+  return /[eE]/.test(cleaned) ? value : cleaned
+}
+
+/**
  * Parse a Boule BM500 HL7 v2.3.1 `ORU^R01` message (Swelab Lumi / Medonic M51),
  * per "Description of LIS Communication Protocol for BM500 Analyzers".
  *
@@ -97,7 +115,7 @@ export function parseBouleHl7(message: ProtocolMessage, instrumentId: string): C
         sampleId: currentSample,
         analyteCode: code,
         analyteName: name || undefined,
-        value,
+        value: cleanNumeric(value),
         unit: hl7Unescape((seg[6] || '').trim()) || undefined,
         referenceRange: (seg[7] || '').trim() || undefined,
         flag: normFlag(seg[8]),

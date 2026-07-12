@@ -463,7 +463,7 @@ const landwind = [
 ]
 
 // ---------------------------------------------------------------------------
-// Agappe - Mispa Maestro HPLC HbA1c + Mispa HX 58 hematology (ASTM E1394)
+// Agappe - Mispa Maestro HPLC HbA1c + Mispa HX 58 hematology (HL7 v2.4)
 // ---------------------------------------------------------------------------
 const agappe = [
   mk(
@@ -472,19 +472,21 @@ const agappe = [
     'Agappe Diagnostics',
     'Hematology (CBC)',
     'Mispa HX 58 automatic 5-part-differential hematology analyzer (Dymind OEM; CBC / ' +
-      'CBC+DIFF, 24 report parameters plus WBC/RBC/PLT histograms and a 4-DIFF scattergram). ' +
-      'ASTM E1394 (LIS2-A2) over TCP/IP or RS-232 serial — this is the analyzer default; ' +
-      '"Strict compliance with HL7" is an optional, non-default mode. On the analyzer set ' +
-      'System > Settings > LIS: Server IP + Server port to THIS host and tick Enable LIS, so ' +
-      'it connects out and uploads H/P/O/R/L result records (Synapse listens as a TCP server). ' +
-      'The accession barcode rides in the O record Specimen ID and each analyte is keyed by ' +
-      'the R record Universal Test ID (e.g. "^^^WBC" -> WBC); units follow the analyzer SI ' +
-      'default (counts 10^9/L, RBC 10^12/L, HGB/MCHC g/L, MPV/PDW fL). Two-way host-query ' +
-      '(test mode + patient info) is supported by the device but pending a captured query ' +
-      'frame — result upload is handled first, and the exact wire codes should be confirmed ' +
-      'against a live capture.',
+      'CBC+DIFF, 26 report parameters plus WBC/RBC/PLT histograms and a 4-DIFF scattergram). ' +
+      'HL7 v2.4 ORU^R01 over MLLP/TCP-IP — verified against a live capture: the analyzer\'s ' +
+      'default LIS output is HL7 (the "Strictly comply with HL7 protocol" toggle only affects ' +
+      'strict header formatting, not the format itself). On the analyzer set System > Settings ' +
+      '> LIS Setting to TCP/IP, enter this host as Server IP + Server Port (the deployed unit ' +
+      'uses port 2003) and tick Enable LIS, so it connects out and uploads ORU^R01 (Synapse ' +
+      'listens as a TCP server on the matching port). Shares the BM500-style HL7 layout ' +
+      '(hl7Dialect "boule"): the accession barcode rides in OBR-3 (= OBR-2), and each analyte ' +
+      'is keyed by the OBX-3 component-2 mnemonic (e.g. "777-3^PLT^LN" -> PLT, also echoed in ' +
+      'OBX-4); value in OBX-5, live unit in OBX-6 (conventional: counts 10^3/uL, HGB/MCHC ' +
+      'g/dL), flag in OBX-8. The 26-analyte menu is confirmed against a live "Transmission ' +
+      'Item" config. Two-way LIS (host-query) may be enabled on the device — harmless, but ' +
+      'Synapse handles result upload only; the query response is pending a captured Q frame.',
     HX58_CBC,
-    { port: 9107, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'skeleton' }
+    { port: 2003, protocol: 'hl7', hl7Dialect: 'boule', mode: 'unidirectional', transports: ['tcp-server'], maturity: 'beta' }
   ),
   mk(
     'agappe-mispa-maestro',
