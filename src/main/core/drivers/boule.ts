@@ -54,6 +54,18 @@ function cleanNumeric(value: string): string {
 }
 
 /**
+ * Core CBC quantitative analytes where a value of 0 is physiologically impossible
+ * for a real sample — a 0 there is a background / blank / failed-aspiration run,
+ * not a result. Their zeros are dropped so they never pollute (or, via the LIS
+ * fill-blanks-only guard, permanently block) the real value. Differential
+ * counts / percentages (BASO%, EO#, IG#, …) are intentionally NOT listed — a
+ * genuine 0 there is clinically valid and must still be reported.
+ */
+const NONZERO_CBC = new Set([
+  'WBC', 'RBC', 'RBC#', 'HGB', 'HCT', 'PLT', 'MCV', 'MCH', 'MCHC', 'RDW-CV', 'RDW-SD'
+])
+
+/**
  * Parse a Boule BM500 HL7 v2.3.1 `ORU^R01` message (Swelab Lumi / Medonic M51),
  * per "Description of LIS Communication Protocol for BM500 Analyzers".
  *
@@ -109,6 +121,9 @@ export function parseBouleHl7(message: ProtocolMessage, instrumentId: string): C
       if (/histogram|scattergram/i.test(name) || code.toLowerCase() === 'age') continue
       const value = (seg[5] || '').trim()
       if (!value || Number.isNaN(Number(value))) continue
+      // A 0 for a core CBC quantitative parameter is a blank/failed run, not a
+      // result — drop it so it never overwrites or blocks the real value.
+      if (Number(value) === 0 && NONZERO_CBC.has(code.toUpperCase())) continue
       results.push({
         id: randomUUID(),
         instrumentId,
