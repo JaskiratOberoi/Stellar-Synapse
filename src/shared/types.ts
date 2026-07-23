@@ -185,6 +185,16 @@ export interface PresetSerial {
  */
 export interface PresetMapping {
   instrumentCode: string
+  /**
+   * Analyzer channel / transmit name ("Channel No." on the MAGLUMI X3), when it
+   * differs from instrumentCode. Applied onto the mapping so host-query order
+   * records address the analyzer's own channel. See MappingRule.analyzerCode.
+   */
+  analyzerCode?: string
+  /** Human label captured with the site config (documentation + display). */
+  instrumentName?: string
+  /** Analyte unit captured with the site config. */
+  unit?: string
   status?: 'auto' | 'manual'
   lisTestId?: number
   lisTestCode?: string
@@ -508,4 +518,46 @@ export interface AppSettings {
    * system tray so interfacing resumes on boot without showing the UI).
    */
   launchAtStartup: boolean
+  /**
+   * Check for and silently download over-the-air updates in the background.
+   * Downloaded updates install + relaunch during the nightly window below.
+   */
+  autoUpdateEnabled: boolean
+  /**
+   * Local hour (0–23) at which a downloaded update is installed and the app
+   * relaunched. Kept off-hours by default so interfacing isn't interrupted
+   * mid-shift; the install itself takes only seconds.
+   */
+  updateInstallHour: number
+}
+
+// ---------------------------------------------------------------------------
+// Auto-update status (main -> renderer)
+// ---------------------------------------------------------------------------
+
+/** Lifecycle of the over-the-air updater, surfaced in the UI. */
+export type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'not-available'
+  | 'error'
+  | 'disabled'
+
+export interface UpdateStatus {
+  /** Running app version (package.json). */
+  currentVersion: string
+  state: UpdateState
+  /** Version offered by the feed, when one is available/downloaded. */
+  availableVersion?: string
+  /** 0–100 while downloading. */
+  progressPercent?: number
+  /** Last error message, when state === 'error'. */
+  error?: string
+  /** ISO time the downloaded update is scheduled to install, if pending. */
+  pendingInstallAt?: string
+  /** ISO time of the last completed check (success or not-available). */
+  lastCheckedAt?: string
 }

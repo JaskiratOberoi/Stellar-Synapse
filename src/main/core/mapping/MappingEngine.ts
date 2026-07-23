@@ -13,6 +13,19 @@ import { auVariantGroup } from '../drivers/beckmanAu'
 import { persist } from '../../store'
 import { logger } from '../logger'
 
+/**
+ * Minimum auto-map confidence trusted for anything that touches patient data —
+ * LIS result writes and host-query order codes alike.
+ *
+ * The fuzzy name pass (0.6) matches on bare substring containment in either
+ * direction, which is how AU "ALB" resolved to Noble's "A/G (Albumin/Globulin)
+ * Ratio", "CHOL" to "Total Cholesterol / HdL", and "IgE" to "Globulin" — silent,
+ * confident and wrong. Exact code/parameter hits (1.0), CBC alias hits (0.95) and
+ * the parenthesised-abbreviation pass (0.9) are precise enough to trust; anything
+ * below must be confirmed by an operator (status 'manual') before it can write.
+ */
+export const MIN_TRUSTED_CONFIDENCE = 0.9
+
 interface MappingTarget {
   lisTestId?: number
   lisTestCode?: string
@@ -183,26 +196,78 @@ export class MappingEngine {
       }
     }
 
-    // 3) Fuzzy: test name contains the analyte name token. Require both sides to
+    // 3) Name similarity, GRADED (see fuzzyNameConfidence). Require both sides to
     // be >= 4 chars so a test literally named "M" can't swallow "Monocytes".
+    // Score every candidate and keep the best rather than the arbitrary first
+    // hit — with a trust floor above, which candidate wins now decides whether
+    // the analyte can write at all.
     if (name && name.trim().length >= 4) {
       const n = name.toLowerCase().trim()
-      const fuzzy = tests.find((t) => {
+      let best: { test: LisTest; confidence: number } | null = null
+      for (const t of tests) {
         const tn = t.testName.toLowerCase().trim()
-        if (tn.length < 4) return false
-        return tn.includes(n) || n.includes(tn)
-      })
-      if (fuzzy) {
+        if (tn.length < 4) continue
+        if (!tn.includes(n) && !n.includes(tn)) continue
+        const confidence = fuzzyNameConfidence(name, t.testName)
+        // Tie-break on the shorter LIS name: the least-qualified row is the raw
+        // analyte ("Troponin I" over "Troponin I (High Sensitivity)").
+        if (
+          !best ||
+          confidence > best.confidence ||
+          (confidence === best.confidence && t.testName.trim().length < best.test.testName.trim().length)
+        ) {
+          best = { test: t, confidence }
+        }
+      }
+      if (best) {
         return {
-          lisTestId: fuzzy.id,
-          lisTestCode: fuzzy.testCode,
-          lisTestName: fuzzy.testName,
-          confidence: 0.6
+          lisTestId: best.test.id,
+          lisTestCode: best.test.testCode,
+          lisTestName: best.test.testName,
+          confidence: best.confidence
         }
       }
     }
 
     return null
+  }
+
+  /**
+   * One-time: re-score name-matched auto rules under the graded matcher.
+   *
+   * Every name-similarity hit used to be stored as a flat 0.6, so once writes
+   * gained a trust floor (MIN_TRUSTED_CONFIDENCE) all of them — including plainly
+   * correct ones like Ferritin -> Ferritin and "Cardiac Troponin I" -> "Troponin
+   * I" — would stop writing on upgrade. Re-grade each one from the names already
+   * on the rule and promote the ones that earn it; genuine junk (pH -> "AFP
+   * (Alpha Fetoprotein)") keeps its 0.6 and stays blocked until an operator
+   * confirms it. Only touches sub-floor 'auto' rules that already carry a LIS
+   * target, so a manual mapping or an operator's ignore is never disturbed.
+   */
+  migrateRescoreNameMappings(): number {
+    if (persist.getMigrationFlag('migratedRescoreNameMappings')) return 0
+    let changed = 0
+    for (const rule of this.rules) {
+      if (rule.status !== 'auto') continue
+      if ((rule.confidence ?? 0) >= MIN_TRUSTED_CONFIDENCE) continue
+      const lisName = rule.lisParamName ?? rule.lisTestName
+      if (!lisName || !rule.instrumentName) continue
+      const graded = fuzzyNameConfidence(rule.instrumentName, lisName)
+      if (graded <= (rule.confidence ?? 0)) continue
+      rule.confidence = graded
+      rule.updatedAt = new Date().toISOString()
+      changed++
+    }
+    persist.setMigrationFlag('migratedRescoreNameMappings', true)
+    if (changed > 0) {
+      this.save()
+      logger.info(
+        'mapping',
+        `Re-scored ${changed} name-matched mapping(s) under the graded matcher; ` +
+          `those still below ${MIN_TRUSTED_CONFIDENCE} need operator confirmation before they can write`
+      )
+    }
+    return changed
   }
 
   /**
@@ -295,7 +360,10 @@ export class MappingEngine {
     }
     if (changed > 0) {
       this.save()
-      logger.info('mapping', `Resolved ${changed} previously-unmapped analyte(s) for [${unique.join(', ')}]`)
+      logger.info(
+        'mapping',
+        `Resolved ${changed} previously-unmapped analyte(s) for [${unique.join(', ')}]`
+      )
     }
     return changed
   }
@@ -430,8 +498,11 @@ export class MappingEngine {
         id: base?.id ?? randomUUID(),
         driverId,
         instrumentCode: base?.instrumentCode ?? code,
-        instrumentName: base?.instrumentName,
-        analyzerCode: base?.analyzerCode,
+        // Prefer the site-captured label/channel/unit from the preset, falling
+        // back to the existing row. The channel (analyzerCode / "Channel No.") is
+        // what host-query order records address, so applying it is the point.
+        instrumentName: m.instrumentName ?? base?.instrumentName,
+        analyzerCode: m.analyzerCode ?? base?.analyzerCode,
         // Preset mappings are site-curated and verified — lock them so a later
         // auto-map (on-receive/startup) can never overwrite the site's choice.
         status: 'manual',
@@ -441,7 +512,7 @@ export class MappingEngine {
         lisTestName: m.lisTestName,
         lisParamId: m.lisParamId,
         lisParamName: m.lisParamName,
-        unit: base?.unit,
+        unit: m.unit ?? base?.unit,
         updatedAt: now
       }
       if (idx >= 0) this.rules[idx] = next
@@ -507,10 +578,23 @@ export class MappingEngine {
       byTest.set(key, group)
     }
 
+    // A preset-configured instrument (any manual/curated mapping) carries the
+    // analyzer's REAL order codes (e.g. DxI "TSH3", MAGICL "18"). Its seeded
+    // generic analytes (TSH, T3, IgE…) are auto-mapped guesses that are NOT in the
+    // analyzer's own menu — ordering one makes the analyzer reject the request
+    // ("Unknown test name / Assay Not Found", Getein MA00F). So once an instrument
+    // has any manual mapping, order ONLY manual codes; a purely auto-mapped
+    // instrument still falls back to high-confidence (exact/abbreviation) auto.
+    const driverHasManual = this.rules.some(
+      (r) => r.driverId === driverId && r.status === 'manual'
+    )
     const out: string[] = []
     for (const group of byTest.values()) {
       const manual = group.filter((r) => r.status === 'manual')
-      const chosen = manual.length > 0 ? manual : group
+      const auto = group.filter(
+        (r) => r.status !== 'manual' && (r.confidence ?? 0) >= MIN_TRUSTED_CONFIDENCE
+      )
+      const chosen = manual.length > 0 ? manual : driverHasManual ? [] : auto
       // Send the analyzer's own channel name when set (e.g. MAGLUMI X3 matches the
       // order by Channel No., not our generic code), else the instrument code.
       for (const r of chosen) out.push(r.analyzerCode?.trim() || r.instrumentCode)
@@ -551,7 +635,13 @@ export class MappingEngine {
  * the "… %" parameter, not the bare cell name.
  */
 const CBC_PARAM_ALIASES: Record<string, string[]> = {
-  WBC: ['total leukocyte count', 'total leucocyte count', 'tlc', 'white blood cell count', 'wbc count'],
+  WBC: [
+    'total leukocyte count',
+    'total leucocyte count',
+    'tlc',
+    'white blood cell count',
+    'wbc count'
+  ],
   RBC: ['rbc count', 'red blood cell count', 'total rbc count'],
   HGB: ['hemoglobin', 'haemoglobin', 'hb'],
   HCT: ['hematocrit', 'haematocrit', 'packed cell volume', 'pcv'],
@@ -634,9 +724,81 @@ function matchTestByCodeAbbreviation(code: string, tests: LisTest[]): LisTest | 
     }
   }
   const pick = (arr: LisTest[]): LisTest | null =>
-    arr.length === 0 ? null : arr.sort((a, b) => a.testName.trim().length - b.testName.trim().length)[0]
+    arr.length === 0
+      ? null
+      : arr.sort((a, b) => a.testName.trim().length - b.testName.trim().length)[0]
   return pick(parenHits) ?? pick(leadHits)
 }
+
+/**
+ * Tokens the LIS appends when a row is a DERIVED quantity rather than the raw
+ * analyte — a ratio, an index, a calculated fraction. These are the rows a loose
+ * name match must never fill: "Albumin" is genuinely a whole word of "A/G
+ * (Albumin/Globulin) Ratio", so token containment alone would happily post a raw
+ * albumin value into the ratio row (Karnal SID 9268936 did exactly that).
+ */
+const DERIVED_NAME_MARKERS = new Set([
+  'ratio',
+  'index',
+  'percent',
+  'pct',
+  'per',
+  'fraction',
+  'coefficient',
+  'corrected',
+  'calculated',
+  'calc',
+  'estimated',
+  'delta'
+])
+
+/** Split a name into comparable lowercase word tokens. */
+function nameTokens(s: string): string[] {
+  return normName(s).split(' ').filter(Boolean)
+}
+
+/**
+ * Grade a name-similarity match instead of scoring every hit a flat 0.6.
+ *
+ * The old single-tier fuzzy pass could not tell "Ferritin" == "Ferritin" apart
+ * from "pH" buried inside "AFP (AlPHa Fetoprotein)" — both scored 0.6, so any
+ * confidence floor either admitted the junk or blocked six correct mappings.
+ * Three grades:
+ *   0.95  names are equal once normalised — as good as an exact code hit.
+ *   0.90  every word of the shorter name appears as a WORD in the longer, and the
+ *         extra words are non-semantic ("Cardiac Troponin I" -> "Troponin I",
+ *         "Mean Platelet Volume" -> "MEAN PLATELET VOLUME, MPV").
+ *   0.60  anything looser — mid-word substrings, or containment where the longer
+ *         name is a derived quantity. Below the trust floor, so it needs an
+ *         operator's confirmation before it can write.
+ */
+function fuzzyNameConfidence(instrumentName: string, lisName: string): number {
+  const a = normName(instrumentName)
+  const b = normName(lisName)
+  if (!a || !b) return 0
+  if (a === b) return 0.95
+
+  const ta = nameTokens(instrumentName)
+  const tb = nameTokens(lisName)
+  const shortIsA = ta.length <= tb.length
+  const short = shortIsA ? ta : tb
+  const long = shortIsA ? tb : ta
+  if (short.length === 0) return 0.6
+  if (!short.every((t) => long.includes(t))) return 0.6 // mid-word substring only
+
+  const extra = long.filter((t) => !short.includes(t))
+  if (extra.some((t) => DERIVED_NAME_MARKERS.has(t))) return 0.6
+  // A '/' or '%' the shorter name lacks marks a compound/derived quantity too
+  // ("Total Cholesterol" vs "Total Cholesterol / HdL").
+  const shortRaw = shortIsA ? instrumentName : lisName
+  const longRaw = shortIsA ? lisName : instrumentName
+  if (/[/%]/.test(longRaw) && !/[/%]/.test(shortRaw)) return 0.6
+
+  return 0.9
+}
+
+/** Test-only export of the grader (see scripts/verify-mapgrade.ts). */
+export const __fuzzyNameConfidenceForTest = fuzzyNameConfidence
 
 /** Lowercase a name and collapse separators/punctuation for tolerant matching. */
 function normName(s: string): string {
@@ -691,8 +853,7 @@ function suggestCbcParam(
   if (cands.length === 0) return null
   // CBC-panel match wins; then most-specific synonym; then shortest name.
   cands.sort(
-    (a, b) =>
-      Number(b.cbc) - Number(a.cbc) || a.idx - b.idx || a.p.name.length - b.p.name.length
+    (a, b) => Number(b.cbc) - Number(a.cbc) || a.idx - b.idx || a.p.name.length - b.p.name.length
   )
   const best = cands[0]
   return {
@@ -707,11 +868,7 @@ function suggestCbcParam(
 }
 
 /** Match Noble parameter rows for LD-560 HbA1c / eAG analytes. */
-function paramMatchesAnalyte(
-  param: LisParameter,
-  code: string,
-  name?: string
-): boolean {
+function paramMatchesAnalyte(param: LisParameter, code: string, name?: string): boolean {
   const n = param.name.toLowerCase()
   const c = code.trim()
   if (c === 'HbA1c' || c === 'S-A1c') {

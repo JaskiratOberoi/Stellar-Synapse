@@ -29,7 +29,7 @@ import {
 function buildLd560Rows(
   ld: string,
   analytes: { code: string; value: string; unit: string }[]
-): { id: string; analyteCode: string; value: string; unit?: string }[] {
+): { id: string; analyteCode: string; analyteName?: string; value: string; unit?: string }[] {
   const rows = analytes.map((a) => ({
     id: `${ld}-${a.code}`,
     analyteCode: a.code === 'eAG' ? 'eAG (Instrument)' : a.code,
@@ -74,7 +74,7 @@ export function InstrumentDetail() {
       timestamp: string
       raw: string
       kind: 'ld560' | 'generic'
-      rows: { id: string; analyteCode: string; value: string; unit?: string }[]
+      rows: { id: string; analyteCode: string; analyteName?: string; value: string; unit?: string }[]
       lisStatus: ReturnType<typeof ld560FrameLisStatus> | undefined
     }
     const byKey = new Map<string, Frame>()
@@ -109,7 +109,13 @@ export function InstrumentDetail() {
         const existing = byKey.get(key)
         if (existing) {
           if (!existing.rows.some((r) => r.analyteCode === m.analyteCode)) {
-            existing.rows.push({ id: m.id, analyteCode: m.analyteCode, value: m.value, unit: m.unit })
+            existing.rows.push({
+              id: m.id,
+              analyteCode: m.analyteCode,
+              analyteName: m.analyteName,
+              value: m.value,
+              unit: m.unit
+            })
           }
         } else {
           byKey.set(key, {
@@ -118,7 +124,15 @@ export function InstrumentDetail() {
             raw: m.raw ?? '',
             kind: 'generic',
             lisStatus: undefined,
-            rows: [{ id: m.id, analyteCode: m.analyteCode, value: m.value, unit: m.unit }]
+            rows: [
+              {
+                id: m.id,
+                analyteCode: m.analyteCode,
+                analyteName: m.analyteName,
+                value: m.value,
+                unit: m.unit
+              }
+            ]
           })
         }
       }
@@ -434,7 +448,14 @@ export function InstrumentDetail() {
                 <div className="divide-y divide-border/30 px-3 py-1">
                   {frame.rows.map((r) => (
                     <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
-                      <span className="font-medium">{r.analyteCode}</span>
+                      <span className="font-medium">
+                        {r.analyteName || r.analyteCode}
+                        {r.analyteName && r.analyteName !== r.analyteCode && (
+                          <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
+                            {r.analyteCode}
+                          </span>
+                        )}
+                      </span>
                       <span>
                         <span className="font-semibold">{r.value}</span>
                         {r.unit && <span className="ml-1 text-xs text-muted-foreground">{r.unit}</span>}
@@ -514,7 +535,7 @@ export function InstrumentDetail() {
                   </span>
                   <span className="text-accent">{m.sampleId}</span>
                   <span className="flex-1 text-foreground">
-                    {m.analyteCode}={m.value} {m.unit}
+                    {m.analyteName || m.analyteCode}={m.value} {m.unit}
                   </span>
                 </motion.div>
               ))}

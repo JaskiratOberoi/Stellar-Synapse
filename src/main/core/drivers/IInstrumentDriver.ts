@@ -37,7 +37,9 @@ export interface IInstrumentDriver {
    * BS-series layout (barcode in the O Specimen ID field 4, analyte code/value in
    * component 1) and its "SA" order-download format. Undefined = standard ASTM.
    */
-  readonly astmDialect?: 'mindray'
+  readonly astmDialect?: 'mindray' | 'beckman-dxi'
+  /** HL7 parsing/host-query dialect for hl7 drivers ('getein'|'edan'|'boule'), else undefined. */
+  readonly hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba'
   /** When true, the analyzer reconnects per result batch; keep the UI status 'online' between batches. */
   readonly transientConnection?: boolean
   /** Analytes this instrument can report. */

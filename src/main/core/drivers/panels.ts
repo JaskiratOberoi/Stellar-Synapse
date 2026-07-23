@@ -14,7 +14,12 @@ const a = (
   max: number,
   decimals = 2,
   ref?: string
-): DriverAnalyte => ({ code, name, unit, sim: { min, max, decimals, ref: ref ?? `${min} to ${max}` } })
+): DriverAnalyte => ({
+  code,
+  name,
+  unit,
+  sim: { min, max, decimals, ref: ref ?? `${min} to ${max}` }
+})
 
 export const THYROID: DriverAnalyte[] = [
   a('TSH', 'Thyroid Stimulating Hormone', 'uIU/mL', 0.27, 4.2),
@@ -127,8 +132,19 @@ export const INFLAMMATION: DriverAnalyte[] = [
   a('IL6', 'Interleukin-6', 'pg/mL', 0, 7, 1)
 ]
 
-export const AUTOIMMUNE: DriverAnalyte[] = [
-  a('ACCP', 'Anti-CCP', 'U/mL', 0, 17, 1)
+export const AUTOIMMUNE: DriverAnalyte[] = [a('ACCP', 'Anti-CCP', 'U/mL', 0, 17, 1)]
+
+/**
+ * Specialty endocrine / allergy immunoassays that don't fit the panels above —
+ * adrenal (Cortisol, 17-OH-Progesterone), pituitary (Growth Hormone) and allergy
+ * (total IgE). Present on the Delhi MAGLUMI X3 menu; ranges are typical adult
+ * defaults for the simulator and should be re-certified per site.
+ */
+export const SPECIALTY_ENDO: DriverAnalyte[] = [
+  a('CORT', 'Cortisol', 'ug/dL', 6, 23, 1),
+  a('17OHP', '17-OH Progesterone', 'ng/mL', 0.2, 1.3, 2),
+  a('GH', 'Growth Hormone', 'ng/mL', 0, 3),
+  a('IGE', 'Immunoglobulin E (IgE)', 'IU/mL', 0, 100, 0)
 ]
 
 export const CHEMISTRY: DriverAnalyte[] = [
@@ -245,7 +261,7 @@ export const HORIBA_YUMIZEN: DriverAnalyte[] = [
   a('MIC', 'Microcytic RBC (% vs RBC)', '%', 0, 5, 1),
   a('MAC', 'Macrocytic RBC (% vs RBC)', '%', 0, 5, 1),
   a('PLT', 'Platelet Count', '10^3/uL', 150, 400, 0),
-  a('PCT', 'Plateletcrit', '%', 0.15, 0.40, 2),
+  a('PCT', 'Plateletcrit', '%', 0.15, 0.4, 2),
   a('PDW', 'Platelet Distribution Width', '%', 10, 18, 1),
   a('MPV', 'Mean Platelet Volume', 'fL', 7.5, 11.5, 1),
   a('P-LCC', 'Platelet Large Cell Count', '10^3/uL', 30, 90, 0),
@@ -273,7 +289,9 @@ export const HORIBA_YUMIZEN: DriverAnalyte[] = [
 ]
 
 /** ESR add-on reported by the Yumizen H550E only (ASTM code "ESR", mm/h). */
-export const HORIBA_ESR: DriverAnalyte[] = [a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)]
+export const HORIBA_ESR: DriverAnalyte[] = [
+  a('ESR', 'Erythrocyte Sedimentation Rate', 'mm/h', 0, 20, 0)
+]
 
 /**
  * Agappe Mispa HX 58 CBC + 5-part-DIFF menu (Dymind OEM) — the 26 report analytes
@@ -395,7 +413,8 @@ export const IMMUNOASSAY_FULL = combine(
   BONE,
   ANEMIA,
   DIABETES,
-  AUTOIMMUNE
+  AUTOIMMUNE,
+  SPECIALTY_ENDO
 )
 
 /** Point-of-care immunofluorescence (Getein FIA) menu. */

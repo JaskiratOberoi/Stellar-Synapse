@@ -6,7 +6,8 @@ import type {
   MonitorEvent,
   LogEntry,
   ScanProgress,
-  DiscoveredHost
+  DiscoveredHost,
+  UpdateStatus
 } from '../shared/types'
 
 /** Helper to subscribe to a push event and return an unsubscribe function. */
@@ -55,8 +56,7 @@ const api: StellarApi = {
     writeBarcode: (instrumentId, barcode) =>
       ipcRenderer.invoke(IPC.lisWriteBarcode, instrumentId, barcode),
     parseFrame: (instrumentId, raw) => ipcRenderer.invoke(IPC.lisParseFrame, instrumentId, raw),
-    parseAllUnwritten: (instrumentId) =>
-      ipcRenderer.invoke(IPC.lisParseAllUnwritten, instrumentId)
+    parseAllUnwritten: (instrumentId) => ipcRenderer.invoke(IPC.lisParseAllUnwritten, instrumentId)
   },
   monitor: {
     recent: () => ipcRenderer.invoke(IPC.monitorRecent),
@@ -74,7 +74,14 @@ const api: StellarApi = {
     save: (settings) => ipcRenderer.invoke(IPC.settingsSave, settings)
   },
   system: {
-    lanIp: () => ipcRenderer.invoke(IPC.systemLanIp)
+    lanIp: () => ipcRenderer.invoke(IPC.systemLanIp),
+    reportError: (message) => ipcRenderer.send(IPC.rendererError, message)
+  },
+  update: {
+    getStatus: () => ipcRenderer.invoke(IPC.updateGetStatus),
+    check: () => ipcRenderer.invoke(IPC.updateCheck),
+    install: () => ipcRenderer.invoke(IPC.updateInstall),
+    onStatus: (cb) => on<UpdateStatus>(IPC_EVENT.updateStatus, cb)
   },
   simulator: {
     start: () => ipcRenderer.invoke(IPC.simulatorStart),

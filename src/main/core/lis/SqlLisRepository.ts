@@ -495,9 +495,22 @@ export class SqlLisRepository implements ILisRepository {
       -- Distinguish "nothing matched because the cell is ALREADY FILLED" (expected
       -- skip — fill-blanks-only) from a genuine "not ordered" miss, so the former
       -- doesn't trip the not-ordered warning or the name-key fallback below.
+      -- Capture WHAT is sitting in the cell as well as the fact that something is:
+      -- a skip whose reason is invisible hides real corruption (a bad value written
+      -- by an earlier mis-decode silently blocks the correct re-run forever).
       DECLARE @existed int = 0;
+      DECLARE @exValue varchar(50) = '', @exLabel varchar(200) = '',
+              @exMachine varchar(50) = '', @exWhen varchar(30) = '', @exRow varchar(60) = '';
       IF @matched = 0
-        SELECT @existed = COUNT(*) FROM tbl_med_mcc_patient_test_result
+        SELECT TOP 1
+          @existed   = 1,
+          @exValue   = LTRIM(RTRIM(CONVERT(varchar(50), value))),
+          @exLabel   = CONVERT(varchar(200), COALESCE(testname, '')),
+          @exMachine = CONVERT(varchar(50), COALESCE(machine_name, '')),
+          @exWhen    = CONVERT(varchar(30), addeddate, 120),
+          @exRow     = 't' + CONVERT(varchar(12), testid) +
+                       '/p' + COALESCE(CONVERT(varchar(12), paramid), '-')
+        FROM tbl_med_mcc_patient_test_result
         WHERE vailid = @vailid AND testtype NOT IN ('Head', 'Profile')
           AND value IS NOT NULL AND LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
           AND ( (@paramid IS NOT NULL AND paramid = @paramid)
@@ -506,16 +519,33 @@ export class SqlLisRepository implements ILisRepository {
 
       ${this.statusRecomputeSql}
 
-      SELECT @matched AS matched, @existed AS existed;
+      SELECT @matched AS matched, @existed AS existed, @exValue AS exValue,
+             @exLabel AS exLabel, @exMachine AS exMachine, @exWhen AS exWhen,
+             @exRow AS exRow;
     `)
 
-    const matched = Number(result.recordset?.[0]?.matched ?? 0)
-    const alreadyFilled = Number(result.recordset?.[0]?.existed ?? 0) > 0
+    const row0 = (result.recordset?.[0] ?? {}) as Record<string, unknown>
+    const matched = Number(row0.matched ?? 0)
+    const alreadyFilled = Number(row0.existed ?? 0) > 0
     if (matched === 0 && alreadyFilled) {
-      logger.info(
+      const str = (k: string): string => String(row0[k] ?? '').trim()
+      const existing = str('exValue')
+      const label = str('exLabel')
+      const machine = str('exMachine')
+      const when = str('exWhen')
+      const rowRef = str('exRow')
+      // Warn, not info: a blocked write means the LIS and the analyzer disagree,
+      // and the operator needs the existing value to judge which one is right.
+      logger.warn(
         'lis-sql',
-        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''} — ` +
-          `value already present in LIS, left unchanged (fill-blanks-only)`
+        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}` +
+          `=${write.value}${write.unit ? ` ${write.unit}` : ''} — target cell already holds ` +
+          `"${existing || '(non-empty)'}"` +
+          (label ? ` for "${label}"` : '') +
+          (rowRef ? ` (${rowRef})` : '') +
+          (machine ? `, written by ${machine}` : '') +
+          (when ? ` at ${when}` : '') +
+          '. Fill-blanks-only: left unchanged. Clear the cell in Noble to let this value in.'
       )
       return 'skipped'
     }
@@ -548,9 +578,10 @@ export class SqlLisRepository implements ILisRepository {
       }
       logger.warn(
         'lis-sql',
-        `No matching result row for ${write.vailid} ${write.testCode} ` +
-          `(mapped testid ${write.testId}, paramid ${write.paramId ?? 'null'}, name "${write.testName}") — ` +
-          `sample rows: ${rowsDump || '(none registered)'}`
+        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}` +
+          `=${write.value} — test not ordered for this sample: no result row matches the mapped ` +
+          `target (testid ${write.testId}, paramid ${write.paramId ?? 'null'}, name "${write.testName}") ` +
+          `by id, code, name or name-key. Sample's registered rows: ${rowsDump || '(none registered)'}`
       )
       return 'skipped'
     }

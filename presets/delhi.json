@@ -1,0 +1,50 @@
+{
+  "preset": "delhi",
+  "location": "Delhi",
+  "capturedAt": "2026-07-19",
+  "instruments": [
+    {
+      "driverId": "maglumi-x3",
+      "model": "MAGLUMI X3",
+      "vendor": "SNIBE Diagnostics",
+      "category": "Immunoassay (CLIA)",
+      "protocol": "astm",
+      "mode": "bidirectional",
+      "defaultPort": 9100,
+      "transports": ["tcp-server", "serial"],
+      "maturity": "beta",
+      "analytePanel": "Delhi MAGLUMI X3 assay menu (23 assays) captured from the analyzer Parameter Definition. analyzerCode is the on-analyzer Channel No.",
+      "source": "Delhi X3 assay menu captured from analyzer screens (2026-07-19); LIS targets resolved against the live Noble catalog (tbl_med_test_master, real BI/MS codes) on 2026-07-19. All 23 analytes mapped and name-verified.",
+      "mappingsSummary": { "total": 23, "mapped": 23, "unmapped": 0 },
+      "_mappingNotes": [
+        "LIS targets are REAL Noble catalog entries (TSH=BI221, T3=BI214, T4=BI215, LH=BI145, FSH=BI106, PSA=BI181, Cortisol=BI085, IgE=BI133, etc.) — NOT the mock 10xx ids the dev-store capture used.",
+        "Insulin (INS) -> Insulin Fasting (BI136); Noble also has Insulin PP/Random. PSA -> Total PSA (BI181), Testosterone -> Total (BI209), Cortisol -> Serum (BI085), B12 -> Serum total (BI235), Rubella -> IgG (MS087)."
+      ],
+      "mappings": [
+        { "instrumentCode": "17OHP", "instrumentName": "17-OH Progesterone", "analyzerCode": "17a-OH P", "lisTestId": 73, "lisTestCode": "BI001", "lisTestName": "17 OHP Hydroxy Progesterone", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "ACCP", "instrumentName": "Anti-CCP", "analyzerCode": "CCP II", "lisTestId": 629, "lisTestCode": "BI036", "lisTestName": "Anti Cyclic Citrullinated Peptide (Anti - CCP)", "unit": "U/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "BHCG", "instrumentName": "Beta hCG", "analyzerCode": "T-B HCG II", "lisTestId": 85, "lisTestCode": "BI044", "lisTestName": "Beta-hCG (Quantitative) Serum", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "CORT", "instrumentName": "Cortisol", "analyzerCode": "Cortisol II", "lisTestId": 111, "lisTestCode": "BI085", "lisTestName": "Cortisol- Serum", "unit": "ug/dL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "CPEP", "instrumentName": "C-Peptide", "analyzerCode": "C-P II", "lisTestId": 112, "lisTestCode": "BI086", "lisTestName": "C-Peptide", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "FERR", "instrumentName": "Ferritin", "analyzerCode": "Ferritin II", "lisTestId": 123, "lisTestCode": "BI104", "lisTestName": "Ferritin", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "FOLATE", "instrumentName": "Folate", "analyzerCode": "FA II", "lisTestId": 124, "lisTestCode": "BI105", "lisTestName": "Folate Serum (Folic Acid)", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "FSH", "instrumentName": "Follicle Stimulating Hormone", "analyzerCode": "FSH II", "lisTestId": 125, "lisTestCode": "BI106", "lisTestName": "FSH Follicle Stimulating Hormone", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "GH", "instrumentName": "Growth Hormone", "analyzerCode": "GH II", "lisTestId": 132, "lisTestCode": "BI128", "lisTestName": "Growth Hormone (HGH)", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "IGE", "instrumentName": "Immunoglobulin E (IgE)", "analyzerCode": "IgE II", "lisTestId": 133, "lisTestCode": "BI133", "lisTestName": "Total IgE", "unit": "IU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "INS", "instrumentName": "Insulin", "analyzerCode": "INS II", "lisTestId": 134, "lisTestCode": "BI136", "lisTestName": "Insulin Fasting", "unit": "uIU/mL", "status": "manual", "confidence": 1, "_note": "Mapped to Insulin Fasting (BI136); Noble also has Insulin PP/Random — re-target per how the sample is ordered." },
+        { "instrumentCode": "LH", "instrumentName": "Luteinizing Hormone", "analyzerCode": "LH II", "lisTestId": 138, "lisTestCode": "BI145", "lisTestName": "LH (Luteinizing Hormone) - Serum", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "NTBNP", "instrumentName": "NT-proBNP", "analyzerCode": "NT-proBNP II", "lisTestId": 147, "lisTestCode": "BI177", "lisTestName": "NT-PRO BNP", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "PRL", "instrumentName": "Prolactin", "analyzerCode": "PRL II", "lisTestId": 150, "lisTestCode": "BI180", "lisTestName": "Prolactin- Serum", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "PROG", "instrumentName": "Progesterone", "analyzerCode": "PROG II", "lisTestId": 149, "lisTestCode": "BI179", "lisTestName": "Progesterone", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "PSA", "instrumentName": "Total PSA", "lisTestId": 151, "lisTestCode": "BI181", "lisTestName": "PSA (Prostate Specific Antigen) Total", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "RUBELLA", "instrumentName": "Rubella IgG", "analyzerCode": "Rubella IgG", "lisTestId": 211, "lisTestCode": "MS087", "lisTestName": "Rubella Virus - IgG Anti body", "unit": "IU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "T3", "instrumentName": "Total Triiodothyronine", "analyzerCode": "TT3 II", "lisTestId": 164, "lisTestCode": "BI214", "lisTestName": "T3 (Tri Iodothyronine )", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "T4", "instrumentName": "Total Thyroxine", "analyzerCode": "TT4 II", "lisTestId": 165, "lisTestCode": "BI215", "lisTestName": "T4 (Thyroxine )", "unit": "ug/dL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "TESTO", "instrumentName": "Testosterone", "analyzerCode": "TEST II", "lisTestId": 158, "lisTestCode": "BI209", "lisTestName": "Testosterone - Total", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "TSH", "instrumentName": "Thyroid Stimulating Hormone", "analyzerCode": "TSH II", "lisTestId": 170, "lisTestCode": "BI221", "lisTestName": "TSH : Thyroid Stimulating Hormone", "unit": "uIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "VITB12", "instrumentName": "Vitamin B12", "analyzerCode": "Vit B12 III", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "VITD", "instrumentName": "25-OH Vitamin D", "analyzerCode": "25-OH VD II", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 }
+      ]
+    }
+  ]
+}

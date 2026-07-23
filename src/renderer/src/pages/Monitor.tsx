@@ -150,7 +150,12 @@ export function Monitor() {
                       </td>
                       <td className="px-4 py-2 font-mono text-xs text-accent">{m.sampleId}</td>
                       <td className="px-4 py-2 font-medium">
-                        {m.analyteCode}
+                        {m.analyteName || m.analyteCode}
+                        {m.analyteName && m.analyteName !== m.analyteCode && (
+                          <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
+                            {m.analyteCode}
+                          </span>
+                        )}
                         {m.flag && m.flag !== 'N' && (
                           <span className="ml-1 text-xs font-bold text-destructive">{m.flag}</span>
                         )}

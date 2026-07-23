@@ -6,6 +6,7 @@ import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
 import { buildBouleHl7Sample, parseBouleHl7 } from './boule'
 import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
+import { buildHoribaHl7Sample, parseHoribaHl7 } from './horiba'
 import { buildMindrayAstmSample, parseMindrayAstm } from './mindray'
 import { parseAstm, parseHl7, parseSimple } from './parsing'
 import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
@@ -36,8 +37,12 @@ export class DefinitionDriver implements IInstrumentDriver {
     return this.def.lisValueOnly
   }
 
-  get astmDialect(): 'mindray' | undefined {
+  get astmDialect(): 'mindray' | 'beckman-dxi' | undefined {
     return this.def.astmDialect
+  }
+
+  get hl7Dialect(): ModelDefinition['hl7Dialect'] {
+    return this.def.hl7Dialect
   }
 
   get astmFlushOnTerminator(): boolean | undefined {
@@ -61,6 +66,9 @@ export class DefinitionDriver implements IInstrumentDriver {
       // Boule BM500 (Swelab Lumi / Medonic M51): barcode in OBR-3, analyte keyed
       // by the OBX-3 component-2 mnemonic, QC (MSH-11=Q) frames skipped.
       if (this.def.hl7Dialect === 'boule') return parseBouleHl7(message, instrumentId)
+      // HORIBA Yumizen H550/H550E OUL^R22: barcode in SPM-2, analyte mnemonic in
+      // OBX-3 component 2 (LOINC^mnemonic^LN), numeric rows only.
+      if (this.def.hl7Dialect === 'horiba') return parseHoribaHl7(message, instrumentId)
       return parseHl7(message, instrumentId)
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
@@ -79,6 +87,7 @@ export class DefinitionDriver implements IInstrumentDriver {
       if (this.def.hl7Dialect === 'getein') return buildGeteinHl7Sample(sampleId, this.def.name, analytes)
       if (this.def.hl7Dialect === 'edan') return buildEdanHl7Sample(sampleId, this.def.name, analytes)
       if (this.def.hl7Dialect === 'boule') return buildBouleHl7Sample(sampleId, this.def.name, analytes)
+      if (this.def.hl7Dialect === 'horiba') return buildHoribaHl7Sample(sampleId, this.def.name, analytes)
       return buildHl7Sample(sampleId, this.def.name, analytes)
     }
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)

@@ -20,11 +20,13 @@ import { NetworkScanner } from '../core/discovery/NetworkScanner'
 import { persist } from '../store'
 import { logger } from '../core/logger'
 import { applyLoginItem } from '../autostart'
+import type { AutoUpdater } from '../core/update/AutoUpdater'
 
 interface Services {
   orchestrator: Orchestrator
   simulator: Simulator
   lis: ILisRepository & Partial<Pick<LisRouter, 'configure'>>
+  updater: AutoUpdater
 }
 
 function buildDashboard(orchestrator: Orchestrator, lis: ILisRepository): DashboardStats {
@@ -64,13 +66,14 @@ function buildDashboard(orchestrator: Orchestrator, lis: ILisRepository): Dashbo
 }
 
 export function registerIpc(win: BrowserWindow, services: Services): void {
-  const { orchestrator, simulator, lis } = services
+  const { orchestrator, simulator, lis, updater } = services
 
   // Forward backend events to the renderer.
   orchestrator.on('instruments', (list) => win.webContents.send(IPC_EVENT.instrumentsChanged, list))
   orchestrator.on('monitor', (evt) => win.webContents.send(IPC_EVENT.monitorEvent, evt))
   orchestrator.on('mappings', (rules) => win.webContents.send(IPC_EVENT.mappingsChanged, rules))
   logger.on('log', (entry) => win.webContents.send(IPC_EVENT.log, entry))
+  updater.on('status', (status) => win.webContents.send(IPC_EVENT.updateStatus, status))
 
   // Drivers
   ipcMain.handle(IPC.driversList, () => listDriverInfos())
@@ -199,8 +202,19 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     if (patch.simulatorEnabled === false) simulator.stop()
     if (patch.simulatorRate && simulator.running) simulator.start(next.simulatorRate)
     if (patch.launchAtStartup !== undefined) applyLoginItem(patch.launchAtStartup)
+    if (patch.autoUpdateEnabled !== undefined || patch.updateInstallHour !== undefined) {
+      updater.onSettingsChanged()
+    }
     return next
   })
+
+  // Over-the-air updates
+  ipcMain.handle(IPC.updateGetStatus, () => updater.getStatus())
+  ipcMain.handle(IPC.updateCheck, () => {
+    updater.checkNow()
+    return updater.getStatus()
+  })
+  ipcMain.handle(IPC.updateInstall, () => updater.installNow())
 
   // Simulator
   ipcMain.handle(IPC.simulatorStart, () => simulator.start(persist.getSettings().simulatorRate))
@@ -219,7 +233,16 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   // scanner's interface enumeration (non-internal IPv4, physical adapters first)
   // and take the top candidate; null when the host has no usable LAN address.
   ipcMain.handle(IPC.systemLanIp, (): string | null => {
+    // getSubnets() is ranked to lead with the instrument bench LAN (192.168.x.x)
+    // over the internet uplink, so the first entry is the address analyzers should
+    // be pointed at on a dual-NIC lab PC.
     const subnets = scanner.getSubnets()
-    return subnets.find((s) => !s.isVirtual)?.address ?? subnets[0]?.address ?? null
+    return subnets[0]?.address ?? null
+  })
+
+  // Persist fatal renderer errors (React error boundary / window onerror) to the
+  // log file so an intermittent UI crash can be diagnosed after the fact.
+  ipcMain.on(IPC.rendererError, (_e, message: string) => {
+    logger.error('renderer', String(message).slice(0, 4000))
   })
 }

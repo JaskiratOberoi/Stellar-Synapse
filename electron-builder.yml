@@ -61,4 +61,17 @@ nsis:
   artifactName: Stellar-Synapse-Setup-${version}.${ext}
   deleteAppDataOnUninstall: false
 
-publish: null
+# Over-the-air updates: the client checks this private GitHub releases repo for
+# newer versions (see src/main/core/update). electron-builder writes these
+# coordinates into app-update.yml inside the package; the read token is NOT
+# stored here — it is injected into the client at build time (SYNAPSE_UPDATE_*,
+# see docs/auto-update.md) and supplied to the updater at runtime. For the
+# `--publish` step, electron-builder uploads via the GH_TOKEN env var.
+#
+# owner/repo MUST match SYNAPSE_UPDATE_OWNER / SYNAPSE_UPDATE_REPO in .env.
+publish:
+  provider: github
+  owner: your-github-org-or-user
+  repo: stellar-synapse-releases
+  private: true
+  releaseType: release

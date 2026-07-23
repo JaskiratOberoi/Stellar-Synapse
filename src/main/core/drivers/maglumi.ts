@@ -27,7 +27,12 @@ export const MAGLUMI_X3_CHANNELS: Record<string, string> = {
   PSA: 'PSA',
   VITD: '25-OH VD II',
   VITB12: 'Vit B12 III',
-  ACCP: 'CCP II'
+  ACCP: 'CCP II',
+  // Specialty endocrine / allergy channels (verified on the Delhi MAGLUMI X3, 2026-07).
+  CORT: 'Cortisol II',
+  '17OHP': '17a-OH P',
+  GH: 'GH II',
+  IGE: 'IgE II'
 }
 
 /** Default X3 Channel No. for an analyte code, if known. */

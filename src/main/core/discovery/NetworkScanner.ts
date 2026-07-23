@@ -10,6 +10,25 @@ import { logger } from '../logger'
 const VIRTUAL_HINTS = ['vethernet', 'vmware', 'virtualbox', 'wsl', 'hyper-v', 'bluetooth', 'loopback', 'vmnet', 'tunnel']
 
 /**
+ * Preference rank for choosing the host's "own" LAN address when a machine has
+ * several NICs — lower wins. Lab PCs commonly have TWO Ethernet ports: one on the
+ * instrument bench LAN (almost always 192.168.x.x — the address an analyzer like
+ * the MAGLUMI X3 or a Mindray must be pointed at) and one on the office/internet
+ * uplink (often 10.x, or public). So a 192.168 address always wins over the
+ * internet NIC; other private ranges rank next, then routable/public, and virtual
+ * adapters or an unconfigured link-local (169.254 APIPA, i.e. no DHCP lease) sink
+ * to the bottom so they're never picked over a real bench LAN.
+ */
+function lanPreferenceRank(address: string, isVirtual: boolean): number {
+  if (isVirtual) return 80
+  if (/^169\.254\./.test(address)) return 90 // APIPA: NIC with no DHCP lease
+  if (/^192\.168\./.test(address)) return 0 // classic instrument bench LAN
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(address)) return 1 // private 172.16-31
+  if (/^10\./.test(address)) return 2 // private 10/8 (often the internet uplink here)
+  return 3 // public / other routable
+}
+
+/**
  * Read-only LAN scanner. Discovery is non-intrusive: it performs TCP connect
  * probes (SYN, then immediate close - no application data sent) and reads the
  * OS ARP cache. It never writes to any device or changes any configuration.
@@ -39,8 +58,13 @@ export class NetworkScanner extends EventEmitter {
         })
       }
     }
-    // Physical adapters first.
-    return out.sort((x, y) => Number(x.isVirtual) - Number(y.isVirtual))
+    // Prefer the instrument bench LAN (192.168.x.x) over the internet uplink, and
+    // real NICs over virtual/link-local ones. Stable within a rank, so the sidebar
+    // "this host" IP and the Discovery subnet list both lead with the bench LAN.
+    return out.sort(
+      (x, y) =>
+        lanPreferenceRank(x.address, x.isVirtual) - lanPreferenceRank(y.address, y.isVirtual)
+    )
   }
 
   stop(): void {

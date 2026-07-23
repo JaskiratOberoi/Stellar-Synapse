@@ -138,19 +138,23 @@ export interface AuVariantGroup {
   matches: (lisTestName: string) => boolean
 }
 
+/**
+ * Point glucose measurements only (Fasting / Post Prandial / Random and the bare
+ * serum/plasma glucose). Excludes tolerance & challenge panels, G6PD, urine
+ * glucose and timed GTT samples — separate workflows the AU glucose channel must
+ * not silently satisfy.
+ */
+const matchesPointGlucose = (name: string): boolean => {
+  const n = name.toLowerCase()
+  if (/tolerance|challenge|g6pd|gtt|gct|urine|\d\s*hr|hr\)/.test(n)) return false
+  return /\bglucose\b/.test(n)
+}
+
 export const AU_VARIANT_GROUPS: AuVariantGroup[] = [
-  {
-    code: 'GLU',
-    // Point glucose measurements only (Fasting / Post Prandial / Random and the
-    // bare serum/plasma glucose). Exclude tolerance & challenge panels, G6PD,
-    // urine glucose, and timed GTT samples — those are separate workflows the AU
-    // glucose channel must not silently satisfy.
-    matches: (name): boolean => {
-      const n = name.toLowerCase()
-      if (/tolerance|challenge|g6pd|gtt|gct|urine|\d\s*hr|hr\)/.test(n)) return false
-      return /\bglucose\b/.test(n)
-    }
-  },
+  { code: 'GLU', matches: matchesPointGlucose },
+  // Sites name the same channel differently in their AU test menu (Karnal's AU480
+  // calls it "GLUC"); both address the one glucose channel.
+  { code: 'GLUC', matches: matchesPointGlucose },
   {
     code: 'RF',
     // Any rheumatoid-factor method variant (Nephelometry / IgM / IgG / Latex):

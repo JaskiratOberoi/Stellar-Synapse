@@ -11,12 +11,14 @@ import type {
 // the main bundle at build time.
 import haldwani from '../../../../presets/haldwani.json'
 import jammu from '../../../../presets/jammu.json'
+import delhi from '../../../../presets/delhi.json'
+import karnal from '../../../../presets/karnal.json'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // The preset JSON files are human-authored and carry documentation keys (_note,
 // _doc, ...) and two different shapes for the AU test table, so we read them
 // loosely and normalize into the strict LocationPreset shape below.
-const RAW_PRESETS: any[] = [haldwani, jammu]
+const RAW_PRESETS: any[] = [haldwani, jammu, delhi, karnal]
 
 /** Pull the per-site Online Test No. table from either JSON shape (or none). */
 function readAuTestNos(inst: any): AuOnlineTestNo[] | undefined {
@@ -68,8 +70,14 @@ function readMappings(inst: any): PresetMapping[] | undefined {
     if (!code) continue
     const hasParam = typeof m.lisParamId === 'number'
     const name = m.name != null ? String(m.name) : undefined
+    const analyzerCode = m.analyzerCode ? String(m.analyzerCode).trim() : undefined
     out.push({
       instrumentCode: code,
+      // Only carry a channel that actually differs — an analyzerCode equal to the
+      // instrumentCode is redundant (host-query falls back to instrumentCode).
+      analyzerCode: analyzerCode && analyzerCode !== code ? analyzerCode : undefined,
+      instrumentName: m.instrumentName ? String(m.instrumentName) : undefined,
+      unit: m.unit ? String(m.unit) : undefined,
       status: m.status === 'manual' ? 'manual' : m.status === 'auto' ? 'auto' : undefined,
       lisTestId: typeof m.lisTestId === 'number' ? m.lisTestId : undefined,
       lisTestCode: m.lisTestCode ? String(m.lisTestCode) : undefined,

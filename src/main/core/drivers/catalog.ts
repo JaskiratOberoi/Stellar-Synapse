@@ -31,13 +31,14 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * 'boule' selects the BM500 OBR-3 (barcode) / OBX-3 component-2 (mnemonic)
    * layout (Swelab Lumi / Medonic M51).
    */
-  hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule'
+  hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba'
   /**
-   * ASTM record-layout dialect for `protocol: 'astm'` models (default standard).
-   * 'mindray' selects the Mindray BS-series layout (barcode in the O Specimen ID
-   * field 4, analyte code/value in component 1) and its "SA" order-download.
+   * ASTM record-layout / host-query dialect for `protocol: 'astm'` models
+   * (default standard). 'mindray' selects the Mindray BS-series layout and "SA"
+   * order-download. 'beckman-dxi' selects the Beckman Access/DxI order-download
+   * (standard E1381 H/P/O/L frames, tests joined by "\" in O-5, report type Q).
    */
-  astmDialect?: 'mindray'
+  astmDialect?: 'mindray' | 'beckman-dxi'
   /**
    * When true, LIS writes for this model send only the result value (never the
    * abnormal flag), leaving Noble to apply its own reference range. Used by the
@@ -229,18 +230,27 @@ const getein = [
     'Immunoassay (CLIA)',
     'Getein MAGICL-series acridinium-ester chemiluminescence immunoassay analyzer (up to ~200 T/H; ' +
       'thyroid, fertility, tumor, cardiac, infectious-disease, bone, anemia, diabetes and autoimmune ' +
-      'markers on serum/plasma/urine/whole blood). Talks ASTM E1394 — LIS01-A2 low-level framing ' +
-      '(ENQ/ACK, STX…ETX, checksum, EOT) plus LIS02-A2 records — over Ethernet TCP/IP or RS-232 ' +
-      'serial. On the analyzer set the LIS interface to ASTM + network/TCP and point it at this ' +
-      "server's IP and port; the analyzer dials out to the host, so Synapse listens as a TCP server. " +
-      'Results upload as H/P/O/R/L: the accession barcode rides in the O-record Specimen ID (field 3) ' +
-      'and each analyte is keyed by the ASTM Universal Test ID in R field 3 ("^^^TSH" → TSH), with ' +
-      'value/unit/reference-range in the following fields. Bidirectional host-query (Q record / order ' +
-      'download) is supported so the analyzer can ask the LIS which assays to run by barcode. Getein\'s ' +
-      'Metis biochemistry line uses HL7 instead — see the Metis drivers for those.',
+      'markers). Interfaces over HL7 v2.3.1 (ORU^R01 result upload; MSH/PID/OBR/OBX), verified against ' +
+      'a live MAGICL 6000i at Karnal. On the analyzer set the LIS interface to HL7 + Ethernet, with ' +
+      "Server IP = this host's instrument-LAN IP and COM Port 8081; the analyzer dials out to that " +
+      'host, so Synapse listens as a TCP server on port 8081 (accepts the incoming connection). The ' +
+      'accession barcode rides in OBR-2 (Placer); each analyte is keyed by the ' +
+      'numeric assay item-id in OBX-3 with the friendly name in OBX-4 (e.g. "OBX|1|NM|25|IgE|659.45|' +
+      'IU/mL") — the same layout as the Getein Metis dialect, so results decode via hl7Dialect getein. ' +
+      'Censored values (<7.00, >2000.00) upload verbatim. Bidirectional host-query is supported: the ' +
+      'analyzer issues an HL7 QRY^Q02 (barcode in QRD-8) and Synapse answers with QCK^Q02 + DSR^Q03 ' +
+      "(the sample's ordered assay item-ids), then ACKs each ORU^R01 — enable Host Query on the " +
+      "instrument. The older ASTM E1394 LIS mode is also selectable on the device but this driver " +
+      "targets the site's HL7 setup.",
     IMMUNOASSAY_FULL,
-    { port: 9101, protocol: 'astm', mode: 'bidirectional', transports: ['tcp-server', 'serial'] },
-    // Deployed/verified against the standard ASTM layout; others stay skeleton.
+    {
+      port: 8081,
+      protocol: 'hl7',
+      hl7Dialect: 'getein',
+      mode: 'bidirectional',
+      transports: ['tcp-server', 'tcp-client', 'serial']
+    },
+    // Verified against a live MAGICL 6000i (Karnal, HL7). Others share the platform.
     ['magicl-6000i', 'magicl-6200', 'magicl-6200i']
   ),
   ...family(
@@ -410,10 +420,16 @@ const beckman = [
     ],
     'Beckman Coulter',
     'Immunoassay',
-    'Access / DxI immunoassay analyzer. ASTM E1394 over TCP/IP or serial.',
+    'Access / DxI immunoassay analyzer. Bidirectional ASTM E1394 (LIS01/02-A2) over TCP/IP or ' +
+      'serial — verified against a live DxI at Karnal. The analyzer uploads H/P/O/R/L: the ' +
+      'accession barcode rides in the O-record Specimen ID (field 3) and each analyte is keyed by ' +
+      'the ASTM Universal Test ID in R field 3 ("^^^TotT4" -> TotT4); auto-dilution reruns append a ' +
+      '"d" to the code (TSH3/TSH3d). Host-query is supported: the analyzer sends a Q record and ' +
+      'Synapse answers with standard E1381 H/P/O/L frames listing the ordered assay codes (joined by ' +
+      '"\\", report type Q). Set the analyzer LIS to this host + port and enable Host Query.',
     IMMUNOASSAY_FULL,
-    { port: 9103, protocol: 'astm' },
-    ['beckman-dxi-9000']
+    { port: 9103, protocol: 'astm', astmDialect: 'beckman-dxi' },
+    ['beckman-dxi-800', 'beckman-dxi-9000']
   ),
   mk(
     'beckman-dxc-500i',
@@ -514,7 +530,11 @@ const agappe = [
 ]
 
 // ---------------------------------------------------------------------------
-// HORIBA Medical - Yumizen H550 / H550E hematology (ASTM LIS2-A2, analyzer = TCP client)
+// HORIBA Medical - Yumizen H550 / H550E hematology (analyzer = TCP client).
+// H550: ASTM LIS2-A2. H550E: HL7 v2.x (ORU^R01 over MLLP) — the analyzer's ASTM
+// upload omits/relabels RDW and ESR at this site, so the H550E uses HL7 where the
+// full parameter set (incl. RDW-SD/RDW-CV and ESR) is reported (per the HORIBA
+// field engineer). Exact OBX layout to be confirmed against a captured frame.
 // ---------------------------------------------------------------------------
 const horiba = [
   mk(
@@ -543,15 +563,20 @@ const horiba = [
     'HORIBA Medical',
     'Hematology (CBC + ESR)',
     'Yumizen H550E auto hematology analyzer — same CBC / 5-part DIFF menu as the H550 plus an ' +
-      'integrated ESR (Erythrocyte Sedimentation Rate, ASTM code "ESR", mm/h). ASTM E1394 ' +
-      '(LIS01-A2 + LIS2-A2) over Ethernet or RS232 serial. Configure the analyzer Host to ASTM ' +
-      '+ Network and point it at this server\'s IP + port (Synapse listens as a TCP server). ' +
-      'Results upload as H/P/O/R/L records keyed by the Universal Test ID code (R field 9.3 ' +
-      'component 4); the accession barcode rides in the O record Specimen ID.',
+      'integrated ESR (Erythrocyte Sedimentation Rate, mm/h). Interfaces over HL7 v2.x ' +
+      '(ORU^R01 over MLLP) so the full parameter set — including RDW-SD/RDW-CV and ESR — is ' +
+      'reported; the analyzer\'s ASTM upload omits/relabels those. On the analyzer set Home > ' +
+      'Settings > System > General Communication > Host to the HL7 format and Network mode, then ' +
+      'point it at this server\'s IP + port (the analyzer connects out, so Synapse listens as a ' +
+      'TCP server on the same host port). Results arrive as MSH/PID/OBR/OBX segments: the ' +
+      'parameter set rides in OBX rows and the accession barcode in OBR-3 (or SPM-2). The exact ' +
+      'OBX code layout (component 1 mnemonic vs LOINC^mnemonic) is verified per site from a ' +
+      'captured frame; the default generic decoder reads the OBX-3 component-1 mnemonic.',
     combine(HORIBA_YUMIZEN, HORIBA_ESR),
-    // Default host port 5678 — HORIBA's factory default for the ASTM/Network host
-    // link (the analyzer Host tab ships pointing at :5678). Synapse listens here.
-    { port: 5678, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+    // Host port 5678 — HORIBA's factory default host-link port (the analyzer Host
+    // tab ships pointing at :5678); unchanged by the ASTM->HL7 switch since MLLP
+    // rides the same TCP stream. Synapse listens here.
+    { port: 5678, protocol: 'hl7', hl7Dialect: 'horiba', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
   )
 ]
 

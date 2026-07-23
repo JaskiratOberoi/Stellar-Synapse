@@ -16,15 +16,25 @@ import { createProtocol } from '../protocols/registry'
 import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { buildMindrayOrderRecords, frameMindrayMessage } from '../drivers/mindray'
+import { buildBeckmanDxiOrderFrames } from '../drivers/beckmanDxi'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
+import {
+  parseGeteinQuery,
+  geteinResultControlId,
+  buildGeteinQck,
+  buildGeteinDsr,
+  buildGeteinAck,
+  frameGeteinHl7,
+  type GeteinQuery
+} from '../drivers/geteinHostQuery'
 import { getDriver } from '../drivers/registry'
 import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
-import { MappingEngine } from '../mapping/MappingEngine'
+import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
 import { persist } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
@@ -98,6 +108,11 @@ export class Orchestrator extends EventEmitter {
     // One-time hygiene: keep a single bilirubin method per AU analyte so the host
     // query never double-orders the DCA + BuBc variants (matches the reference).
     this.mapping.migrateAuSingleBilirubinMethod()
+
+    // One-time: re-grade flat-0.6 name matches so the new write trust floor does
+    // not silently mute correct mappings (Ferritin, Troponin I, D-Dimer, MPV) on
+    // upgrade, while leaving genuine junk matches blocked.
+    this.mapping.migrateRescoreNameMappings()
 
     // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
     // AMH II, …). Restrict the host query to exactly those channels so unrelated
@@ -531,6 +546,24 @@ export class Orchestrator extends EventEmitter {
       }
     }
 
+    // Getein MAGICL / Metis HL7 host-query (order-download) + result ACK over MLLP.
+    if (
+      def.protocol === 'hl7' &&
+      driver.hl7Dialect === 'getein' &&
+      def.connection.hostQuery &&
+      !def.connection.passive
+    ) {
+      const query = parseGeteinQuery(message)
+      if (query) {
+        await this.handleGeteinHostQuery(def, driver.info.id, query, message.raw)
+        return
+      }
+      // Acknowledge each result upload so the analyzer marks it delivered, then
+      // fall through to decode the ORU below.
+      const oruId = geteinResultControlId(message)
+      if (oruId) this.writeHl7Response(def, frameGeteinHl7(buildGeteinAck(oruId)))
+    }
+
     let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })
     // HbA1c HPLC analyzers (Agappe Mispa Maestro): round to a single decimal and,
     // when enabled, derive Estimated Average Glucose to write alongside HbA1c.
@@ -652,6 +685,10 @@ export class Orchestrator extends EventEmitter {
         // standard E1381 frame (frame no. 1 + checksum, CR before ETX), all tests
         // in one O record as CODE^^2^1 — verified against the eLABS BS430 capture.
         await sender.sendFrames(frameMindrayMessage(buildMindrayOrderRecords(sid, codes)))
+      } else if (dialect === 'beckman-dxi') {
+        // Beckman Access/DxI: standard E1381 H/P/O/L frames, tests joined by "\"
+        // in O-5, report type "Q" — verified against the eLab Karnal capture.
+        await sender.sendFrames(buildBeckmanDxiOrderFrames(sid, codes))
       } else {
         // The MAGLUMI X3 expects SNIBE's "simple" host-download framing (verified
         // on a live unit): <ENQ> <STX> <all records CR-separated> <ETX> <EOT> with
@@ -674,6 +711,82 @@ export class Orchestrator extends EventEmitter {
       logger.error('host-query', `${def.name}: failed to send orders for ${sid}: ${(err as Error).message}`)
       this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: (err as Error).message })
     }
+  }
+
+  /** Write an MLLP-framed HL7 response back to the analyzer (order-download / ACK). */
+  private writeHl7Response(def: InstrumentDefinition, frame: Buffer): void {
+    const conn = this.connections.get(def.id)
+    if (!conn) return
+    this.pushRawSent(def.id, def.name, frame)
+    conn.transport.write(frame)
+  }
+
+  /**
+   * Answer a Getein MAGICL/Metis HL7 host query: look up the sample's ordered
+   * tests in the LIS, reverse-map the LIS test codes to this analyzer's assay
+   * item-ids, and reply with QCK^Q02 (ack) + DSR^Q03 (the ordered codes) over
+   * MLLP so the analyzer knows which assays to run for the barcode.
+   */
+  private async handleGeteinHostQuery(
+    def: InstrumentDefinition,
+    driverId: string,
+    query: GeteinQuery,
+    raw: string
+  ): Promise<void> {
+    const baseEvent = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: query.sid,
+      analyteCode: 'QUERY',
+      analyteName: 'Host query',
+      value: '',
+      raw: raw.length > 600 ? `${raw.slice(0, 600)}...` : raw,
+      timestamp: new Date().toISOString()
+    }
+    this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'received', message: `Host query for ${query.sid}` })
+
+    let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
+    try {
+      order = await this.lis.getOrder(query.sid)
+    } catch (err) {
+      logger.warn('host-query', `${def.name}: order lookup failed for ${query.sid}: ${(err as Error).message}`)
+    }
+
+    const codes = order
+      ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
+      : []
+
+    // Answer with the QCK acknowledgment + the DSR data in ONE MLLP frame (CR
+    // between the two messages), the way the live eLab interface sends its order
+    // buffer. Sent as two separate frames the analyzer reads only the first (the
+    // QCK, which has no tasks) and reports "failed to obtain the task" without ever
+    // parsing the DSR. (An empty code set still sends a valid DSR = "run nothing".)
+    const orderBuffer = `${buildGeteinQck(query.controlId)}\r${buildGeteinDsr(query, codes)}`
+    this.writeHl7Response(def, frameGeteinHl7(orderBuffer))
+
+    if (codes.length === 0) {
+      logger.info('host-query', `${def.name}: no mappable orders for ${query.sid} — replied with empty order set`)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'skipped',
+        value: order ? `${order.testCodes.length} ordered, 0 on analyzer` : 'not registered',
+        message: order
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this analyzer`
+          : `Barcode ${query.sid} not registered in LIS — nothing to order`
+      })
+      return
+    }
+
+    logger.info('host-query', `${def.name}: answered ${query.sid} with ${codes.length} code(s): [${codes.join(', ')}]`)
+    this.pushMonitor({
+      ...baseEvent,
+      id: randomUUID(),
+      stage: 'mapped',
+      value: codes.join(', '),
+      mappedTo: codes.join(', '),
+      message: `Ordered to analyzer: ${codes.join(', ')}`
+    })
   }
 
   /**
@@ -809,16 +922,60 @@ export class Orchestrator extends EventEmitter {
       rule = this.mapping.resolve(result, driverId)
     }
     if (!rule || rule.status === 'unmapped' || !rule.lisTestId) {
-      this.pushMonitor({
-        ...base,
-        id: randomUUID(),
-        stage: 'skipped',
-        message: `No LIS mapping for analyte "${result.analyteCode}"`
-      })
+      const why =
+        `No LIS mapping for analyte "${result.analyteCode}"` +
+        (rule ? ' (rule exists but resolves to no LIS test)' : ' (no rule for this driver + code)')
+      // Also to the Logs page: a received-but-unwritten result is silent data loss
+      // unless the operator is told which analyte fell through and why.
+      logger.warn(
+        'engine',
+        `${def.name}: not written — ${result.sampleId} ${result.analyteCode}=${result.value} — ${why}`
+      )
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: why })
       return 'skipped'
     }
     if (rule.status === 'ignored') {
       this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: 'Analyte ignored' })
+      return 'skipped'
+    }
+
+    // A low-confidence auto-map never touches patient data. The fuzzy pass scores
+    // 0.6 on bare substring containment, which is how AU "ALB" silently resolved
+    // to Noble's "A/G (Albumin/Globulin) Ratio" and "CHOL" to "Total Cholesterol /
+    // HdL" — the wrong analyte, filled with full confidence and then frozen there
+    // by the fill-blanks-only guard. The operator must confirm the mapping (status
+    // 'manual') before it can write. Same floor the host query already applies.
+    if (rule.status === 'auto' && (rule.confidence ?? 0) < MIN_TRUSTED_CONFIDENCE) {
+      const target = rule.lisParamName ?? rule.lisTestName ?? rule.lisTestCode ?? '(unknown)'
+      const pct = Math.round((rule.confidence ?? 0) * 100)
+      const why =
+        `Low-confidence mapping (${pct}%): "${result.analyteCode}" auto-matched ` +
+        `"${target}" by name similarity only. Confirm it under Mappings to enable writing.`
+      logger.warn(
+        'engine',
+        `${def.name}: not written — ${result.sampleId} ${result.analyteCode}=${result.value} — ${why}`
+      )
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: why })
+      return 'skipped'
+    }
+
+    // Beckman AU: the Online Test No. table is configured per site, so Synapse's
+    // built-in default numbering is only a guess. Decoding with the wrong table
+    // yields plausible values on the WRONG analytes (Karnal SID 9268936 recorded a
+    // total bilirubin of 99.2 that was really ALT, and an "Iron" of 410 that was
+    // TIBC). Fail closed: still parse and surface the results so the operator can
+    // see the instrument is talking, but refuse to write them until the site's own
+    // table is loaded — no result is far safer than a confidently wrong one.
+    if (def.protocol === 'beckman-au' && !def.auOnline?.testNos?.length) {
+      const why =
+        'Beckman AU Online Test No. table not configured for this instrument — ' +
+        'values decoded with the default numbering cannot be trusted. Re-onboard with ' +
+        'the location preset (or set the table) to enable LIS writing.'
+      logger.warn(
+        'engine',
+        `${def.name}: not written — ${result.sampleId} ${result.analyteCode}=${result.value} — ${why}`
+      )
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: why })
       return 'skipped'
     }
 

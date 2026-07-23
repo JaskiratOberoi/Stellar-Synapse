@@ -15,6 +15,10 @@ coverage/
 scripts/.verify-mindray.mjs
 scripts/.verify-presets.mjs
 scripts/.verify-magicl.mjs
+scripts/.verify-mapgrade.mjs
+
+# Per-machine Claude Code tool permissions (the shared skills/ dir IS committed)
+.claude/settings.local.json
 
 # Local LIS cleanup backups (contain patient result values — never commit)
 *-backup.json

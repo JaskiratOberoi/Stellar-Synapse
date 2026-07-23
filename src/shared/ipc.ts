@@ -24,7 +24,8 @@ import type {
   MappingRule,
   MonitorEvent,
   ScanProgress,
-  SerialPortInfo
+  SerialPortInfo,
+  UpdateStatus
 } from './types'
 
 /** Request/response channels (renderer -> main, via ipcRenderer.invoke). */
@@ -76,6 +77,13 @@ export const IPC = {
 
   // System / host info
   systemLanIp: 'system:lan-ip',
+  /** One-way: renderer reports a fatal UI error so it's persisted to the log file. */
+  rendererError: 'renderer:error',
+
+  // Over-the-air updates
+  updateGetStatus: 'update:get-status',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
 
   // Simulator
   simulatorStart: 'simulator:start',
@@ -96,7 +104,8 @@ export const IPC_EVENT = {
   mappingsChanged: 'evt:mappings-changed',
   lisStateChanged: 'evt:lis-state-changed',
   discoveryProgress: 'evt:discovery-progress',
-  discoveryHost: 'evt:discovery-host'
+  discoveryHost: 'evt:discovery-host',
+  updateStatus: 'evt:update-status'
 } as const
 
 /** The API surface available to the renderer as `window.api`. */
@@ -172,6 +181,22 @@ export interface StellarApi {
   system: {
     /** Primary LAN IPv4 of this host (physical adapter preferred); null if none. */
     lanIp(): Promise<string | null>
+    /**
+     * Report a fatal renderer error (React error boundary / window error) to the
+     * main process so it's written to the persistent log for later diagnosis.
+     * Fire-and-forget — never awaits, so it's safe to call from an error path.
+     */
+    reportError(message: string): void
+  }
+  update: {
+    /** Current over-the-air update status (version + lifecycle state). */
+    getStatus(): Promise<UpdateStatus>
+    /** Trigger an immediate check for updates. */
+    check(): Promise<UpdateStatus>
+    /** Install a downloaded update now (quits, installs, relaunches). */
+    install(): Promise<void>
+    /** Subscribe to update-status changes pushed from the main process. */
+    onStatus(cb: (status: UpdateStatus) => void): () => void
   }
   simulator: {
     start(): Promise<void>

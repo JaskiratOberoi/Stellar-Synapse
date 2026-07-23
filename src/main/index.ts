@@ -6,6 +6,7 @@ import { LisRouter } from './core/lis/LisRouter'
 import { registerIpc } from './ipc'
 import { persist } from './store'
 import { logger } from './core/logger'
+import { AutoUpdater } from './core/update/AutoUpdater'
 import { applyDataDir } from './dataDir'
 import { applyLoginItem, startedHidden } from './autostart'
 import { LD560_POLL } from './core/connection/InstrumentPollScheduler'
@@ -116,12 +117,10 @@ function ensureLd560(): void {
       current.connection.pollIntervalMs !== LD560_POLL.pollIntervalMs ||
       JSON.stringify(current.connection.pollCommands ?? []) !==
         JSON.stringify(LD560_POLL.pollCommands)
-    const needsRename = current.name !== LD560_NAME && /landwind|ld-560|hematology/i.test(current.name)
+    const needsRename =
+      current.name !== LD560_NAME && /landwind|ld-560|hematology/i.test(current.name)
     const needsUpdate =
-      needsRename ||
-      current.connection.transport === 'tcp-server' ||
-      hasOldPoll ||
-      pollOutOfSync
+      needsRename || current.connection.transport === 'tcp-server' || hasOldPoll || pollOutOfSync
     if (needsUpdate) {
       const next = [...existing]
       next[idx] = {
@@ -182,6 +181,46 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' }
   })
 
+  // Renderer resilience. This is an unattended background service, so a renderer
+  // crash / OOM (or a fatal load failure) must self-heal — otherwise the window
+  // goes blank and only a manual app restart brings the UI back while interfacing
+  // silently continues. Auto-reload the renderer, with a backoff so a page that
+  // crashes on every load can't spin into a reload loop.
+  let rendererReloads = 0
+  let lastRendererCrashAt = 0
+  const recoverRenderer = (why: string): void => {
+    if (isQuitting || win.isDestroyed()) return
+    const now = Date.now()
+    // A crash more than a minute after the last one is treated as fresh.
+    if (now - lastRendererCrashAt > 60_000) rendererReloads = 0
+    lastRendererCrashAt = now
+    rendererReloads += 1
+    if (rendererReloads > 5) {
+      logger.error('main', `Renderer keeps failing (${why}); stopping auto-reload to avoid a loop`)
+      return
+    }
+    logger.error('main', `Renderer recovery: ${why} — reloading UI (attempt ${rendererReloads})`)
+    try {
+      win.webContents.reload()
+    } catch (err) {
+      logger.error('main', `Renderer reload failed: ${(err as Error).message}`)
+    }
+  }
+
+  win.webContents.on('render-process-gone', (_e, details) =>
+    recoverRenderer(`render-process-gone (${details.reason}, exit ${details.exitCode})`)
+  )
+  win.webContents.on('did-fail-load', (_e, code, desc, _url, isMainFrame) => {
+    // -3 is an aborted load (navigation superseded) — not a failure. Only the
+    // main frame failing to load leaves a blank window.
+    if (code === -3 || !isMainFrame) return
+    recoverRenderer(`did-fail-load (${code} ${desc})`)
+  })
+  // A hung renderer (blocked main thread) fires 'unresponsive'; log both edges so
+  // a UI freeze is visible in the logs even when it recovers on its own.
+  win.on('unresponsive', () => logger.warn('main', 'Renderer unresponsive (UI hang detected)'))
+  win.on('responsive', () => logger.info('main', 'Renderer responsive again'))
+
   // Close-to-tray: the 'X' button hides the window instead of quitting, so
   // instrument interfacing keeps running. A real exit goes through the tray's
   // "Quit" (or app.quit()), which sets `isQuitting` first.
@@ -237,6 +276,11 @@ app.whenReady().then(() => {
   const lis = new LisRouter()
   const orchestrator = new Orchestrator(lis)
   const simulator = new Simulator(orchestrator)
+  // The updater must be able to flip `isQuitting` before it quits-to-install, or
+  // the close-to-tray handler would cancel the quit and the install would stall.
+  const updater = new AutoUpdater(() => {
+    isQuitting = true
+  })
 
   // Open the window and wire IPC FIRST so the UI always loads — even if the
   // Noble LIS is unreachable. Instrument data is still received and queued, then
@@ -244,7 +288,10 @@ app.whenReady().then(() => {
   const win = createWindow()
   mainWindow = win
   createTray()
-  registerIpc(win, { orchestrator, simulator, lis })
+  registerIpc(win, { orchestrator, simulator, lis, updater })
+
+  // Arm over-the-air updates (no-op in dev / when the feed isn't configured).
+  updater.start()
 
   orchestrator
     .init()

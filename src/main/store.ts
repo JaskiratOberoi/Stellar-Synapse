@@ -37,9 +37,16 @@ interface PersistShape {
   migratedAuSingleBilirubin?: boolean
   /** One-time migration: re-enable LD-560 calculated-eAG LIS posting. */
   migratedLd560EnableEag?: boolean
+  /** One-time migration: force the instrument simulator off (was toolbar-toggled). */
+  migratedSimulatorOff?: boolean
+  /** One-time migration: re-grade flat-0.6 name matches under the graded matcher. */
+  migratedRescoreNameMappings?: boolean
 }
 
-type MigrationFlagKey = 'migratedAuSingleBilirubin' | 'migratedLd560EnableEag'
+type MigrationFlagKey =
+  | 'migratedAuSingleBilirubin'
+  | 'migratedLd560EnableEag'
+  | 'migratedRescoreNameMappings'
 
 const MAX_MONITOR_HISTORY = 2000
 
@@ -53,7 +60,10 @@ const defaults: PersistShape = {
     simulatorRate: 6,
     autoMapOnReceive: true,
     lisAutoWrite: true,
-    launchAtStartup: false
+    launchAtStartup: false,
+    // Over-the-air updates on by default; install downloaded updates at 03:00 local.
+    autoUpdateEnabled: true,
+    updateInstallHour: 3
   },
   // Noble LISTEC LIS — live mode on; set password under Settings or LIS Connection.
   lis: {
@@ -90,13 +100,30 @@ export const persist = {
   setMigrationFlag: (key: MigrationFlagKey, value: boolean): void => store().set(key, value),
 
   getSettings: (): AppSettings => {
-    const s = store().get('settings')
+    let s = store().get('settings')
+    // One-time: force the simulator OFF. It used to be toggleable from the toolbar,
+    // so a machine could have it persisted 'on' — which would emit SYNTHETIC results
+    // into a live Noble LIS. It's now an opt-in Settings control, off by default.
+    if (!store().get('migratedSimulatorOff')) {
+      if (s.simulatorEnabled) {
+        s = { ...s, simulatorEnabled: false }
+        store().set('settings', s)
+      }
+      store().set('migratedSimulatorOff', true)
+    }
     // Backfill new settings keys for existing installs.
-    if (s.lisAutoWrite === undefined || s.launchAtStartup === undefined) {
+    if (
+      s.lisAutoWrite === undefined ||
+      s.launchAtStartup === undefined ||
+      s.autoUpdateEnabled === undefined ||
+      s.updateInstallHour === undefined
+    ) {
       const next = {
         ...s,
         lisAutoWrite: s.lisAutoWrite ?? true,
-        launchAtStartup: s.launchAtStartup ?? false
+        launchAtStartup: s.launchAtStartup ?? false,
+        autoUpdateEnabled: s.autoUpdateEnabled ?? true,
+        updateInstallHour: s.updateInstallHour ?? 3
       }
       store().set('settings', next)
       return next

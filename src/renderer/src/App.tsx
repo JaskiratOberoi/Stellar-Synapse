@@ -14,6 +14,7 @@ import { Monitor } from '@/pages/Monitor'
 import { LisConnection } from '@/pages/LisConnection'
 import { Logs } from '@/pages/Logs'
 import { Settings } from '@/pages/Settings'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Waypoints } from 'lucide-react'
 
 function Loading() {
@@ -50,17 +51,21 @@ function AnimatedRoutes() {
         exit="exit"
         className="h-full"
       >
-        <Routes location={location}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/instruments" element={<Instruments />} />
-          <Route path="/instruments/:id" element={<InstrumentDetail />} />
-          <Route path="/discovery" element={<Discovery />} />
-          <Route path="/mapping" element={<Mapping />} />
-          <Route path="/monitor" element={<Monitor />} />
-          <Route path="/lis" element={<LisConnection />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
+        {/* Keyed by path so an error on one page shows a recoverable fallback
+            (the shell/sidebar stay alive) and navigating elsewhere clears it. */}
+        <ErrorBoundary area="this view" resetKey={location.pathname}>
+          <Routes location={location}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/instruments" element={<Instruments />} />
+            <Route path="/instruments/:id" element={<InstrumentDetail />} />
+            <Route path="/discovery" element={<Discovery />} />
+            <Route path="/mapping" element={<Mapping />} />
+            <Route path="/monitor" element={<Monitor />} />
+            <Route path="/lis" element={<LisConnection />} />
+            <Route path="/logs" element={<Logs />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </ErrorBoundary>
       </motion.div>
     </AnimatePresence>
   )

@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.2.52",
+  "version": "0.2.71",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
@@ -21,11 +21,13 @@
     "verify:mindray": "esbuild scripts/verify-mindray.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mindray.mjs && node scripts/.verify-mindray.mjs",
     "verify:presets": "esbuild scripts/verify-presets.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-presets.mjs && node scripts/.verify-presets.mjs",
     "verify:magicl": "esbuild scripts/verify-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-magicl.mjs && node scripts/.verify-magicl.mjs",
+    "verify:mapgrade": "esbuild scripts/verify-mapgrade.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mapgrade.mjs && node scripts/.verify-mapgrade.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
     "mssql": "^11.0.1",
     "serialport": "^12.0.0"
   },
