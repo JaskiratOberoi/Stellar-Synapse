@@ -16,6 +16,7 @@ scripts/.verify-mindray.mjs
 scripts/.verify-presets.mjs
 scripts/.verify-magicl.mjs
 scripts/.verify-mapgrade.mjs
+scripts/.verify-units.mjs
 
 # Per-machine Claude Code tool permissions (the shared skills/ dir IS committed)
 .claude/settings.local.json
