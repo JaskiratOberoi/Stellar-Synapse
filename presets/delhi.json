@@ -45,6 +45,46 @@
         { "instrumentCode": "VITB12", "instrumentName": "Vitamin B12", "analyzerCode": "Vit B12 III", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "unit": "pg/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "VITD", "instrumentName": "25-OH Vitamin D", "analyzerCode": "25-OH VD II", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 }
       ]
+    },
+    {
+      "driverId": "magicl-6000i",
+      "model": "Getein MAGICL 6000i",
+      "vendor": "Getein Biotech",
+      "category": "Immunoassay (CLIA)",
+      "protocol": "hl7",
+      "mode": "bidirectional",
+      "defaultPort": 8081,
+      "transports": ["tcp-server"],
+      "analytePanel": "Delhi MAGICL 6000i assay menu (15 assays) captured from the analyzer Item Setup > Item Param screen (2026-07-24): TSH, FSH, 25-OH-VD, Vitamin B12, T3, T4, LH, Estradiol, CA125, PRL, AMH, CA19-9, beta-HCG, TPSA, Progesterone.",
+      "source": "Delhi MAGICL 6000i, serial M022W0000396. Network + LIS settings captured from the analyzer System Setup screens (2026-07-24). Noble targets resolved and name-verified against the live catalog on 2026-07-24; the 9 numeric item-ids reused here were verified on the Karnal MAGICL against real eLab Assist HL7 traffic.",
+      "mappingsSummary": { "total": 15, "mapped": 9, "unmapped": 6 },
+      "_mappingNotes": [
+        "Analyte key (instrumentCode) is the MAGICL numeric assay item-id carried in OBX-3 — NOT a mnemonic. It is also what the host query sends back as the ordered assay, so a wrong id means the analyzer either rejects the order (MA00F 'Assay Not Found') or runs the wrong assay.",
+        "9 of the 15 menu items reuse item-ids verified against real MAGICL HL7 traffic at Karnal: TSH=18, T3=19, T4=20, FSH=24, LH=27, VitD=42, AMH=79, B12=139, tPSA=8.",
+        "PENDING (6): Estradiol, CA125, Prolactin, CA19-9, beta-HCG and Progesterone are NOT in the Karnal capture, so their numeric item-ids are unknown and are deliberately left unmapped rather than guessed. Their Noble targets are already resolved (see _pendingMappings) — only the analyzer's numeric ID is missing. Read each off the analyzer: Item Setup > Item Param > tap the assay > the 'ID' field.",
+        "Parameterized Noble tests write to the PARAMETER (lisParamId); TSH, T3, T4 and Vitamin D are standalone test-level rows (no param), matching Karnal.",
+        "Connection: the analyzer is the TCP CLIENT. Its LIS screen has Ethernet Port, Server IP 192.168.1.106, COM Port 8081 — so the Delhi Synapse host must hold 192.168.1.106 on the instrument LAN and listen as tcp-server on 8081. The analyzer itself is static 192.168.1.159/24, gateway 192.168.1.253. No analyzer IP is entered in Synapse.",
+        "'Auto access tests' is ticked on the analyzer, i.e. host query is ON: enable Host Query in Synapse so it answers QRY^Q02 with QCK+DSR and ACKs each ORU^R01."
+      ],
+      "_pendingMappings": [
+        { "instrumentCode": "TODO", "instrumentName": "Estradiol", "lisTestId": 121, "lisTestCode": "BI102", "lisTestName": "Estradiol (E2)", "lisParamId": 514, "lisParamName": "Estradiol  E2", "unit": "pg/mL" },
+        { "instrumentCode": "TODO", "instrumentName": "CA125", "lisTestId": 92, "lisTestCode": "BI058", "lisTestName": "CA 125 (Cancer Antigen)", "lisParamId": 462, "lisParamName": "CA 125 (Cancer Antigen 125)", "unit": "U/mL" },
+        { "instrumentCode": "TODO", "instrumentName": "Prolactin", "lisTestId": 150, "lisTestCode": "BI180", "lisTestName": "Prolactin- Serum", "lisParamId": 623, "lisParamName": "Prolactin", "unit": "ng/mL" },
+        { "instrumentCode": "TODO", "instrumentName": "CA19-9", "lisTestId": 94, "lisTestCode": "BI060", "lisTestName": "CA 19.9 (Cancer Antigen)", "lisParamId": 464, "lisParamName": "CA 19.9 (Cancer Antigen 19.9)", "unit": "U/mL" },
+        { "instrumentCode": "TODO", "instrumentName": "beta-HCG", "lisTestId": 85, "lisTestCode": "BI044", "lisTestName": "Beta-hCG (Quantitative) Serum", "lisParamId": 427, "lisParamName": "Beta hCG (Quantitative)-Serum", "unit": "mIU/mL" },
+        { "instrumentCode": "TODO", "instrumentName": "Progesterone", "lisTestId": 149, "lisTestCode": "BI179", "lisTestName": "Progesterone", "lisParamId": 622, "lisParamName": "Progesterone", "unit": "ng/mL" }
+      ],
+      "mappings": [
+        { "instrumentCode": "8", "instrumentName": "tPSA", "lisTestId": 151, "lisTestCode": "BI181", "lisTestName": "PSA (Prostate Specific Antigen) Total", "lisParamId": 624, "lisParamName": "PSA Total (Prostatic Specific Antigen Total)", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "18", "instrumentName": "TSH", "lisTestId": 170, "lisTestCode": "BI221", "lisTestName": "TSH : Thyroid Stimulating Hormone", "unit": "uIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "19", "instrumentName": "T3", "lisTestId": 164, "lisTestCode": "BI214", "lisTestName": "T3 (Tri Iodothyronine )", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "20", "instrumentName": "T4", "lisTestId": 165, "lisTestCode": "BI215", "lisTestName": "T4 (Thyroxine )", "unit": "ug/dL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "24", "instrumentName": "FSH", "lisTestId": 125, "lisTestCode": "BI106", "lisTestName": "FSH Follicle Stimulating Hormone", "lisParamId": 519, "lisParamName": "Follicle Stimulating Hormone FSH", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "27", "instrumentName": "LH", "lisTestId": 138, "lisTestCode": "BI145", "lisTestName": "LH (Luteinizing Hormone) - Serum", "lisParamId": 589, "lisParamName": "Leutinizing Hormone LH", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "42", "instrumentName": "25-OH Vitamin D", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "79", "instrumentName": "AMH", "lisTestId": 626, "lisTestCode": "BI034", "lisTestName": "Anti - Mullerian Hormone (AMH)", "lisParamId": 417, "lisParamName": "Anti - Mullerian Hormone AMH", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "139", "instrumentName": "Vitamin B12", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "lisParamId": 701, "lisParamName": "Vitamin B12", "unit": "pg/mL", "status": "manual", "confidence": 1 }
+      ]
     }
   ]
 }
