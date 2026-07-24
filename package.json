@@ -22,6 +22,7 @@
     "verify:presets": "esbuild scripts/verify-presets.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-presets.mjs && node scripts/.verify-presets.mjs",
     "verify:magicl": "esbuild scripts/verify-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-magicl.mjs && node scripts/.verify-magicl.mjs",
     "verify:mapgrade": "esbuild scripts/verify-mapgrade.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mapgrade.mjs && node scripts/.verify-mapgrade.mjs",
+    "verify:units": "esbuild scripts/verify-units.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-units.mjs && node scripts/.verify-units.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },

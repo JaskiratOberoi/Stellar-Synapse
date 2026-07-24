@@ -35,6 +35,7 @@ import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
+import { convertForLis } from './units'
 import { persist } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
@@ -1633,26 +1634,5 @@ function isLisDownError(err: unknown): boolean {
   )
 }
 
-function convertForLis(
-  result: CanonicalResult,
-  rule: MappingRule
-): { value: string; unit?: string } {
-  if (result.analyteCode === 'eAG' && result.unit === 'mmol/L') {
-    const n = parseFloat(result.value)
-    if (!isNaN(n)) {
-      // Noble's eAG parameter is always mg/dL; convert the analyzer's mmol/L
-      // value and always label it mg/dL (never the analyzer's source unit).
-      return { value: (n * 18.0182).toFixed(1), unit: 'mg/dL' }
-    }
-  }
-  // Hematology analyzers (e.g. EDAN H60) report HGB/MCHC in g/L while Noble's
-  // CBC fields are g/dL — convert by /10 whenever the analyzer reports g/L and
-  // the mapping's target unit is g/dL (so 144 g/L -> 14.4 g/dL).
-  const srcUnit = (result.unit ?? '').replace(/\s+/g, '').toLowerCase()
-  const tgtUnit = (rule.unit ?? '').replace(/\s+/g, '').toLowerCase()
-  if (srcUnit === 'g/l' && tgtUnit === 'g/dl') {
-    const n = parseFloat(result.value)
-    if (!Number.isNaN(n)) return { value: (n / 10).toFixed(1), unit: 'g/dL' }
-  }
-  return { value: result.value, unit: result.unit ?? rule.unit }
-}
+// convertForLis moved to ./units so the conversion table can be unit-tested
+// without pulling in the whole orchestrator (see scripts/verify-units.ts).
