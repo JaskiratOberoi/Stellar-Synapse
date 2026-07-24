@@ -18,6 +18,10 @@ scripts/.verify-magicl.mjs
 scripts/.verify-mapgrade.mjs
 scripts/.verify-units.mjs
 
+# Ad-hoc dot-prefixed scripts in scripts/ — build artifacts and one-off DB
+# queries. These carry live LIS credentials, so they must never be committed.
+scripts/.*.mjs
+
 # Per-machine Claude Code tool permissions (the shared skills/ dir IS committed)
 .claude/settings.local.json
 
