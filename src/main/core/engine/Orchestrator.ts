@@ -30,6 +30,7 @@ import {
   frameGeteinHl7,
   type GeteinQuery
 } from '../drivers/geteinHostQuery'
+import { horibaResultControlId, buildHoribaAck, frameHoribaHl7 } from '../drivers/horiba'
 import { getDriver } from '../drivers/registry'
 import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
@@ -563,6 +564,14 @@ export class Orchestrator extends EventEmitter {
       // fall through to decode the ORU below.
       const oruId = geteinResultControlId(message)
       if (oruId) this.writeHl7Response(def, frameGeteinHl7(buildGeteinAck(oruId)))
+    }
+
+    // HORIBA Yumizen H550E: ACK^R22 after each OUL^R22 upload. The analyzer holds
+    // the MLLP link open waiting for this accept-ack; without it, it flags a host
+    // timeout and drops the connection (COMM red). Then fall through to decode.
+    if (def.protocol === 'hl7' && driver.hl7Dialect === 'horiba' && !def.connection.passive) {
+      const oruId = horibaResultControlId(message)
+      if (oruId) this.writeHl7Response(def, frameHoribaHl7(buildHoribaAck(oruId)))
     }
 
     let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })

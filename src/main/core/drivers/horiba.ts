@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { CanonicalResult, ResultFlag } from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
+import { Hl7Protocol } from '../protocols/hl7'
 import type { DriverAnalyte } from './IInstrumentDriver'
 import { simValue } from './sampleBuilders'
 
@@ -94,6 +95,43 @@ export function parseHoribaHl7(message: ProtocolMessage, instrumentId: string): 
     }
   }
   return results
+}
+
+/** MSH is special: after split on '|', element[N-1] is field MSH-N (N>=2). */
+function mshField(message: ProtocolMessage, fieldNo: number): string {
+  const msh = message.records.find((r) => (r[0] || '').toUpperCase() === 'MSH')
+  return (msh?.[fieldNo - 1] || '').trim()
+}
+
+/**
+ * If the message is a HORIBA result upload (`OUL^R22`, or a plain `ORU` on older
+ * firmware), return its MSH-10 control id so we can echo it in the ACK. The
+ * H550E waits for this acknowledgment after each upload; without it the analyzer
+ * reports a host communication timeout and drops the link (COMM red).
+ */
+export function horibaResultControlId(message: ProtocolMessage): string | null {
+  if (message.protocol !== 'hl7') return null
+  const type = mshField(message, 9).toUpperCase()
+  return type.startsWith('OUL') || type.startsWith('ORU') ? mshField(message, 10) || '0' : null
+}
+
+/**
+ * Build the HL7 v2.5 `ACK^R22` accept-acknowledgment the H550E expects after an
+ * `OUL^R22` upload. Only MSA|AA|<control-id> is load-bearing (the analyzer keys
+ * the ack to its own MSH-10); the routing fields are left blank like the upload's
+ * generic peers. Segments are CR-delimited (standard HL7, unlike the flattened
+ * Getein stream). MLLP framing is added by {@link frameHoribaHl7}.
+ */
+export function buildHoribaAck(controlId: string): string {
+  return (
+    `MSH|^~\\&|SYNAPSE||HORIBA_MEDICAL||${ts()}||ACK^R22^ACK|${controlId}|P|2.5||||||UNICODE UTF-8\r` +
+    `MSA|AA|${controlId}`
+  )
+}
+
+/** Wrap an HL7 message body in MLLP framing for transmission to the analyzer. */
+export function frameHoribaHl7(body: string): Buffer {
+  return Hl7Protocol.frame(body)
 }
 
 /**
