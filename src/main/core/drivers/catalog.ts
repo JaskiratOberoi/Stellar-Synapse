@@ -407,9 +407,13 @@ const beckman = [
     'Clinical Chemistry',
     'AU / DxC AU clinical chemistry analyzer. Beckman "Online" fixed-field host protocol ' +
       '(2-digit Online Test No., fixed-width results) over TCP/IP or serial. Shares the AU480 ' +
-      'test menu; confirm each analyzer\'s Online Test No. assignments.',
+      'test menu; confirm each analyzer\'s Online Test No. assignments. The DxC 700 AU is ' +
+      'verified end-to-end against a live Rohtak analyzer (per-site wire-format override).',
     BECKMAN_AU,
-    { port: 9111, protocol: 'beckman-au' }
+    // Same beckman-au code path as the AU480 (itself 'beta'); the DxC 700 AU is
+    // verified against real Rohtak R/S/D frames, so the family is 'beta', not the
+    // default 'skeleton'.
+    { port: 9111, protocol: 'beckman-au', maturity: 'beta' }
   ),
   ...family(
     [
