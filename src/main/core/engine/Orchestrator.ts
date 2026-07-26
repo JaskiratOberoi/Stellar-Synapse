@@ -17,7 +17,7 @@ import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { buildMindrayOrderRecords, frameMindrayMessage } from '../drivers/mindray'
 import { buildBeckmanDxiOrderFrames } from '../drivers/beckmanDxi'
-import { AuHostQuerySender, DEFAULT_AU_FORMAT } from '../protocols/beckmanAu'
+import { AuHostQuerySender, DEFAULT_AU_FORMAT, mergeAuFormat } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
@@ -247,7 +247,8 @@ export class Orchestrator extends EventEmitter {
 
     const transport = createTransport(def.id, def.connection)
     const protocol = createProtocol(def.protocol, {
-      astmFlushOnTerminator: driver.astmFlushOnTerminator
+      astmFlushOnTerminator: driver.astmFlushOnTerminator,
+      auFormat: def.auOnline?.format
     })
 
     // Wire low-level protocol control bytes (e.g. ASTM E1381 ENQ->ACK and
@@ -281,7 +282,7 @@ export class Orchestrator extends EventEmitter {
         ? new AuHostQuerySender(
             writeAndLog,
             (m) => logger.info('host-query', `${def.name}: ${m}`),
-            DEFAULT_AU_FORMAT
+            def.auOnline?.format ? mergeAuFormat(def.auOnline.format) : DEFAULT_AU_FORMAT
           )
         : undefined
 
@@ -864,9 +865,17 @@ export class Orchestrator extends EventEmitter {
     // if the response sample No./ID differ from what it asked for — then append
     // the fixed demographics block (E + M00000 + patient name) so the Online Test
     // Nos land at the offset the analyzer expects.
-    const block = buildAuOrderResponse(req.raw, testNos, DEFAULT_AU_FORMAT, {
-      patientName: order?.patientName
-    })
+    const block = buildAuOrderResponse(
+      req.raw,
+      testNos,
+      def.auOnline?.format ? mergeAuFormat(def.auOnline.format) : DEFAULT_AU_FORMAT,
+      {
+        patientName: order?.patientName,
+        // Analyzers whose S response carries no demographics block (Rohtak DxC 700
+        // AU) set this false in their preset; the AU480 default stays true.
+        demographics: def.auOnline?.format?.responseDemographics
+      }
+    )
     try {
       await auSender.send(block)
       logger.info(

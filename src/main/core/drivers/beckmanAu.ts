@@ -317,18 +317,24 @@ export function buildAuOrderResponse(
   requestBlock: string,
   testNos: number[],
   fmt: AuFormat = DEFAULT_AU_FORMAT,
-  opts: { patientName?: string } = {}
+  opts: { patientName?: string; demographics?: boolean } = {}
 ): string {
-  // 31-char identity region (rack..barcode), echoed verbatim from the request.
+  // Identity region (rack..barcode), echoed verbatim from the request.
   let id = requestBlock.slice(2)
   // Blank the sample-type flag (rack(4) + cup(2) = index 6 within `id`) — the
   // live interface always sends a space here in its S responses.
   if (id.length > 6) id = id.slice(0, 6) + ' ' + id.slice(7)
 
-  // Fixed 31-char demographics block: 4 spaces + block flag "E" + "M00000" + name(20).
-  const demographics = ' '.repeat(4) + 'E' + 'M00000' + padField(opts.patientName ?? '', 20)
+  // The demographics block is 4 spaces + block flag "E" + "M00000" + name(20) on
+  // the AU480. Some analyzers (e.g. the Rohtak DxC 700 AU) expect no demographics
+  // at all — just "…barcode␠␠␠␠E<testNos>". `demographics` defaults to true so the
+  // AU480 behaviour is unchanged; a preset sets it false to match the DxC.
+  const withDemographics = opts.demographics !== false
+  const marker = withDemographics
+    ? ' '.repeat(4) + 'E' + 'M00000' + padField(opts.patientName ?? '', 20)
+    : ' '.repeat(4) + 'E'
 
-  let block = 'S ' + id + demographics
+  let block = 'S ' + id + marker
   for (const no of testNos) {
     block += String(no).padStart(fmt.testNo, '0') // Online Test No. (3 digits)
   }

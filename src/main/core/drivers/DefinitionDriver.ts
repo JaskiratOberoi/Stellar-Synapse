@@ -3,6 +3,7 @@ import type { ProtocolMessage } from '../protocols/IProtocol'
 import type { ModelDefinition } from './catalog'
 import type { DriverAnalyte, DriverParseContext, IInstrumentDriver } from './IInstrumentDriver'
 import { buildBeckmanAuSample, parseBeckmanAu } from './beckmanAu'
+import { mergeAuFormat } from '../protocols/beckmanAu'
 import { buildBouleHl7Sample, parseBouleHl7 } from './boule'
 import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
@@ -75,7 +76,12 @@ export class DefinitionDriver implements IInstrumentDriver {
     // A per-site Online Test No. table (location preset) overrides the default AU
     // numbering for this instrument.
     if (message.protocol === 'beckman-au')
-      return parseBeckmanAu(message, instrumentId, undefined, ctx?.auOnline?.testNos)
+      return parseBeckmanAu(
+        message,
+        instrumentId,
+        ctx?.auOnline?.format ? mergeAuFormat(ctx.auOnline.format) : undefined,
+        ctx?.auOnline?.testNos
+      )
     // Mindray BS-series ASTM uses a non-standard field layout (barcode in the O
     // Specimen ID field 4, analyte code/value in component 1).
     if (this.def.astmDialect === 'mindray') return parseMindrayAstm(message, instrumentId)

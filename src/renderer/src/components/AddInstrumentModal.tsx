@@ -6,7 +6,13 @@ import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
 import { useAppStore } from '@/store/useAppStore'
-import type { AuOnlineTestNo, InstrumentDriverInfo, SerialPortInfo, TransportKind } from '@shared/types'
+import type {
+  AuOnlineTestNo,
+  AuWireFormat,
+  InstrumentDriverInfo,
+  SerialPortInfo,
+  TransportKind
+} from '@shared/types'
 
 const maturityTone = { stable: 'success', beta: 'warning', skeleton: 'muted' } as const
 
@@ -33,6 +39,7 @@ export function AddInstrumentModal({
   const [name, setName] = useState('')
   const [presetKey, setPresetKey] = useState('')
   const [auOnlineTestNos, setAuOnlineTestNos] = useState<AuOnlineTestNo[] | undefined>(undefined)
+  const [auFormat, setAuFormat] = useState<AuWireFormat | undefined>(undefined)
   const [transport, setTransport] = useState<TransportKind>('tcp-server')
   const [host, setHost] = useState('127.0.0.1')
   const [port, setPort] = useState('9100')
@@ -75,6 +82,7 @@ export function AddInstrumentModal({
     setName('')
     setPresetKey('')
     setAuOnlineTestNos(undefined)
+    setAuFormat(undefined)
     setTransport('tcp-server')
     setHost('127.0.0.1')
     setPort('9100')
@@ -142,12 +150,14 @@ export function AddInstrumentModal({
     setPresetKey(slug)
     if (!slug || !driver) {
       setAuOnlineTestNos(undefined)
+      setAuFormat(undefined)
       return
     }
     const preset = presets.find((p) => p.preset === slug)
     const inst = preset?.instruments.find((i) => i.driverId === driver.id)
     if (!preset || !inst) {
       setAuOnlineTestNos(undefined)
+      setAuFormat(undefined)
       return
     }
     if (inst.transport) setTransport(inst.transport)
@@ -161,6 +171,9 @@ export function AddInstrumentModal({
     // The per-site Beckman AU Online Test No. map travels with the instrument so
     // results decode under THIS lab's numbering, not the driver default.
     setAuOnlineTestNos(inst.auOnlineTestNos?.length ? inst.auOnlineTestNos : undefined)
+    // Per-site AU wire-frame layout (e.g. Rohtak DxC 700 AU's Run Date/Time
+    // header + no-demographics S response) travels with the instrument too.
+    setAuFormat(inst.auFormat ?? undefined)
     setName(`${driver.name} — ${preset.location}`)
   }
 
@@ -169,6 +182,7 @@ export function AddInstrumentModal({
     setName(`${d.name}`)
     setPresetKey('')
     setAuOnlineTestNos(undefined)
+    setAuFormat(undefined)
     setTransport(d.transports[0])
     setPort(String(d.defaultPort ?? 9100))
     setHostQuery(d.mode === 'bidirectional')
@@ -202,7 +216,9 @@ export function AddInstrumentModal({
           passive,
           autoIdentify: passive
         },
-        auOnline: auOnlineTestNos ? { testNos: auOnlineTestNos } : undefined
+        auOnline: auOnlineTestNos
+          ? { testNos: auOnlineTestNos, format: auFormat }
+          : undefined
       })
       // When onboarding from a location preset, apply that site's curated
       // analyte -> LIS mappings so they don't have to be re-mapped by hand.

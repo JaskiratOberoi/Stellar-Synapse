@@ -132,6 +132,38 @@ export interface AuOnlineTestNo {
   name?: string
 }
 
+/**
+ * Per-site override of the Beckman AU "Online" wire frame layout. The built-in
+ * DEFAULT_AU_FORMAT is calibrated to one AU480; sites that change the analyzer's
+ * `[Online] > Format Configuration` (e.g. Run Date/Time on, which inserts a
+ * 14-char timestamp, or a different barcode field width) shift where the result
+ * groups and the barcode sit. Only the fields a site actually changes need to be
+ * set; the rest fall back to DEFAULT_AU_FORMAT. All widths are character counts.
+ */
+export interface AuWireFormat {
+  systemNo?: number
+  rack?: number
+  cup?: number
+  sampleNo?: number
+  sampleType?: number
+  sampleId?: number
+  dummy?: number
+  dataClass?: number
+  sex?: number
+  testNo?: number
+  diluent?: number
+  result?: number
+  marks?: number
+  bcc?: boolean
+  /**
+   * Whether the host-query S response carries the fixed demographics block
+   * (block flag "E" + "M00000" + 20-char patient name). Default true (AU480). Set
+   * false for analyzers whose S response is just "…barcode␠␠␠␠E<testNos>" with no
+   * demographics (e.g. the Rohtak DxC 700 AU).
+   */
+  responseDemographics?: boolean
+}
+
 export interface InstrumentDefinition {
   id: string
   /** User-facing name, e.g. "Maglumi X3 - Bench 2". */
@@ -147,7 +179,7 @@ export interface InstrumentDefinition {
    * AU_ONLINE_TESTS numbering for BOTH result parsing and host-query order
    * responses — the same wire number means a different analyte at each lab.
    */
-  auOnline?: { testNos: AuOnlineTestNo[] }
+  auOnline?: { testNos: AuOnlineTestNo[]; format?: AuWireFormat }
 }
 
 /** A configured instrument plus its live runtime state (sent to the UI). */
@@ -214,6 +246,8 @@ export interface PresetInstrument {
   serial?: PresetSerial
   /** Beckman AU per-site Online Test No. decode table (AU analyzers only). */
   auOnlineTestNos?: AuOnlineTestNo[]
+  /** Beckman AU per-site wire frame layout override (AU analyzers only). */
+  auFormat?: AuWireFormat
   /** Per-site analyte -> Noble LIS mappings, applied at onboarding. */
   mappings?: PresetMapping[]
 }

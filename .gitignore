@@ -17,6 +17,7 @@ scripts/.verify-presets.mjs
 scripts/.verify-magicl.mjs
 scripts/.verify-mapgrade.mjs
 scripts/.verify-units.mjs
+scripts/.verify-rohtak.mjs
 
 # Ad-hoc dot-prefixed scripts in scripts/ — build artifacts and one-off DB
 # queries. These carry live LIS credentials, so they must never be committed.

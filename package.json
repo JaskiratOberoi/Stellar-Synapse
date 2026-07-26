@@ -23,6 +23,7 @@
     "verify:magicl": "esbuild scripts/verify-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-magicl.mjs && node scripts/.verify-magicl.mjs",
     "verify:mapgrade": "esbuild scripts/verify-mapgrade.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mapgrade.mjs && node scripts/.verify-mapgrade.mjs",
     "verify:units": "esbuild scripts/verify-units.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-units.mjs && node scripts/.verify-units.mjs",
+    "verify:rohtak": "esbuild scripts/verify-rohtak.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak.mjs && node scripts/.verify-rohtak.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },

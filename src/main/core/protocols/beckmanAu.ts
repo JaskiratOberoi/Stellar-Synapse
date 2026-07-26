@@ -109,6 +109,22 @@ export function auGroupWidth(fmt: AuFormat): number {
   return fmt.testNo + fmt.diluent + fmt.result + fmt.marks
 }
 
+/**
+ * Merge a per-site partial wire-format override (from a preset / instrument
+ * definition) onto DEFAULT_AU_FORMAT. Only the fields the site actually changed
+ * are overridden; `responseDemographics` lives on the override object, not on
+ * AuFormat, so it is not consumed here (buildAuOrderResponse reads it directly).
+ */
+export function mergeAuFormat(o?: Partial<AuFormat> | null): AuFormat {
+  if (!o) return DEFAULT_AU_FORMAT
+  const out = { ...DEFAULT_AU_FORMAT } as Record<string, unknown>
+  for (const k of Object.keys(out)) {
+    const v = (o as Record<string, unknown>)[k]
+    if (v !== undefined && v !== null) out[k] = v
+  }
+  return out as unknown as AuFormat
+}
+
 /** Width of the fixed per-sample header that precedes the variable part. */
 export function auHeaderWidth(fmt: AuFormat): number {
   return (

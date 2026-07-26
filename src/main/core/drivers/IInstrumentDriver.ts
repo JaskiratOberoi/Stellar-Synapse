@@ -1,4 +1,9 @@
-import type { AuOnlineTestNo, CanonicalResult, InstrumentDriverInfo } from '../../../shared/types'
+import type {
+  AuOnlineTestNo,
+  AuWireFormat,
+  CanonicalResult,
+  InstrumentDriverInfo
+} from '../../../shared/types'
 import type { ProtocolMessage } from '../protocols/IProtocol'
 
 /** A known analyte a driver can report (seeds the mapping catalog + simulator). */
@@ -16,7 +21,7 @@ export interface DriverAnalyte {
  * table from a location preset). Optional — most drivers ignore it.
  */
 export interface DriverParseContext {
-  auOnline?: { testNos: AuOnlineTestNo[] }
+  auOnline?: { testNos: AuOnlineTestNo[]; format?: AuWireFormat }
 }
 
 /**
