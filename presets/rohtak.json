@@ -119,6 +119,41 @@
         { "instrumentCode": "Cl", "instrumentName": "Chloride", "lisTestId": 101, "lisTestCode": "BI074", "lisTestName": "Chloride", "lisParamId": 478, "lisParamName": "Chloride - Serum", "unit": "mmol/L", "status": "manual", "confidence": 1 },
         { "instrumentCode": "HBA1C", "instrumentName": "HbA1c", "lisTestId": 291, "lisTestCode": "BI127", "lisTestName": "Glycated  Hemoglobin (HBA1c)", "lisParamId": 545, "lisParamName": "Glycated Hemoglobin  HbA1c", "unit": "%", "status": "manual", "confidence": 1 }
       ]
+    },
+    {
+      "driverId": "magicl-6200",
+      "model": "Getein MAGICL 6200",
+      "vendor": "Getein Biotech",
+      "category": "Immunoassay (CLIA)",
+      "protocol": "hl7",
+      "mode": "bidirectional",
+      "defaultPort": 8081,
+      "transports": ["tcp-server"],
+      "source": "Rohtak Getein MAGICL 6200. HL7 v2.3.1 over MLLP, captured from the eLab Assist logs (06-08 Aug 2026): QRY^Q02 host query (barcode in QRD-8) answered by QCK+DSR^Q03, ORU^R01 result upload ACKed. Identical getein dialect to the Delhi 6000i — only the assay item-ids differ. 14 assays actually in use; every Noble target reused from the Delhi MAGICL (same Noble DB) and re-confirmed on 2026-08-08.",
+      "mappingsSummary": { "total": 14, "mapped": 14, "unmapped": 0 },
+      "_mappingNotes": [
+        "Analyte key (instrumentCode) is the MAGICL numeric assay item-id from OBX-3; the analyzer also puts the friendly name in OBX-4, so decoding is unambiguous. The 6200 uses 4-digit ids (TSH=1018, T3=1019, …) — the 6000i's ids + 1000 for most, EXCEPT 25-OH-VD which is 1151 (not 1042). Read verbatim from the ORU frames, not inferred.",
+        "Same getein HL7 flow as the Delhi 6000i, so no driver change was needed — only this per-site item-id -> Noble map. The host query answers QRY^Q02 (QRD-8 barcode) with the ordered item-ids in the DSR, and ACKs each ORU^R01.",
+        "UNIT TRAPS, both verified against what eLab actually wrote to Noble for THIS analyzer's SIDs (2026-08-08): FT3 (1021) arrives pmol/L and Noble stores pg/mL — eLab converts x0.651, and Synapse's units.ts does the same conversion for FT3, so it matches (e.g. SID 9282585 wire ~5.4 pmol/L -> Noble 3.54 pg/mL). FT4 (1022) arrives pmol/L and eLab stores it RAW in Noble's ng/L field (SID 9282585 wire 12.64 -> Noble 12.64), NO conversion; Synapse has no pmol/L->ng/L rule so it passes through raw too — matching eLab. Noble's FT4 'ng/L' label is nominal (the lab's reference range is set for the raw analyzer number); do not add a conversion without the lab's sign-off.",
+        "Testosterone (1034) arrives ng/dL and Noble stores ng/dL — direct, matching the corrected Delhi/X3 Testosterone finding. T3 ng/mL, T4 ug/dL, TSH uIU/mL all map directly.",
+        "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer's HL7/Ethernet Server IP to this host's instrument-LAN IP and its port to match; Synapse listens as tcp-server on that port (8081 default, as at Delhi). Confirm the port on the analyzer's LIS screen. This is a SEPARATE instrument from the Rohtak DxC 700 AU (serial) in this same preset."
+      ],
+      "mappings": [
+        { "instrumentCode": "1006", "instrumentName": "Ferritin", "lisTestId": 123, "lisTestCode": "BI104", "lisTestName": "Ferritin", "lisParamId": 517, "lisParamName": "Ferritin", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1008", "instrumentName": "tPSA", "lisTestId": 151, "lisTestCode": "BI181", "lisTestName": "PSA (Prostate Specific Antigen) Total", "lisParamId": 624, "lisParamName": "PSA Total (Prostatic Specific Antigen Total)", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1018", "instrumentName": "TSH", "lisTestId": 170, "lisTestCode": "BI221", "lisTestName": "TSH : Thyroid Stimulating Hormone", "unit": "uIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1019", "instrumentName": "T3", "lisTestId": 164, "lisTestCode": "BI214", "lisTestName": "T3 (Tri Iodothyronine )", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1020", "instrumentName": "T4", "lisTestId": 165, "lisTestCode": "BI215", "lisTestName": "T4 (Thyroxine )", "unit": "ug/dL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1021", "instrumentName": "FT3", "lisTestId": 128, "lisTestCode": "BI109", "lisTestName": "Free T3 (FT3)", "lisParamId": 525, "lisParamName": "T3 - Free (Tri-iodothyronine-Free)", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1022", "instrumentName": "FT4", "lisTestId": 129, "lisTestCode": "BI110", "lisTestName": "Free T4 (FT4)", "lisParamId": 526, "lisParamName": "T4 - Free (Thyroxine - Free)", "unit": "ng/L", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1025", "instrumentName": "IgE", "lisTestId": 133, "lisTestCode": "BI133", "lisTestName": "Total IgE", "lisParamId": 568, "lisParamName": "IgE Total", "unit": "IU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1034", "instrumentName": "Testosterone", "lisTestId": 158, "lisTestCode": "BI209", "lisTestName": "Testosterone  - Total", "lisParamId": 670, "lisParamName": "Testosterone - Total", "unit": "ng/dL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1041", "instrumentName": "NT-proBNP", "lisTestId": 147, "lisTestCode": "BI177", "lisTestName": "NT-PRO BNP", "lisParamId": 620, "lisParamName": "ProBNP (Pro-Beta Natriuretic Peptide)", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1079", "instrumentName": "AMH", "lisTestId": 626, "lisTestCode": "BI034", "lisTestName": "Anti - Mullerian Hormone (AMH)", "lisParamId": 417, "lisParamName": "Anti - Mullerian Hormone AMH", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1101", "instrumentName": "Estradiol", "lisTestId": 121, "lisTestCode": "BI102", "lisTestName": "Estradiol (E2)", "lisParamId": 514, "lisParamName": "Estradiol  E2", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1139", "instrumentName": "Vitamin B12", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "lisParamId": 701, "lisParamName": "Vitamin B12", "unit": "pg/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "1151", "instrumentName": "25-OH-VD", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 }
+      ]
     }
   ]
 }
