@@ -767,13 +767,15 @@ export class Orchestrator extends EventEmitter {
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
       : []
 
-    // Answer with the QCK acknowledgment + the DSR data in ONE MLLP frame (CR
-    // between the two messages), the way the live eLab interface sends its order
-    // buffer. Sent as two separate frames the analyzer reads only the first (the
-    // QCK, which has no tasks) and reports "failed to obtain the task" without ever
-    // parsing the DSR. (An empty code set still sends a valid DSR = "run nothing".)
-    const orderBuffer = `${buildGeteinQck(query.controlId)}\r${buildGeteinDsr(query, codes)}`
-    this.writeHl7Response(def, frameGeteinHl7(orderBuffer))
+    // Answer with the QCK acknowledgment and the DSR data as TWO SEPARATE MLLP
+    // frames (each its own <VT>…<FS>), back to back — byte-verified against the
+    // live eLab Assist capture for the Rohtak 6200, whose outbound stream is
+    // "…QAK|SR|OK|<FS><VT>MSH…DSR^Q03…". An earlier build combined them into one
+    // frame (QCK<CR>DSR); the analyzer then parsed only the QCK, saw no tasks, and
+    // reported "failed to retrieve task" even though the DSR carried the order.
+    // (An empty code set still sends a valid DSR = "run nothing".)
+    this.writeHl7Response(def, frameGeteinHl7(buildGeteinQck(query.controlId)))
+    this.writeHl7Response(def, frameGeteinHl7(buildGeteinDsr(query, codes)))
 
     if (codes.length === 0) {
       logger.info('host-query', `${def.name}: no mappable orders for ${query.sid} — replied with empty order set`)
