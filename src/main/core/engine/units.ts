@@ -20,6 +20,22 @@ function norm(unit: string | undefined): string {
 }
 
 /**
+ * Round a numeric result to at most `maxDp` decimal places for LIS submission —
+ * TRIMMING, never padding: "25.75119047" -> "25.75", "233" -> "233", "0.5" ->
+ * "0.5". Non-numeric values pass through untouched: censored results (">2000.00",
+ * "<105"), qualitative text ("POSITIVE"), and blanks are returned verbatim so a
+ * flag is never turned into "0". Getein immunoassays emit up to ~15 decimals on
+ * the wire; labs want at most 2 in Noble.
+ */
+export function roundResultValue(value: string, maxDp: number): string {
+  const t = value.trim()
+  if (!t) return value
+  const n = Number(t)
+  if (!Number.isFinite(n)) return value
+  return String(parseFloat(n.toFixed(maxDp)))
+}
+
+/**
  * Identifies free T3 across the ways a driver may label it — the Getein MAGICL
  * keys analytes by a bare numeric item-id (FT3 = "21"), so the analyte code
  * alone is not self-describing and the mapping's names are checked too.

@@ -36,7 +36,7 @@ import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
-import { convertForLis } from './units'
+import { convertForLis, roundResultValue } from './units'
 import { persist } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
@@ -911,6 +911,14 @@ export class Orchestrator extends EventEmitter {
     countedSids: Set<string>,
     options?: { forceWrite?: boolean }
   ): Promise<'written' | 'skipped' | 'suppressed' | 'error' | 'queued'> {
+    // Getein immunoassays (MAGICL 6000i/6200, Metis) transmit up to ~15 decimals;
+    // labs want at most 2 in Noble. Round for BOTH the display and the LIS write,
+    // but keep the analyzer's original value visible (originalValue) so the
+    // reduction is transparent. Non-getein drivers are unaffected (maxDp null).
+    const maxDp = getDriver(driverId)?.hl7Dialect === 'getein' ? 2 : null
+    const displayValue = maxDp != null ? roundResultValue(result.value, maxDp) : result.value
+    const displayOriginal = displayValue !== result.value ? result.value : undefined
+
     const base = {
       id: randomUUID(),
       instrumentId: def.id,
@@ -918,7 +926,8 @@ export class Orchestrator extends EventEmitter {
       sampleId: result.sampleId,
       analyteCode: result.analyteCode,
       analyteName: result.analyteName,
-      value: result.value,
+      value: displayValue,
+      originalValue: displayOriginal,
       unit: result.unit,
       flag: result.flag,
       raw: raw.length > 600 ? `${raw.slice(0, 600)}...` : raw,
@@ -1030,7 +1039,12 @@ export class Orchestrator extends EventEmitter {
       return 'skipped'
     }
 
-    const { value: writeValue, unit: writeUnit } = convertForLis(result, rule)
+    // convertForLis runs on the analyzer's full-precision value (correct — round
+    // the OUTPUT, not the input, so a unit conversion like FT3 pmol/L->pg/mL isn't
+    // done on a pre-truncated number). Then apply the getein 2-decimal cap.
+    const converted = convertForLis(result, rule)
+    const writeValue = maxDp != null ? roundResultValue(converted.value, maxDp) : converted.value
+    const writeUnit = converted.unit
 
     // Variant channels (e.g. AU Glucose / RF): the mapping rule pins ONE LIS
     // variant, but the lab may have ordered a different one (Fasting vs PP vs

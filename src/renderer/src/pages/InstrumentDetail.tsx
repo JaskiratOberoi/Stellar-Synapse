@@ -74,7 +74,14 @@ export function InstrumentDetail() {
       timestamp: string
       raw: string
       kind: 'ld560' | 'generic'
-      rows: { id: string; analyteCode: string; analyteName?: string; value: string; unit?: string }[]
+      rows: {
+        id: string
+        analyteCode: string
+        analyteName?: string
+        value: string
+        originalValue?: string
+        unit?: string
+      }[]
       lisStatus: ReturnType<typeof ld560FrameLisStatus> | undefined
     }
     const byKey = new Map<string, Frame>()
@@ -114,6 +121,7 @@ export function InstrumentDetail() {
               analyteCode: m.analyteCode,
               analyteName: m.analyteName,
               value: m.value,
+              originalValue: m.originalValue,
               unit: m.unit
             })
           }
@@ -130,6 +138,7 @@ export function InstrumentDetail() {
                 analyteCode: m.analyteCode,
                 analyteName: m.analyteName,
                 value: m.value,
+                originalValue: m.originalValue,
                 unit: m.unit
               }
             ]
@@ -457,6 +466,14 @@ export function InstrumentDetail() {
                         )}
                       </span>
                       <span>
+                        {r.originalValue && (
+                          <span
+                            className="mr-1.5 text-xs text-muted-foreground line-through"
+                            title="Analyzer value before rounding to 2 decimals"
+                          >
+                            {r.originalValue}
+                          </span>
+                        )}
                         <span className="font-semibold">{r.value}</span>
                         {r.unit && <span className="ml-1 text-xs text-muted-foreground">{r.unit}</span>}
                       </span>
@@ -535,7 +552,11 @@ export function InstrumentDetail() {
                   </span>
                   <span className="text-accent">{m.sampleId}</span>
                   <span className="flex-1 text-foreground">
-                    {m.analyteName || m.analyteCode}={m.value} {m.unit}
+                    {m.analyteName || m.analyteCode}=
+                    {m.originalValue && (
+                      <span className="text-muted-foreground line-through">{m.originalValue} </span>
+                    )}
+                    {m.value} {m.unit}
                   </span>
                 </motion.div>
               ))}

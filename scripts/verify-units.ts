@@ -6,7 +6,7 @@
  * molar-mass-dependent pmol/L rule must not fire for a non-FT3 analyte.
  * Run: npm run verify:units
  */
-import { convertForLis } from '../src/main/core/engine/units'
+import { convertForLis, roundResultValue } from '../src/main/core/engine/units'
 import type { CanonicalResult, MappingRule } from '../src/shared/types'
 
 function res(over: Partial<CanonicalResult>): CanonicalResult {
@@ -129,7 +129,30 @@ const CASES: Case[] = [
   }
 ]
 
-let failed = 0
+// --- roundResultValue: Getein 2-decimal cap ---------------------------------
+const ROUND: Array<[string, string]> = [
+  ['25.75119047', '25.75'],
+  ['0.37168773', '0.37'],
+  ['11.68325389', '11.68'],
+  ['46.6697961469203', '46.67'],
+  ['233', '233'], // integer stays integer (no padding)
+  ['0.5', '0.5'], // fewer than 2 dp preserved
+  ['1.299', '1.3'], // rounds, trailing zero trimmed
+  ['>2000.00', '>2000.00'], // censored — passthrough
+  ['<105', '<105'], // censored — passthrough
+  ['POSITIVE', 'POSITIVE'], // qualitative — passthrough
+  ['', ''] // blank — passthrough (never becomes "0")
+]
+let roundFailed = 0
+for (const [input, expected] of ROUND) {
+  const got = roundResultValue(input, 2)
+  const ok = got === expected
+  if (!ok) roundFailed++
+  console.log(`${ok ? 'PASS' : 'FAIL'}  round("${input}") -> "${got}"${ok ? '' : ` EXPECTED "${expected}"`}`)
+}
+console.log('')
+
+let failed = roundFailed
 for (const c of CASES) {
   const got = convertForLis(c.result, c.rule)
   const ok = got.value === c.expectValue && (c.expectUnit === undefined || got.unit === c.expectUnit)

@@ -424,6 +424,12 @@ export interface MonitorEvent {
   analyteCode: string
   analyteName?: string
   value: string
+  /**
+   * The analyzer's original value when Synapse changed it before display/LIS
+   * (e.g. a Getein immunoassay's 25.75119047 rounded to 25.75). Present only when
+   * it differs from `value`, so the UI can show both for transparency.
+   */
+  originalValue?: string
   unit?: string
   flag?: ResultFlag
   stage: MonitorStage
