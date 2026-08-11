@@ -271,6 +271,69 @@ export class MappingEngine {
   }
 
   /**
+   * One-time: route the Delhi MAGICL 6000i TORCH IgG analytes to the TORCH
+   * PROFILE 10 params (TCH10, Noble test 2666) instead of the standalone HSV
+   * CP-series / (unmapped) MS-series targets. This lab orders TORCH as the TCH10
+   * profile and enters the analyzer's raw S/CO values into its params (5338-5342,
+   * historically confirmed), so the old standalone targets never matched the
+   * ordered profile rows and those results skipped.
+   *
+   * GUARD: only fires for an instrument that still carries the exact old mapping
+   * (magicl-6000i code 73 -> CP3103), which ONLY the pre-2026-08 Delhi preset
+   * produced — so it cannot mis-route any other lab's setup. Idempotent: once code
+   * 73 points at TCH10 the guard no longer matches. Flag-protected so it runs once.
+   */
+  migrateDelhiTorchProfile(): number {
+    if (persist.getMigrationFlag('migratedDelhiTorchProfile')) return 0
+    persist.setMigrationFlag('migratedDelhiTorchProfile', true)
+    const isDelhiTorch = this.rules.some(
+      (r) => r.driverId === 'magicl-6000i' && r.instrumentCode === '73' && r.lisTestCode === 'CP3103'
+    )
+    if (!isDelhiTorch) return 0
+
+    // analyzer item-id -> TORCH PROFILE 10 param (id, Noble param name).
+    const TORCH: Array<[code: string, name: string, paramId: number, paramName: string]> = [
+      ['73', 'HSV-I IgG', 5341, 'HSV 1 IgG'],
+      ['74', 'HSV-II IgG', 5342, 'HSV 2 IgG'],
+      ['144', 'CMV IgG', 5340, 'Cytomegalovirus IgG'],
+      ['145', 'Rubella IgG', 5339, 'Rubella IgG'],
+      ['146', 'Toxo IgG', 5338, 'Toxoplasma IgG']
+    ]
+    const now = new Date().toISOString()
+    let changed = 0
+    for (const [code, name, paramId, paramName] of TORCH) {
+      const idx = this.rules.findIndex(
+        (r) => r.driverId === 'magicl-6000i' && r.instrumentCode === code
+      )
+      const base = idx >= 0 ? this.rules[idx] : undefined
+      const rule: MappingRule = {
+        id: base?.id ?? randomUUID(),
+        driverId: 'magicl-6000i',
+        instrumentCode: code,
+        instrumentName: base?.instrumentName ?? name,
+        status: 'manual',
+        confidence: 1,
+        lisTestId: 2666,
+        lisTestCode: 'TCH10',
+        lisTestName: 'TORCH PROFILE 10',
+        lisParamId: paramId,
+        lisParamName: paramName,
+        unit: 'S/CO',
+        updatedAt: now
+      }
+      if (idx >= 0) this.rules[idx] = rule
+      else this.rules.push(rule)
+      changed++
+    }
+    this.save()
+    logger.info(
+      'mapping',
+      `Delhi TORCH: routed ${changed} getein IgG analyte(s) to the TCH10 profile params (test 2666)`
+    )
+    return changed
+  }
+
+  /**
    * One-time hygiene: a Beckman AU configures two methods for each bilirubin
    * analyte — DCA (DBILC/TBILC, online nos 6/8) and BuBc (DBILB/TBILB, nos 7/9) —
    * and both can end up mapped to the SAME LIS test. The host query would then

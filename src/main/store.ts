@@ -41,12 +41,15 @@ interface PersistShape {
   migratedSimulatorOff?: boolean
   /** One-time migration: re-grade flat-0.6 name matches under the graded matcher. */
   migratedRescoreNameMappings?: boolean
+  /** One-time migration: route Delhi 6000i TORCH IgG analytes to the TCH10 profile. */
+  migratedDelhiTorchProfile?: boolean
 }
 
 type MigrationFlagKey =
   | 'migratedAuSingleBilirubin'
   | 'migratedLd560EnableEag'
   | 'migratedRescoreNameMappings'
+  | 'migratedDelhiTorchProfile'
 
 const MAX_MONITOR_HISTORY = 2000
 

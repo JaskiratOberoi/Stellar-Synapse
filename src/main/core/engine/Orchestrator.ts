@@ -116,6 +116,11 @@ export class Orchestrator extends EventEmitter {
     // upgrade, while leaving genuine junk matches blocked.
     this.mapping.migrateRescoreNameMappings()
 
+    // One-time: fix the Delhi 6000i TORCH IgG analytes to write into the TCH10
+    // profile params (they were mapped to standalone HSV/unmapped, which never
+    // matched the ordered TORCH profile rows). Guarded to the exact old mapping.
+    this.mapping.migrateDelhiTorchProfile()
+
     // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
     // AMH II, …). Restrict the host query to exactly those channels so unrelated
     // catalog analytes (ATG, CEA, AFP, …) can never be queried or written, no
