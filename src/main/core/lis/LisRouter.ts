@@ -3,7 +3,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisResultWrite,
-  LisWriteOutcome,
+  LisWriteResult,
   LisTest,
   TestOrder
 } from '../../../shared/types'
@@ -64,7 +64,7 @@ export class LisRouter implements ILisRepository {
     return this.backend.getOrder(vailid)
   }
 
-  writeResult(write: LisResultWrite): Promise<LisWriteOutcome> {
+  writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     return this.backend.writeResult(write)
   }
 

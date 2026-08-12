@@ -3,7 +3,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisResultWrite,
-  LisWriteOutcome,
+  LisWriteResult,
   LisTest,
   TestOrder
 } from '../../../shared/types'
@@ -23,10 +23,11 @@ export interface ILisRepository {
   getOrder(vailid: string): Promise<TestOrder | null>
   /**
    * Persist a result into the pre-created row (tbl_med_mcc_patient_test_result)
-   * and advance the sample status. Returns 'skipped' when the test was not
-   * ordered for the sample (no row to fill).
+   * and advance the sample status. Returns the outcome plus a reason: 'skipped'
+   * when the test was not ordered (no row) or the cell is already filled
+   * (fill-blanks-only), 'suppressed' in read-only safe mode.
    */
-  writeResult(write: LisResultWrite): Promise<LisWriteOutcome>
+  writeResult(write: LisResultWrite): Promise<LisWriteResult>
   /** Recently written results (for the UI). */
   recentWrites(): Promise<LisResultWrite[]>
   /** Validate connectivity for the given settings. */

@@ -539,7 +539,16 @@ export function InstrumentDetail() {
                   initial="hidden"
                   animate="show"
                   exit="exit"
-                  className="flex gap-3 rounded px-2 py-1 hover:bg-secondary/40"
+                  // The reason (skip/error message) shows as a native tooltip on
+                  // hover — an operator can see exactly WHY a value wasn't written
+                  // without opening the Logs page.
+                  title={m.message || undefined}
+                  className={cn(
+                    'flex gap-3 rounded px-2 py-1 hover:bg-secondary/40',
+                    m.message && (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed')
+                      ? 'cursor-help'
+                      : undefined
+                  )}
                 >
                   <span className="text-muted-foreground">{formatTime(m.timestamp)}</span>
                   <span
@@ -557,6 +566,11 @@ export function InstrumentDetail() {
                       <span className="text-muted-foreground line-through">{m.originalValue} </span>
                     )}
                     {m.value} {m.unit}
+                    {/* Inline hint that a hover reason exists for skips/errors. */}
+                    {m.message &&
+                      (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed') && (
+                        <span className="ml-1.5 text-muted-foreground">ⓘ</span>
+                      )}
                   </span>
                 </motion.div>
               ))}

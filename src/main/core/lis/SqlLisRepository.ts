@@ -3,7 +3,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisResultWrite,
-  LisWriteOutcome,
+  LisWriteResult,
   LisTest,
   TestOrder
 } from '../../../shared/types'
@@ -388,7 +388,7 @@ export class SqlLisRepository implements ILisRepository {
    * INSERT — an orphan row gets testtype = NULL, which Noble's status count
    * excludes, so it would be invisible to the worksheet anyway.
    */
-  async writeResult(write: LisResultWrite): Promise<LisWriteOutcome> {
+  async writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     const order = await this.getOrder(write.vailid)
     if (!order) {
       throw new Error(`Barcode ${write.vailid} is not registered in Noble LIS (tbl_med_mcc_patient_samples)`)
@@ -534,20 +534,21 @@ export class SqlLisRepository implements ILisRepository {
       const machine = str('exMachine')
       const when = str('exWhen')
       const rowRef = str('exRow')
+      const reason =
+        `Cell already holds "${existing || '(non-empty)'}"` +
+        (label ? ` for "${label}"` : '') +
+        (rowRef ? ` (${rowRef})` : '') +
+        (machine ? `, written by ${machine}` : '') +
+        (when ? ` at ${when}` : '') +
+        ` — fill-blanks-only kept it (this run sent ${write.value}${write.unit ? ` ${write.unit}` : ''}). ` +
+        'Clear the cell in Noble to let the new value in.'
       // Warn, not info: a blocked write means the LIS and the analyzer disagree,
       // and the operator needs the existing value to judge which one is right.
       logger.warn(
         'lis-sql',
-        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}` +
-          `=${write.value}${write.unit ? ` ${write.unit}` : ''} — target cell already holds ` +
-          `"${existing || '(non-empty)'}"` +
-          (label ? ` for "${label}"` : '') +
-          (rowRef ? ` (${rowRef})` : '') +
-          (machine ? `, written by ${machine}` : '') +
-          (when ? ` at ${when}` : '') +
-          '. Fill-blanks-only: left unchanged. Clear the cell in Noble to let this value in.'
+        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}=${write.value} — ${reason}`
       )
-      return 'skipped'
+      return { outcome: 'skipped', reason }
     }
     if (matched === 0) {
       // Tier 5: the testid/paramid/testcode/exact-name tiers all missed because
@@ -558,7 +559,7 @@ export class SqlLisRepository implements ILisRepository {
       if (await this.writeByNameKey(write)) {
         this.writes.unshift(write)
         if (this.writes.length > this.maxWrites) this.writes.pop()
-        return 'written'
+        return { outcome: 'written' }
       }
       // Dump the sample's rows so a genuine "not ordered" is debuggable, and any
       // profile layout the tiers don't yet cover is immediately visible in Logs.
@@ -576,14 +577,15 @@ export class SqlLisRepository implements ILisRepository {
       } catch {
         /* best-effort diagnostic */
       }
+      const reason =
+        `Test not ordered for this sample — no result row matches the mapped target ` +
+        `(testid ${write.testId}, paramid ${write.paramId ?? 'null'}, "${write.testName}") by id, ` +
+        `code, name or name-key. Registered rows: ${rowsDump || '(none registered)'}`
       logger.warn(
         'lis-sql',
-        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}` +
-          `=${write.value} — test not ordered for this sample: no result row matches the mapped ` +
-          `target (testid ${write.testId}, paramid ${write.paramId ?? 'null'}, name "${write.testName}") ` +
-          `by id, code, name or name-key. Sample's registered rows: ${rowsDump || '(none registered)'}`
+        `Skipped ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}=${write.value} — ${reason}`
       )
-      return 'skipped'
+      return { outcome: 'skipped', reason }
     }
 
     this.writes.unshift(write)
@@ -592,7 +594,7 @@ export class SqlLisRepository implements ILisRepository {
       'lis-sql',
       `Wrote ${write.vailid} ${write.testCode}${write.paramId ? `[${write.paramId}]` : ''}=${write.value} ${write.unit ?? ''}`
     )
-    return 'written'
+    return { outcome: 'written' }
   }
 
   /**

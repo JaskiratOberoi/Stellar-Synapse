@@ -3,7 +3,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisResultWrite,
-  LisWriteOutcome,
+  LisWriteResult,
   LisTest,
   TestOrder
 } from '../../../shared/types'
@@ -33,14 +33,14 @@ export class MockLisRepository implements ILisRepository {
     return MOCK_ORDERS.find((o) => o.vailid === vailid) ?? null
   }
 
-  async writeResult(write: LisResultWrite): Promise<LisWriteOutcome> {
+  async writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     this.writes.unshift(write)
     if (this.writes.length > this.maxWrites) this.writes.pop()
     logger.debug(
       'lis-mock',
       `(mock write) ${write.vailid} ${write.testCode}=${write.value} ${write.unit ?? ''}`
     )
-    return 'written'
+    return { outcome: 'written' }
   }
 
   async recentWrites(): Promise<LisResultWrite[]> {

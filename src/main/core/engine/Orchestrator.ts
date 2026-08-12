@@ -1110,7 +1110,7 @@ export class Orchestrator extends EventEmitter {
     }
 
     try {
-      const outcome = await this.lis.writeResult(write)
+      const { outcome, reason } = await this.lis.writeResult(write)
       if (outcome === 'suppressed') {
         // Read-only safe mode: the value was resolved against live Noble data but
         // the write was deliberately blocked. Nothing is persisted.
@@ -1119,19 +1119,22 @@ export class Orchestrator extends EventEmitter {
           id: randomUUID(),
           stage: 'suppressed',
           mappedTo,
-          message: `Read-only mode — NOT written to Noble (would write ${write.value}${write.unit ? ` ${write.unit}` : ''})`
+          message:
+            reason ??
+            `Read-only mode — NOT written to Noble (would write ${write.value}${write.unit ? ` ${write.unit}` : ''})`
         })
         return 'suppressed'
       }
       if (outcome === 'skipped') {
-        // Sample is registered but this test was not ordered for it — Synapse
-        // does not fabricate a row (it would be invisible to Noble's status).
+        // Skipped by the repository: either the test was not ordered for this
+        // sample (no row) or the cell already holds a value (fill-blanks-only).
+        // The repository returns the specific reason so the Monitor can show it.
         this.pushMonitor({
           ...base,
           id: randomUUID(),
           stage: 'skipped',
           mappedTo,
-          message: `Test not ordered for ${write.vailid} in Noble — value not written`
+          message: reason ?? `Not written to Noble for ${write.vailid}`
         })
         return 'skipped'
       }
@@ -1207,7 +1210,7 @@ export class Orchestrator extends EventEmitter {
     try {
       for (const write of [...this.pendingWrites]) {
         try {
-          const outcome = await this.lis.writeResult(write)
+          const { outcome, reason } = await this.lis.writeResult(write)
           // Resolved either way (written or definitively not-ordered): drop it
           // from the queue. Only transient failures (throws) stay queued.
           this.pendingWrites = this.pendingWrites.filter((w) => w !== write)
@@ -1225,7 +1228,7 @@ export class Orchestrator extends EventEmitter {
             message:
               outcome === 'written'
                 ? 'Flushed from offline queue'
-                : 'Test not ordered in Noble — dropped from queue',
+                : (reason ?? 'Not written in Noble — dropped from queue'),
             timestamp: new Date().toISOString()
           })
         } catch (err) {

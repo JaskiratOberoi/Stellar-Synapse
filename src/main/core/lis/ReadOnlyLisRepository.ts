@@ -3,7 +3,7 @@ import type {
   LisConnectionSettings,
   LisParameter,
   LisResultWrite,
-  LisWriteOutcome,
+  LisWriteResult,
   LisTest,
   TestOrder
 } from '../../../shared/types'
@@ -42,7 +42,7 @@ export class ReadOnlyLisRepository implements ILisRepository {
     return this.inner.getOrder(vailid)
   }
 
-  async writeResult(write: LisResultWrite): Promise<LisWriteOutcome> {
+  async writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     this.suppressed.unshift(write)
     if (this.suppressed.length > this.maxWrites) this.suppressed.pop()
     logger.warn(
@@ -50,7 +50,7 @@ export class ReadOnlyLisRepository implements ILisRepository {
       `WRITE BLOCKED (read-only mode) — would write ${write.vailid} ${write.testCode}` +
         `${write.paramId ? `[${write.paramId}]` : ''}=${write.value} ${write.unit ?? ''}`
     )
-    return 'suppressed'
+    return { outcome: 'suppressed', reason: 'Read-only safe mode — write blocked' }
   }
 
   /** Surface the would-have-written results so the UI's "recent writes" still works. */

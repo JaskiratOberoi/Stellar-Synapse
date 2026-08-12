@@ -341,6 +341,17 @@ export interface TestOrder {
 export type LisWriteOutcome = 'written' | 'skipped' | 'suppressed'
 
 /**
+ * Outcome of a LIS write plus a human-readable reason (why it skipped/was
+ * suppressed). The reason is surfaced on the Monitor so an operator can see, on
+ * hover, exactly why a value wasn't written (e.g. "cell already holds 0.82" vs
+ * "test not ordered").
+ */
+export interface LisWriteResult {
+  outcome: LisWriteOutcome
+  reason?: string
+}
+
+/**
  * Payload written to dbo.tbl_med_mcc_patient_test_result.
  * Captured here as a record of what *would* be persisted (mock phase).
  */
