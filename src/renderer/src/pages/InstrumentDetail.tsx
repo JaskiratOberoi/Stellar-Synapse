@@ -204,6 +204,12 @@ export function InstrumentDetail() {
     })
   }
 
+  const setHostQuerySkipFilled = async (v: boolean): Promise<void> => {
+    await window.api.instruments.update(inst.id, {
+      connection: { ...inst.connection, hostQuerySkipFilled: v }
+    })
+  }
+
   const setAutoEag = async (v: boolean): Promise<void> => {
     await window.api.instruments.update(inst.id, {
       connection: { ...inst.connection, autoEag: v }
@@ -350,6 +356,21 @@ export function InstrumentDetail() {
                 disabled={driver?.mode === 'unidirectional'}
               />
             </div>
+            {inst.connection.hostQuery && (
+              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Skip already-run tests</p>
+                  <p className="text-xs text-muted-foreground">
+                    Don&apos;t order tests the LIS already has a value for (avoids re-running
+                    what another analyzer completed)
+                  </p>
+                </div>
+                <Switch
+                  checked={!!inst.connection.hostQuerySkipFilled}
+                  onChange={setHostQuerySkipFilled}
+                />
+              </div>
+            )}
             {driver?.derivesEag && (
               <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
                 <div>

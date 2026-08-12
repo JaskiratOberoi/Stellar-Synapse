@@ -33,6 +33,10 @@ export class MockLisRepository implements ILisRepository {
     return MOCK_ORDERS.find((o) => o.vailid === vailid) ?? null
   }
 
+  async getFilledResultKeys(): Promise<Set<string>> {
+    return new Set<string>()
+  }
+
   async writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     this.writes.unshift(write)
     if (this.writes.length > this.maxWrites) this.writes.pop()

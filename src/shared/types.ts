@@ -79,6 +79,14 @@ export interface InstrumentConnectionConfig {
   /** Enable host-query (analyzer asks the LIS what tests to run by barcode). */
   hostQuery?: boolean
   /**
+   * Host-query refinement: when answering, drop any ordered test whose LIS cell
+   * already holds a value, so a bidirectional analyzer doesn't re-run what
+   * another instrument already completed (the write would be skipped by
+   * fill-blanks-only anyway — this just avoids wasting reagent). Opt-in
+   * (undefined/false = send the full ordered set). Only applies when hostQuery is on.
+   */
+  hostQuerySkipFilled?: boolean
+  /**
    * Auto-calculate Estimated Average Glucose (eAG) from HbA1c and write it to
    * the LIS alongside the HbA1c. Only meaningful for `derivesEag` drivers
    * (Agappe Mispa Maestro); enabled by default (undefined = on).

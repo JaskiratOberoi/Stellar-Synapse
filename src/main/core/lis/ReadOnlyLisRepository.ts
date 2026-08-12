@@ -42,6 +42,10 @@ export class ReadOnlyLisRepository implements ILisRepository {
     return this.inner.getOrder(vailid)
   }
 
+  getFilledResultKeys(vailid: string): Promise<Set<string>> {
+    return this.inner.getFilledResultKeys(vailid)
+  }
+
   async writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     this.suppressed.unshift(write)
     if (this.suppressed.length > this.maxWrites) this.suppressed.pop()

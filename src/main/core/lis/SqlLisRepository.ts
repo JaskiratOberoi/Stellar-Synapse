@@ -210,6 +210,36 @@ export class SqlLisRepository implements ILisRepository {
     }
   }
 
+  /**
+   * Normalized keys of the sample's already-filled result cells (see
+   * ILisRepository). testname for every filled row (matches param-level orders);
+   * testcode only for test-level rows (paramid null) since a composite's params
+   * share the parent code and keying on it would drop still-pending siblings.
+   */
+  async getFilledResultKeys(vailid: string): Promise<Set<string>> {
+    const pool = await this.getPool()
+    const mssql = await this.getMssql()
+    const res = await pool
+      .request()
+      .input('v', mssql.VarChar, vailid)
+      .query(`
+        SELECT testcode, testname, paramid FROM tbl_med_mcc_patient_test_result
+        WHERE vailid = @v AND testtype NOT IN ('Head', 'Profile')
+          AND value IS NOT NULL AND LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
+      `)
+    const norm = (s: unknown): string => String(s ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
+    const set = new Set<string>()
+    for (const r of res.recordset as Array<Record<string, unknown>>) {
+      const name = norm(r.testname)
+      if (name) set.add(name)
+      if (r.paramid == null || Number(r.paramid) === 0) {
+        const code = norm(r.testcode)
+        if (code) set.add(code)
+      }
+    }
+    return set
+  }
+
   // Whether the live schema exposes a patient-name column we can read (probed once).
   private patientNameUnavailable = false
 

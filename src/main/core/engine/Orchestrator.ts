@@ -635,6 +635,50 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
+   * Opt-in host-query refinement (def.connection.hostQuerySkipFilled): drop any
+   * ordered test whose LIS cell already holds a value, so a bidirectional
+   * analyzer doesn't re-run what another instrument already completed (the write
+   * would be skipped by fill-blanks-only anyway — this saves reagent). Shared by
+   * the ASTM, getein-HL7 and Beckman-AU host-query handlers. Best-effort: any
+   * lookup failure returns the order unchanged rather than breaking host query.
+   */
+  private async dropFilledFromOrder(
+    def: InstrumentDefinition,
+    order: Awaited<ReturnType<ILisRepository['getOrder']>>
+  ): Promise<Awaited<ReturnType<ILisRepository['getOrder']>>> {
+    if (!def.connection.hostQuerySkipFilled || !order || order.testCodes.length === 0) return order
+    let filled: Set<string>
+    try {
+      filled = await this.lis.getFilledResultKeys(order.vailid)
+    } catch {
+      return order
+    }
+    if (filled.size === 0) return order
+    const norm = (s: string | undefined): string =>
+      String(s ?? '').replace(/\s+/g, ' ').trim().toUpperCase()
+    const codes: string[] = []
+    const names: string[] = []
+    const dropped: string[] = []
+    for (let i = 0; i < order.testCodes.length; i++) {
+      const code = norm(order.testCodes[i])
+      const name = norm(order.testNames[i])
+      if ((code && filled.has(code)) || (name && filled.has(name))) {
+        dropped.push(order.testCodes[i] || order.testNames[i] || '?')
+        continue
+      }
+      codes.push(order.testCodes[i])
+      names.push(order.testNames[i])
+    }
+    if (dropped.length > 0) {
+      logger.info(
+        'host-query',
+        `${def.name}: ${order.vailid} — skipped ${dropped.length} already-filled test(s) from the order [${dropped.join(', ')}]`
+      )
+    }
+    return { ...order, testCodes: codes, testNames: names }
+  }
+
+  /**
    * Answer an ASTM host query: look up the sample's ordered tests in the LIS,
    * reverse-map the LIS test codes to this analyzer's instrument codes, and
    * transmit ASTM O (order) records back so the analyzer knows what to run.
@@ -665,6 +709,7 @@ export class Orchestrator extends EventEmitter {
     } catch (err) {
       logger.warn('host-query', `${def.name}: order lookup failed for ${sid}: ${(err as Error).message}`)
     }
+    order = await this.dropFilledFromOrder(def, order)
 
     const codes = order
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
@@ -767,6 +812,7 @@ export class Orchestrator extends EventEmitter {
     } catch (err) {
       logger.warn('host-query', `${def.name}: order lookup failed for ${query.sid}: ${(err as Error).message}`)
     }
+    order = await this.dropFilledFromOrder(def, order)
 
     const codes = order
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
@@ -836,6 +882,7 @@ export class Orchestrator extends EventEmitter {
     } catch (err) {
       logger.warn('host-query', `${def.name}: AU order lookup failed for ${req.sid}: ${(err as Error).message}`)
     }
+    order = await this.dropFilledFromOrder(def, order)
 
     // LIS test codes -> this analyzer's instrument codes -> 2-digit Online Test Nos.
     const codes = order

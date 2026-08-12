@@ -64,6 +64,10 @@ export class LisRouter implements ILisRepository {
     return this.backend.getOrder(vailid)
   }
 
+  getFilledResultKeys(vailid: string): Promise<Set<string>> {
+    return this.backend.getFilledResultKeys(vailid)
+  }
+
   writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     return this.backend.writeResult(write)
   }

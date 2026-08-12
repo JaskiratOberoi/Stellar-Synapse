@@ -22,6 +22,14 @@ export interface ILisRepository {
   /** Look up a pending order by sample barcode (tbl_med_mcc_patient_samples). */
   getOrder(vailid: string): Promise<TestOrder | null>
   /**
+   * Normalized keys (uppercased, whitespace-collapsed) of the sample's result
+   * cells that ALREADY hold a value — the per-analyte testname for every filled
+   * row, plus the testcode for test-level rows only (a composite's params share
+   * the parent code). Used to drop already-done tests from a host-query order so
+   * a bidirectional analyzer doesn't re-run what another instrument finished.
+   */
+  getFilledResultKeys(vailid: string): Promise<Set<string>>
+  /**
    * Persist a result into the pre-created row (tbl_med_mcc_patient_test_result)
    * and advance the sample status. Returns the outcome plus a reason: 'skipped'
    * when the test was not ordered (no row) or the cell is already filled
