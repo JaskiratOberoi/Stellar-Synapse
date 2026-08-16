@@ -71,6 +71,7 @@ interface MkOpts {
   derivesEag?: boolean
   astmFlushOnTerminator?: boolean
   transientConnection?: boolean
+  commTypes?: InstrumentDriverInfo['commTypes']
 }
 
 function mk(
@@ -99,7 +100,8 @@ function mk(
     ...(opts.astmDialect ? { astmDialect: opts.astmDialect } : {}),
     ...(opts.lisValueOnly ? { lisValueOnly: true } : {}),
     ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
-    ...(opts.transientConnection ? { transientConnection: true } : {})
+    ...(opts.transientConnection ? { transientConnection: true } : {}),
+    ...(opts.commTypes ? { commTypes: opts.commTypes } : {})
   }
 }
 
@@ -540,6 +542,15 @@ const agappe = [
 // full parameter set (incl. RDW-SD/RDW-CV and ESR) is reported (per the HORIBA
 // field engineer). Exact OBX layout to be confirmed against a captured frame.
 // ---------------------------------------------------------------------------
+// The Yumizen speaks EITHER ASTM (LIS2-A2) or HL7 (ORU^R01/MLLP) on the same
+// host port; labs switch between them on the analyzer (H550 shipped ASTM, H550E
+// added HL7 to carry RDW/ESR). Offering both as a per-instrument comm type keeps
+// ONE driverId — so flipping ASTM<->HL7 in Synapse never loses the mappings.
+const HORIBA_COMM_TYPES = [
+  { id: 'hl7', label: 'HL7 (ORU^R01 / MLLP)', protocol: 'hl7' as const, port: 5678 },
+  { id: 'astm', label: 'ASTM (LIS2-A2)', protocol: 'astm' as const, port: 5678 }
+]
+
 const horiba = [
   mk(
     'horiba-yumizen-h550',
@@ -559,7 +570,17 @@ const horiba = [
     HORIBA_YUMIZEN,
     // Default host port 5678 — HORIBA's factory default for the ASTM/Network host
     // link (the analyzer Host tab ships pointing at :5678). Synapse listens here.
-    { port: 5678, protocol: 'astm', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+    // hl7Dialect is set so the same driver can also decode HL7 if the comm type is
+    // switched to it (parse only consults it when a frame arrives as HL7).
+    {
+      port: 5678,
+      protocol: 'astm',
+      hl7Dialect: 'horiba',
+      mode: 'unidirectional',
+      transports: ['tcp-server', 'serial'],
+      maturity: 'beta',
+      commTypes: HORIBA_COMM_TYPES
+    }
   ),
   mk(
     'horiba-yumizen-h550e',
@@ -579,8 +600,18 @@ const horiba = [
     combine(HORIBA_YUMIZEN, HORIBA_ESR),
     // Host port 5678 — HORIBA's factory default host-link port (the analyzer Host
     // tab ships pointing at :5678); unchanged by the ASTM->HL7 switch since MLLP
-    // rides the same TCP stream. Synapse listens here.
-    { port: 5678, protocol: 'hl7', hl7Dialect: 'horiba', mode: 'unidirectional', transports: ['tcp-server', 'serial'], maturity: 'beta' }
+    // rides the same TCP stream. Synapse listens here. Default comm type HL7 (the
+    // reason to pick the E: it carries RDW/ESR the ASTM upload drops), but ASTM is
+    // selectable per-instrument without changing driverId — mappings persist.
+    {
+      port: 5678,
+      protocol: 'hl7',
+      hl7Dialect: 'horiba',
+      mode: 'unidirectional',
+      transports: ['tcp-server', 'serial'],
+      maturity: 'beta',
+      commTypes: HORIBA_COMM_TYPES
+    }
   )
 ]
 

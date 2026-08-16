@@ -53,6 +53,25 @@ export interface InstrumentDriverInfo {
    * gates the derivation in the pipeline (Agappe Mispa Maestro).
    */
   derivesEag?: boolean
+  /**
+   * Analyzers that can speak more than one host protocol (e.g. HORIBA Yumizen:
+   * ASTM or HL7). When present, the onboarding/edit UI shows a communication-type
+   * selector, the chosen `protocol` is stored per-instrument, and the startup
+   * protocol-reconcile leaves it alone (it's a user choice, not a fixed driver
+   * trait). One driverId across both types, so switching never loses mappings.
+   */
+  commTypes?: CommType[]
+}
+
+/** One selectable host communication type for a multi-protocol driver. */
+export interface CommType {
+  /** Stable id, e.g. "astm" | "hl7". */
+  id: string
+  /** UI label, e.g. "HL7 (ORU^R01 / MLLP)". */
+  label: string
+  protocol: ProtocolKind
+  /** Default port for this comm type (usually the same physical host port). */
+  port?: number
 }
 
 // ---------------------------------------------------------------------------

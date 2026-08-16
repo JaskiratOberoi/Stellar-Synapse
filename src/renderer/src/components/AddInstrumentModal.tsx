@@ -10,6 +10,7 @@ import type {
   AuOnlineTestNo,
   AuWireFormat,
   InstrumentDriverInfo,
+  ProtocolKind,
   SerialPortInfo,
   TransportKind
 } from '@shared/types'
@@ -40,6 +41,8 @@ export function AddInstrumentModal({
   const [presetKey, setPresetKey] = useState('')
   const [auOnlineTestNos, setAuOnlineTestNos] = useState<AuOnlineTestNo[] | undefined>(undefined)
   const [auFormat, setAuFormat] = useState<AuWireFormat | undefined>(undefined)
+  // Communication type (protocol) for multi-protocol drivers (HORIBA: ASTM/HL7).
+  const [protocol, setProtocol] = useState<ProtocolKind>('astm')
   const [transport, setTransport] = useState<TransportKind>('tcp-server')
   const [host, setHost] = useState('127.0.0.1')
   const [port, setPort] = useState('9100')
@@ -184,7 +187,10 @@ export function AddInstrumentModal({
     setAuOnlineTestNos(undefined)
     setAuFormat(undefined)
     setTransport(d.transports[0])
-    setPort(String(d.defaultPort ?? 9100))
+    // Default comm type = first entry (falls back to the driver's own protocol).
+    const defaultCt = d.commTypes?.[0]
+    setProtocol(defaultCt?.protocol ?? d.protocol)
+    setPort(String(defaultCt?.port ?? d.defaultPort ?? 9100))
     setHostQuery(d.mode === 'bidirectional')
     // Real AU480 "Online" host links run 8-N-1 (confirmed on-analyzer); a location
     // preset can still override this. Most other ASTM serial is also 8-N-1.
@@ -201,7 +207,7 @@ export function AddInstrumentModal({
       await window.api.instruments.add({
         name: name.trim() || driver.name,
         driverId: driver.id,
-        protocol: driver.protocol,
+        protocol: driver.commTypes?.length ? protocol : driver.protocol,
         enabled,
         connection: {
           transport,
@@ -360,6 +366,31 @@ export function AddInstrumentModal({
             <Label>Instrument Name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maglumi X3 - Bench 2" />
           </div>
+
+          {driver?.commTypes && driver.commTypes.length > 1 && (
+            <div className="space-y-1.5">
+              <Label>Communication type</Label>
+              <Select
+                value={protocol}
+                onChange={(e) => {
+                  const p = e.target.value as ProtocolKind
+                  setProtocol(p)
+                  const ct = driver.commTypes?.find((c) => c.protocol === p)
+                  if (ct?.port != null && transport !== 'serial') setPort(String(ct.port))
+                }}
+              >
+                {driver.commTypes.map((ct) => (
+                  <option key={ct.id} value={ct.protocol}>
+                    {ct.label}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Must match the mode set on the analyzer&apos;s Host settings. You can change this
+                later without losing mappings.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

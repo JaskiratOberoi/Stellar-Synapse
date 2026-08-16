@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { useAppStore } from '@/store/useAppStore'
-import type { InstrumentRuntime, SerialPortInfo, TransportKind } from '@shared/types'
+import type { InstrumentRuntime, ProtocolKind, SerialPortInfo, TransportKind } from '@shared/types'
 
 /**
  * Edit the connection config of an already-onboarded instrument so a setting can
@@ -32,6 +32,10 @@ export function EditInstrumentModal({
 
   const c = instrument.connection
   const [name, setName] = useState(instrument.name)
+  // Communication type (protocol) — only user-selectable for multi-protocol
+  // drivers (HORIBA Yumizen: ASTM or HL7). Same driverId either way, so mappings
+  // are untouched when it changes.
+  const [protocol, setProtocol] = useState<ProtocolKind>(instrument.protocol)
   const [transport, setTransport] = useState<TransportKind>(c.transport)
   const [host, setHost] = useState(c.host ?? '127.0.0.1')
   const [port, setPort] = useState(String(c.port ?? 9100))
@@ -54,6 +58,7 @@ export function EditInstrumentModal({
     if (!open) return
     const cur = instrument.connection
     setName(instrument.name)
+    setProtocol(instrument.protocol)
     setTransport(cur.transport)
     setHost(cur.host ?? '127.0.0.1')
     setPort(String(cur.port ?? 9100))
@@ -91,6 +96,9 @@ export function EditInstrumentModal({
       await window.api.instruments.update(instrument.id, {
         name: name.trim() || instrument.name,
         enabled,
+        // Only send protocol for multi-comm-type drivers; for every other driver
+        // it stays as-is (the startup reconcile owns it).
+        ...(driver?.commTypes?.length ? { protocol } : {}),
         connection: {
           // Preserve advanced fields the form doesn't expose (poll/idle/autoEag/
           // autoIdentify) — update() replaces the whole connection object.
@@ -147,6 +155,31 @@ export function EditInstrumentModal({
           <Label>Instrument Name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maglumi X3 - Bench 2" />
         </div>
+
+        {driver?.commTypes && driver.commTypes.length > 1 && (
+          <div className="space-y-1.5">
+            <Label>Communication type</Label>
+            <Select
+              value={protocol}
+              onChange={(e) => {
+                const p = e.target.value as ProtocolKind
+                setProtocol(p)
+                // Follow the comm type's default port unless the operator set a custom one.
+                const ct = driver.commTypes?.find((c) => c.protocol === p)
+                if (ct?.port != null && transport !== 'serial') setPort(String(ct.port))
+              }}
+            >
+              {driver.commTypes.map((ct) => (
+                <option key={ct.id} value={ct.protocol}>
+                  {ct.label}
+                </option>
+              ))}
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Switch ASTM ↔ HL7 on the analyzer&apos;s Host settings to match. Mappings are kept.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">

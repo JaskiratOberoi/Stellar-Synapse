@@ -175,6 +175,10 @@ export class Orchestrator extends EventEmitter {
     for (const def of all) {
       if (def.driverId === 'generic-astm') continue
       const info = getDriver(def.driverId)?.info
+      // Multi-protocol drivers (HORIBA Yumizen: ASTM or HL7) store the chosen comm
+      // type as the instrument's protocol — a user choice, not a fixed driver
+      // trait — so don't reconcile it away when it's one of the offered types.
+      if (info?.commTypes?.some((c) => c.protocol === def.protocol)) continue
       if (info && def.protocol !== info.protocol) {
         logger.info(
           'engine',
