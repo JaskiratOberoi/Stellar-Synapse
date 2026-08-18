@@ -304,7 +304,25 @@ export class Orchestrator extends EventEmitter {
     // analyzer never gets an ACK and reports a communication timeout.
     const ctrlProto = protocol as unknown as { onControl?: (byte: number) => void }
     ctrlProto.onControl = (byte: number): void => {
-      if (!def.connection.passive) transport.write(Buffer.from([byte]))
+      if (def.connection.passive) {
+        // A passive definition NEVER transmits — so the analyzer gets no ACK and
+        // reports a link timeout (Beckman AU "ONLINE ERROR (05) … T4"). This is
+        // silent misconfiguration; say so out loud.
+        if (def.protocol === 'beckman-au') {
+          logger.warn(
+            'host-query',
+            `${def.name}: suppressed ${auVisibleBytes(Buffer.from([byte]))} — instrument is PASSIVE (read-only). ` +
+              `The analyzer will time out waiting for it; turn passive OFF for a bidirectional link.`
+          )
+        }
+        return
+      }
+      transport.write(Buffer.from([byte]))
+      // The per-frame ACK is the handshake the AU actually waits on (T4). Log it
+      // so a "no ACK" complaint can be traced to us not sending vs it not arriving.
+      if (def.protocol === 'beckman-au') {
+        logger.info('host-query', `${def.name}: TX ${auVisibleBytes(Buffer.from([byte]))} (frame ack)`)
+      }
     }
 
     // Surface bytes we transmit (order-download frames + handshake) in the RAW
