@@ -150,6 +150,25 @@ const matchesPointGlucose = (name: string): boolean => {
   return /\bglucose\b/.test(n)
 }
 
+/**
+ * Point insulin measurements only (Fasting / Post Prandial / Random and the bare
+ * serum insulin). The MAGLUMI X3 reports one insulin value; whichever timing
+ * variant the doctor ordered is the one to query and fill — same pattern as the
+ * AU glucose channel. Excludes distinct analytes that merely share the word
+ * "insulin" (anti-insulin antibody, IGF / insulin-like growth factor, insulin
+ * resistance / HOMA, proinsulin, insulin receptor) and timed challenge panels.
+ */
+const matchesPointInsulin = (name: string): boolean => {
+  const n = name.toLowerCase()
+  if (
+    /antibod|auto.?antibod|growth factor|\bigf\b|resistance|homa|proinsulin|receptor|tolerance|challenge|\d\s*hr|hr\)/.test(
+      n
+    )
+  )
+    return false
+  return /\binsulin\b/.test(n)
+}
+
 export const AU_VARIANT_GROUPS: AuVariantGroup[] = [
   { code: 'GLU', matches: matchesPointGlucose },
   // Sites name the same channel differently in their AU test menu (Karnal's AU480
@@ -160,7 +179,13 @@ export const AU_VARIANT_GROUPS: AuVariantGroup[] = [
     // Any rheumatoid-factor method variant (Nephelometry / IgM / IgG / Latex):
     // the AU RF channel reports one quantitative value for whichever was ordered.
     matches: (name): boolean => /rheumatoid arthritis factor|\bra factor\b/i.test(name)
-  }
+  },
+  // MAGLUMI X3 immunoassay: the single "INS" insulin channel satisfies whichever
+  // of Insulin Fasting / PP / Random was ordered. Keyed by the mapping's stable
+  // instrument code ("INS") — the analyzer uploads results under its Channel No.
+  // ("INS II"), so the write path resolves the group from the rule's code, not
+  // the transmitted channel name.
+  { code: 'INS', matches: matchesPointInsulin }
 ]
 
 const AU_VARIANT_BY_CODE = new Map<string, AuVariantGroup>(

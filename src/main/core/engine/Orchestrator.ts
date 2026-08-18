@@ -1112,7 +1112,12 @@ export class Orchestrator extends EventEmitter {
     let writeTestId = rule.lisTestId
     let writeTestCode = rule.lisTestCode ?? ''
     let writeTestName = rule.lisParamName ?? rule.lisTestName ?? ''
-    const variant = auVariantGroup(result.analyteCode)
+    // Resolve the variant group from the mapping's stable instrument code first
+    // (e.g. MAGLUMI "INS"): analyzers that label results by Channel No. upload the
+    // suffixed channel ("INS II") as the analyte code, which won't match the group
+    // table. Fall back to the transmitted code for drivers that report the online
+    // code directly (Beckman AU "GLU").
+    const variant = auVariantGroup(rule.instrumentCode) ?? auVariantGroup(result.analyteCode)
     if (variant && !rule.lisParamId && this.lis.mode === 'sql') {
       try {
         const order = await this.lis.getOrder(result.sampleId)
