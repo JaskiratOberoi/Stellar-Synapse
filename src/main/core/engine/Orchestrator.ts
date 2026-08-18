@@ -92,6 +92,8 @@ export class Orchestrator extends EventEmitter {
   private offlineSince = new Map<string, number>()
   /** `${instrumentId}|${rawFrame}` -> last handled at (ms). Drops AU retransmissions. */
   private recentAuFrames = new Map<string, number>()
+  /** instrumentId -> retransmissions seen, for the receive-only-link diagnosis. */
+  private auRetransmits = new Map<string, number>()
 
   constructor(private readonly lis: ILisRepository) {
     super()
@@ -277,7 +279,53 @@ export class Orchestrator extends EventEmitter {
     const key = `${instrumentId}|${raw}`
     const seen = this.recentAuFrames.get(key)
     this.recentAuFrames.set(key, now)
-    return seen != null && now - seen < RETRANSMIT_WINDOW_MS
+    const repeat = seen != null && now - seen < RETRANSMIT_WINDOW_MS
+    if (repeat) this.noteReceiveOnlyLink(instrumentId)
+    return repeat
+  }
+
+  /**
+   * The analyzer only re-sends a frame when it did not get our ACK. A steady
+   * stream of repeats therefore means our transmissions are not reaching it —
+   * the link is effectively receive-only. Results still arrive and post to the
+   * LIS, but host query (which requires talking back) cannot work until the
+   * physical path is repaired. Say that once, loudly, instead of leaving the
+   * operator to infer it from a pattern of retries.
+   */
+  private noteReceiveOnlyLink(instrumentId: string): void {
+    const n = (this.auRetransmits.get(instrumentId) ?? 0) + 1
+    this.auRetransmits.set(instrumentId, n)
+    if (n !== 3) return // warn once, after enough repeats to be unambiguous
+    const def = persist.getInstruments().find((i) => i.id === instrumentId)
+    const name = def?.name ?? instrumentId
+    const via =
+      def?.connection.transport === 'serial'
+        ? `${def.connection.serialPath ?? 'serial port'}`
+        : 'the network link'
+    logger.warn(
+      'engine',
+      `${name}: RECEIVE-ONLY LINK. The analyzer keeps re-sending frames we have already ` +
+        `acknowledged, so our replies are not reaching it (writes leave this machine fine). ` +
+        `Results still decode and post to the LIS; HOST QUERY CANNOT WORK until this is fixed. ` +
+        `Check the cabling on ${via}: use a straight analyzer-to-PC null-modem cable with TX, RX ` +
+        `and GND all wired, and remove any splitter/tap or read-only "spy" cable in between.`
+    )
+    this.pushMonitor({
+      id: randomUUID(),
+      instrumentId,
+      instrumentName: name,
+      sampleId: '-',
+      analyteCode: 'LINK',
+      analyteName: 'Receive-only link',
+      value: '',
+      stage: 'error',
+      message:
+        'The analyzer is re-sending frames Synapse already acknowledged — our replies are not ' +
+        'reaching it. Results still post to the LIS, but host query needs a working outbound ' +
+        'path. Check the cable/adapter (null-modem with TX+RX+GND; no read-only tap or splitter).',
+      raw: '',
+      timestamp: new Date().toISOString()
+    })
   }
 
   async startInstrument(id: string): Promise<InstrumentRuntime> {
