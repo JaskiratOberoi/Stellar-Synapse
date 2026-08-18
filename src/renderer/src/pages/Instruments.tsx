@@ -84,7 +84,10 @@ export function Instruments() {
                     </div>
                     <div>
                       <p className="font-semibold leading-tight">{inst.name}</p>
-                      <p className="text-xs text-muted-foreground">{driverName(inst.driverId)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {driverName(inst.driverId)}
+                        {inst.serialNumber ? ` · S/N ${inst.serialNumber}` : ''}
+                      </p>
                     </div>
                   </div>
                   <StatusDot status={inst.status} showLabel={false} />

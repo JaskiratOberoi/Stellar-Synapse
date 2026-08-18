@@ -195,6 +195,11 @@ export interface InstrumentDefinition {
   id: string
   /** User-facing name, e.g. "Maglumi X3 - Bench 2". */
   name: string
+  /**
+   * Optional device serial number, to tell apart two identical analyzers in the
+   * same lab (purely a human-facing label — not used for routing or matching).
+   */
+  serialNumber?: string
   driverId: string
   protocol: ProtocolKind
   connection: InstrumentConnectionConfig

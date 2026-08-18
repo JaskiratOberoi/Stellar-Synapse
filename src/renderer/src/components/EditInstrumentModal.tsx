@@ -32,6 +32,7 @@ export function EditInstrumentModal({
 
   const c = instrument.connection
   const [name, setName] = useState(instrument.name)
+  const [serialNumber, setSerialNumber] = useState(instrument.serialNumber ?? '')
   // Communication type (protocol) — only user-selectable for multi-protocol
   // drivers (HORIBA Yumizen: ASTM or HL7). Same driverId either way, so mappings
   // are untouched when it changes.
@@ -58,6 +59,7 @@ export function EditInstrumentModal({
     if (!open) return
     const cur = instrument.connection
     setName(instrument.name)
+    setSerialNumber(instrument.serialNumber ?? '')
     setProtocol(instrument.protocol)
     setTransport(cur.transport)
     setHost(cur.host ?? '127.0.0.1')
@@ -95,6 +97,7 @@ export function EditInstrumentModal({
     try {
       await window.api.instruments.update(instrument.id, {
         name: name.trim() || instrument.name,
+        serialNumber: serialNumber.trim() || undefined,
         enabled,
         // Only send protocol for multi-comm-type drivers; for every other driver
         // it stays as-is (the startup reconcile owns it).
@@ -151,9 +154,23 @@ export function EditInstrumentModal({
           </p>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Instrument Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maglumi X3 - Bench 2" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Instrument Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. MAGICL Lab 1 - Room 2"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Serial Number (optional)</Label>
+            <Input
+              value={serialNumber}
+              onChange={(e) => setSerialNumber(e.target.value)}
+              placeholder="e.g. GT-6000i-2024-0417"
+            />
+          </div>
         </div>
 
         {driver?.commTypes && driver.commTypes.length > 1 && (

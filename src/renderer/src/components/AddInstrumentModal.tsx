@@ -38,6 +38,7 @@ export function AddInstrumentModal({
   const [step, setStep] = useState(1)
   const [driver, setDriver] = useState<InstrumentDriverInfo | null>(null)
   const [name, setName] = useState('')
+  const [serialNumber, setSerialNumber] = useState('')
   const [presetKey, setPresetKey] = useState('')
   const [auOnlineTestNos, setAuOnlineTestNos] = useState<AuOnlineTestNo[] | undefined>(undefined)
   const [auFormat, setAuFormat] = useState<AuWireFormat | undefined>(undefined)
@@ -83,6 +84,7 @@ export function AddInstrumentModal({
     setStep(1)
     setDriver(null)
     setName('')
+    setSerialNumber('')
     setPresetKey('')
     setAuOnlineTestNos(undefined)
     setAuFormat(undefined)
@@ -206,6 +208,7 @@ export function AddInstrumentModal({
     try {
       await window.api.instruments.add({
         name: name.trim() || driver.name,
+        serialNumber: serialNumber.trim() || undefined,
         driverId: driver.id,
         protocol: driver.commTypes?.length ? protocol : driver.protocol,
         enabled,
@@ -362,9 +365,29 @@ export function AddInstrumentModal({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label>Instrument Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maglumi X3 - Bench 2" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Instrument Name</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. MAGICL Lab 1 - Room 2"
+              />
+              <p className="text-xs text-muted-foreground">
+                A custom label to tell two identical machines apart.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Serial Number (optional)</Label>
+              <Input
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+                placeholder="e.g. GT-6000i-2024-0417"
+              />
+              <p className="text-xs text-muted-foreground">
+                The device serial, shown on the instrument page.
+              </p>
+            </div>
           </div>
 
           {driver?.commTypes && driver.commTypes.length > 1 && (

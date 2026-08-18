@@ -311,7 +311,15 @@ export function InstrumentDetail() {
         </div>
         <div className="flex-1">
           <h2 className="text-xl font-semibold">{inst.name}</h2>
-          <p className="text-sm text-muted-foreground">{driver?.name} - {driver?.vendor}</p>
+          <p className="text-sm text-muted-foreground">
+            {driver?.name} - {driver?.vendor}
+            {inst.serialNumber ? (
+              <>
+                {' · '}
+                <span className="font-mono">S/N {inst.serialNumber}</span>
+              </>
+            ) : null}
+          </p>
         </div>
         <StatusDot status={inst.status} />
       </motion.div>
