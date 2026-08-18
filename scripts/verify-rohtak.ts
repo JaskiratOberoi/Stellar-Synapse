@@ -26,17 +26,44 @@ const check = (name: string, ok: boolean, detail = ''): void => {
 }
 
 // ---- 1. Header parse: barcode extraction from a real R request -------------
-// R 000801N0220                   9153004   (barcode at 32-39)
-const rBlock = 'R 000801N0220                   9153004'
-const rh = parseAuHeader(rBlock, fmt)
-check('R header -> SID 9153004', rh.sampleId === '9153004', `got "${rh.sampleId}"`)
+// Live 2026-08-18 request (20-char sample-ID field, the analyzer's current
+// Online format). The July eLab requests used a 26-char field; header parsing
+// follows the CURRENT format, while buildAuOrderResponse echoes whatever width
+// arrives, which is why the eLab byte-exact checks below still hold.
+const rLiveBlock = 'R 000301N0095             9501268'
+const rh = parseAuHeader(rLiveBlock, fmt)
+check('R header -> SID 9501268', rh.sampleId === '9501268', `got "${rh.sampleId}"`)
+const rBlock = 'R 000801N0220                   9153004' // July eLab frame (S-echo tests)
 
-// ---- 2. Result decode: a real D block under the per-site table --------------
+// ---- 2. Result decode -------------------------------------------------------
+// The REAL frame captured live on 2026-08-18 (log: [host-query] RX 92B). The
+// analyzer's Online format changed since July — sampleId 26 -> 20, dummy 19 ->
+// 46 — so the old widths put the result groups at the wrong offset and NOTHING
+// decoded. Pin the real bytes so a future drift is caught here, not in the lab.
+const dReal =
+  'D 000305 0081             9281305    E0                          20260818161505014  78.8  '
+const dRealH = parseAuHeader(dReal, fmt)
+check('live D header -> SID 9281305', dRealH.sampleId === '9281305', `got "${dRealH.sampleId}"`)
+const realMsg: ProtocolMessage = {
+  protocol: 'beckman-au',
+  raw: dReal,
+  records: [['D', dRealH.sampleId]]
+} as ProtocolMessage
+const realRes = parseBeckmanAu(realMsg, 'inst-rohtak', fmt, override)
+check('live D decodes 1 analyte', realRes.length === 1, `got ${realRes.length}`)
+check(
+  '  014 -> GLU = 78.8',
+  realRes[0]?.analyteCode === 'GLU' && parseFloat(realRes[0]?.value ?? '') === 78.8,
+  `got ${realRes[0]?.analyteCode}=${realRes[0]?.value}`
+)
+
+// Multi-analyte coverage: same measured header, result groups appended (the
+// group layout is unchanged and confirmed by the live frame above).
 const dBlock =
-  'D 001006 0187                   8851336    E20260722000759' +
+  'D 000305 0081             9281305    E0                          20260818161505' +
   '001  3.33  009 0.335  025  6.93  002 134.5  003  17.9  028  9.45  012 0.029  005  20.2  013  12.5  029   2.5  006  9.10  024 0.238  097 135.8  098 4.186  099 102.7  '
 const dh = parseAuHeader(dBlock, fmt)
-check('D header -> SID 8851336', dh.sampleId === '8851336', `got "${dh.sampleId}"`)
+check('D header -> SID 9281305', dh.sampleId === '9281305', `got "${dh.sampleId}"`)
 
 const msg: ProtocolMessage = {
   protocol: 'beckman-au',

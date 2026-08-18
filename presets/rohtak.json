@@ -17,8 +17,8 @@
         "cup": 2,
         "sampleNo": 4,
         "sampleType": 1,
-        "sampleId": 26,
-        "dummy": 19,
+        "sampleId": 20,
+        "dummy": 46,
         "testNo": 3,
         "diluent": 0,
         "result": 6,
@@ -28,7 +28,7 @@
       },
       "_formatNotes": [
         "Wire frame layout override for THIS analyzer's Format Configuration (Run Date/Time ON, Type ON, no Dilution/Reagent/ISE, Zero Suppress ON; Rack ID 4 / Online Test No. 3 / Result 6 / Flags 2). Derived and byte-verified from the real R/S/D frames in the eLab logs.",
-        "The header is 58 chars (vs the AU480 default 64): after the 7-digit barcode sit '    E' + a 14-digit Run Date/Time timestamp before the result groups. Field widths here make auHeaderWidth() = 2+4+2+4+1+26+19 = 58 and put the barcode in the right-justified sampleId(26) field. Result group = testNo(3)+result(6)+marks(2) = 11, no diluent.",
+        "RECALIBRATED 2026-08-18 from a live captured frame — the analyzer's Online format CHANGED since the July eLab capture (sampleId 26 -> 20, dummy 19 -> 46), which silently broke result decoding (frames arrived, 0 samples decoded). Real frame: 'D 000305 0081             9281305    E0                          20260818161505014  78.8  ' — 90 chars = header 79 + one 11-char group (014 = GLU 78.8). Header is now 2+4+2+4+1+20+46 = 79: after the barcode sit '    E0', 26 blank demographic chars, then the 14-digit Run Date/Time. Result group = testNo(3)+result(6)+marks(2) = 11, no diluent. If results stop decoding again, capture a raw D frame from the log ([host-query] RX lines) and re-derive these two widths — do NOT assume the old values.",
         "responseDemographics=false: the analyzer's S order-response is just '…barcode␠␠␠␠E<testNos>' with NO M00000+patient-name block (confirmed against eLab's S frames, e.g. 'S 000801 0220 ... 9153004    E014'). Sending the default demographics block would push the Online Test Nos to the wrong offset and the analyzer would run the wrong assays."
       ],
       "source": "Rohtak DxC 700 AU. Online Test No. table, Protocol and Format read off the analyzer's Configuration > Online screens (2026-07-26), cross-validated against the eLab Assist serial logs (logDetails/logINMessage 22-26 Jul 2026). Noble LIS targets resolved against the live catalog; shared analytes reuse the IDs already verified on the Karnal AU480 (same Noble DB), DxC-only analytes (CK, LDH, Lipase, Amylase, Mg, LDL, HbA1c) resolved and checked on 2026-07-26.",
