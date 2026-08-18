@@ -230,6 +230,19 @@ export class AuHostQuerySender {
     })
   }
 
+  /**
+   * Abandon the in-flight ACK wait. Called when the analyzer starts a NEW frame
+   * (STX) instead of acknowledging: it has moved on (or is retrying its request),
+   * so the bytes must go to the decoder — which ACKs them — rather than being
+   * swallowed by this handshake. Without this the analyzer's retries go
+   * unacknowledged and it reports ONLINE ERROR (05).
+   */
+  cancel(): void {
+    if (!this.isBusy()) return
+    this.log?.('order response unacknowledged — analyzer sent a new frame, releasing')
+    this.finish()
+  }
+
   feedByte(byte: number): void {
     if (!this.isBusy()) return
     if (byte === ACK) {

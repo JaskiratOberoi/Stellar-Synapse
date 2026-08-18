@@ -265,6 +265,33 @@ export class Orchestrator extends EventEmitter {
     const driver = getDriver(def.driverId)
     if (!driver) throw new Error(`Driver ${def.driverId} not registered`)
 
+    // Two instruments on one COM port is a silent killer: only one can hold it,
+    // and if the winner is PASSIVE it never ACKs or answers host queries — the
+    // analyzer then reports a timeout on every frame it sends (Beckman AU
+    // "ONLINE ERROR (05)"). Surface it instead of leaving it to a log forensics.
+    if (def.connection.transport === 'serial' && def.connection.serialPath) {
+      const rivals = persist
+        .getInstruments()
+        .filter(
+          (o) =>
+            o.id !== def.id &&
+            o.enabled &&
+            o.connection.transport === 'serial' &&
+            (o.connection.serialPath ?? '').toUpperCase() ===
+              (def.connection.serialPath ?? '').toUpperCase()
+        )
+      if (rivals.length) {
+        logger.warn(
+          'engine',
+          `${def.name}: ${def.connection.serialPath} is also assigned to ${rivals
+            .map((r) => `"${r.name}"${r.connection.passive ? ' (passive)' : ''}`)
+            .join(', ')} — only one instrument can hold a COM port. ` +
+            `Delete or disable the duplicate(s); if the passive one wins the race it never ACKs ` +
+            `the analyzer and the link fails.`
+        )
+      }
+    }
+
     const transport = createTransport(def.id, def.connection)
     const protocol = createProtocol(def.protocol, {
       astmFlushOnTerminator: driver.astmFlushOnTerminator,
@@ -349,7 +376,8 @@ export class Orchestrator extends EventEmitter {
       }
     })
     transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
-    transport.on('data', (chunk: Buffer) => {
+    transport.on('data', (rawChunk: Buffer) => {
+      let chunk = rawChunk
       this.pollSchedulers.get(id)?.touchInbound()
       // While a host-query response is in flight, the analyzer only sends ACK/NAK
       // control bytes — route them to the sender's handshake, not the decoder.
@@ -361,8 +389,19 @@ export class Orchestrator extends EventEmitter {
         // Capture exactly what the analyzer sends back while we wait for its ACK
         // (an ACK 0x06, a NAK 0x15, or nothing at all → link/BCC problem).
         logger.info('host-query', `${def.name}: RX ${chunk.length}B during order ${auVisibleBytes(chunk)}`)
-        for (const b of chunk) auSender.feedByte(b)
-        return
+        // An STX means the analyzer skipped the ACK and started a NEW frame —
+        // typically retrying its request. Feed only the leading control bytes to
+        // the handshake, then release it and let the decoder handle (and ACK) the
+        // frame. Swallowing these left every retry unacknowledged, which the
+        // analyzer reports as ONLINE ERROR (05).
+        const stx = chunk.indexOf(0x02)
+        if (stx < 0) {
+          for (const b of chunk) auSender.feedByte(b)
+          return
+        }
+        for (const b of chunk.subarray(0, stx)) auSender.feedByte(b)
+        auSender.cancel()
+        chunk = chunk.subarray(stx)
       }
       // Surface every inbound byte so live instruments are debuggable in the UI.
       if (def.connection.passive) {
