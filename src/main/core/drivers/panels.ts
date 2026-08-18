@@ -414,7 +414,11 @@ export const IMMUNOASSAY_FULL = combine(
   ANEMIA,
   DIABETES,
   AUTOIMMUNE,
-  SPECIALTY_ENDO
+  SPECIALTY_ENDO,
+  // Inflammation markers (CRP / Procalcitonin / SAA / IL-6) are part of the
+  // MAGICL CLIA menu too — without this the family panel had no PCT analyte, so
+  // it never seeded a row to map.
+  INFLAMMATION
 )
 
 /** Point-of-care immunofluorescence (Getein FIA) menu. */
