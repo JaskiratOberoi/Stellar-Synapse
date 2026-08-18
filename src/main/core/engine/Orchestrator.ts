@@ -41,6 +41,17 @@ import { persist } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
 
+/**
+ * Render a byte buffer with control characters spelled out (<STX>/<ETX>/<ACK>/
+ * <NAK> and <NN> for the rest), for raw wire-level diagnostics in the file log.
+ */
+function auVisibleBytes(b: Buffer): string {
+  const names: Record<number, string> = { 2: '<STX>', 3: '<ETX>', 6: '<ACK>', 21: '<NAK>', 23: '<ETB>', 5: '<ENQ>', 4: '<EOT>' }
+  let out = ''
+  for (const c of b) out += names[c] ?? (c < 0x20 || c > 0x7e ? `<${c}>` : String.fromCharCode(c))
+  return out
+}
+
 interface RunningConnection {
   transport: ITransport
   protocol: IProtocol
@@ -271,8 +282,14 @@ export class Orchestrator extends EventEmitter {
 
     // Surface bytes we transmit (order-download frames + handshake) in the RAW
     // activity log so host-query responses are debuggable, not just inbound data.
+    // For Beckman-AU also write the exact bytes to the file log: an analyzer that
+    // never ACKs a byte-correct S frame is a wire/handshake problem, and the raw
+    // TX + whatever comes back is the only way to tell content vs link vs BCC.
     const writeAndLog = (b: Buffer): void => {
       this.pushRawSent(id, def.name, b)
+      if (def.protocol === 'beckman-au') {
+        logger.info('host-query', `${def.name}: TX ${b.length}B ${auVisibleBytes(b)}`)
+      }
       transport.write(b)
     }
 
@@ -341,6 +358,9 @@ export class Orchestrator extends EventEmitter {
         return
       }
       if (auSender?.isBusy()) {
+        // Capture exactly what the analyzer sends back while we wait for its ACK
+        // (an ACK 0x06, a NAK 0x15, or nothing at all → link/BCC problem).
+        logger.info('host-query', `${def.name}: RX ${chunk.length}B during order ${auVisibleBytes(chunk)}`)
         for (const b of chunk) auSender.feedByte(b)
         return
       }
