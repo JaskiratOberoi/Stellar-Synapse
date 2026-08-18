@@ -353,29 +353,23 @@ export function buildAuOrderResponse(
     ? ' '.repeat(4) + 'E' + 'M00000' + padField(opts.patientName ?? '', 20)
     : ' '.repeat(4) + 'E'
 
-  let id: string
-  if (withDemographics) {
-    // AU480: echo the request identity verbatim (barcode as-sent), blanking only
-    // the sample-type flag (rack(4) + cup(2) = index 6 within `id`) — the live
-    // interface always sends a space here in its S responses.
-    id = requestBlock.slice(2)
-    if (id.length > 6) id = id.slice(0, 6) + ' ' + id.slice(7)
-  } else {
-    // DxC 700 AU: DON'T echo the barcode field verbatim. The DxC transmits its
-    // sample-ID field NARROWER than the AU480 (fewer pad spaces before the
-    // barcode), so echoing it left-shifts every Online Test No. and the analyzer
-    // rejects the frame (ONLINE ERROR 05 — the test numbers aren't at the fixed
-    // offset it reads). Instead rebuild the identity in the FIXED layout: echo the
-    // stable header (rack/cup/type/sampleNo) with the type blanked, then place the
-    // barcode right-justified in the full `sampleId` field width. Byte-matches
-    // eLab's own S frame regardless of how much padding the request carried.
-    const headerLen = 2 + fmt.systemNo + fmt.rack + fmt.cup + fmt.sampleType + fmt.sampleNo
-    let header = requestBlock.slice(2, headerLen)
-    const typeOff = fmt.rack + fmt.cup + fmt.systemNo
-    if (header.length > typeOff) header = header.slice(0, typeOff) + ' ' + header.slice(typeOff + 1)
-    const barcode = parseAuHeader(requestBlock, fmt).sampleId
-    id = header + barcode.padStart(fmt.sampleId)
-  }
+  // ECHO the request's identity region VERBATIM (rack/cup/sampleNo/sampleId as
+  // the analyzer sent them), blanking only the sample-type flag (at rack + cup
+  // within `id`) — the live interface always sends a space there in its S
+  // responses.
+  //
+  // Echoing is deliberate and load-bearing: the sample-ID field width is a
+  // site-configurable Online setting that CHANGES (the Rohtak DxC ran a 26-char
+  // field in the July eLab capture and a 20-char field today). Echoing whatever
+  // the request carried always lands the Online Test Nos at the offset that
+  // analyzer currently reads. A build that instead right-justified the barcode
+  // into a hard-coded `fmt.sampleId` sent 6 bytes too many and the analyzer
+  // silently refused to ACK it (ONLINE ERROR 05 / T4). Do not "fix" this back to
+  // a fixed width — verified byte-exact against all 942 eLab R->S pairs, which
+  // it reproduces precisely because those requests carried the width of the day.
+  let id = requestBlock.slice(2)
+  const typeOff = fmt.systemNo + fmt.rack + fmt.cup
+  if (id.length > typeOff) id = id.slice(0, typeOff) + ' ' + id.slice(typeOff + 1)
 
   let block = 'S ' + id + marker
   for (const no of testNos) {

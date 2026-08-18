@@ -74,15 +74,19 @@ const builtS2 = buildAuOrderResponse(rBlock2, [99, 9, 97, 28, 29, 98, 6], fmt, {
 check('S multi-test response byte-exact vs eLab', builtS2 === expectedS2,
   builtS2 === expectedS2 ? '' : `\n      built:    "${builtS2}"\n      expected: "${expectedS2}"`)
 
-// ---- 4. Live regression: a NARROW barcode field (DxC sends fewer pad spaces
-// than the AU480 the format was first calibrated on). The response must STILL
-// right-justify the barcode into the fixed 26-char sampleId field so the Online
-// Test Nos land at the fixed offset — otherwise ONLINE ERROR 05 (seen live on
-// 9281318). Same rack/cup/sampleNo/barcode, 4 fewer pad bytes than eLab's R.
-const rNarrow = 'R 000801N0220               9153004' // 22-char id field vs eLab's 26
-const builtNarrow = buildAuOrderResponse(rNarrow, [14], fmt, { demographics: false })
-check('S response fixed-width from a narrow request', builtNarrow === expectedS,
-  builtNarrow === expectedS ? '' : `\n      built:    "${builtNarrow}" (${builtNarrow.length}B)\n      expected: "${expectedS}" (${expectedS.length}B)`)
+// ---- 4. Live regression (2026-08-18): the analyzer's sample-ID field width is
+// a site-configurable Online setting and it CHANGED — 26 chars in the July eLab
+// capture, 20 chars today:
+//     RX <STX>R 000301N0095             9501268<ETX>     (13 + 20)
+// The response must MIRROR the width the request carried. A build that instead
+// right-justified the barcode into the preset's fixed 26-char field sent 6 bytes
+// too many, and the analyzer silently refused to ACK it (ONLINE ERROR 05 / T4).
+const rLive = 'R 000301N0095             9501268'
+const expectedLive = 'S 000301 0095             9501268    E014'
+const builtLive = buildAuOrderResponse(rLive, [14], fmt, { demographics: false })
+check('S mirrors the request width (20-char id field)', builtLive === expectedLive,
+  builtLive === expectedLive ? '' : `\n      built:    "${builtLive}" (${builtLive.length}B)\n      expected: "${expectedLive}" (${expectedLive.length}B)`)
+check('  and never pads to the stale 26-char width', !builtLive.includes('                   9501268'))
 
 console.log('')
 if (failed > 0) { console.log(`${failed} FAILURE(S)`); process.exit(1) }

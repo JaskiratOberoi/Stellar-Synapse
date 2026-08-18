@@ -421,6 +421,17 @@ export class Orchestrator extends EventEmitter {
         auSender.cancel()
         chunk = chunk.subarray(stx)
       }
+      // Beckman AU: record inbound frames byte-exact. The site's Online format is
+      // user-configurable and DOES change (this analyzer's sample-ID field went
+      // 26 -> 20 chars), which silently breaks fixed-width result decoding — so
+      // keep the real bytes rather than re-deriving them from a screenshot.
+      if (def.protocol === 'beckman-au') {
+        const shown = auVisibleBytes(chunk)
+        logger.info(
+          'host-query',
+          `${def.name}: RX ${chunk.length}B ${shown.length > 400 ? shown.slice(0, 400) + '…' : shown}`
+        )
+      }
       // Surface every inbound byte so live instruments are debuggable in the UI.
       if (def.connection.passive) {
         this.pushRawReceived(id, def.name, chunk)
