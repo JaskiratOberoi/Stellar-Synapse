@@ -90,6 +90,8 @@ export class Orchestrator extends EventEmitter {
   // manually re-send reports after a link drop).
   private connectedOnce = new Set<string>()
   private offlineSince = new Map<string, number>()
+  /** `${instrumentId}|${rawFrame}` -> last handled at (ms). Drops AU retransmissions. */
+  private recentAuFrames = new Map<string, number>()
 
   constructor(private readonly lis: ILisRepository) {
     super()
@@ -256,6 +258,27 @@ export class Orchestrator extends EventEmitter {
   }
 
   // ----- start / stop --------------------------------------------------------
+
+  /**
+   * True when this exact AU frame was already handled for this instrument in the
+   * last RETRANSMIT_WINDOW_MS — i.e. the analyzer re-sent it because our ACK did
+   * not reach it. Byte-identical is a safe test: every AU data frame carries its
+   * own Run Date/Time, so a real re-run differs even for the same sample+test.
+   */
+  private isAuRetransmission(instrumentId: string, raw: string): boolean {
+    const RETRANSMIT_WINDOW_MS = 120_000
+    const now = Date.now()
+    // Opportunistic prune so the map can't grow without bound on a busy analyzer.
+    if (this.recentAuFrames.size > 500) {
+      for (const [k, ts] of this.recentAuFrames) {
+        if (now - ts > RETRANSMIT_WINDOW_MS) this.recentAuFrames.delete(k)
+      }
+    }
+    const key = `${instrumentId}|${raw}`
+    const seen = this.recentAuFrames.get(key)
+    this.recentAuFrames.set(key, now)
+    return seen != null && now - seen < RETRANSMIT_WINDOW_MS
+  }
 
   async startInstrument(id: string): Promise<InstrumentRuntime> {
     const def = persist.getInstruments().find((i) => i.id === id)
@@ -461,6 +484,15 @@ export class Orchestrator extends EventEmitter {
             raw: msg.raw,
             timestamp: new Date().toISOString()
           })
+          continue
+        }
+        // Degraded-link guard: an AU whose ACKs aren't reaching it re-sends the
+        // SAME frame once per retry (Online > Protocol "Retry"), so one run
+        // arrives 4x and would be processed — and monitored — 4x over. The frame
+        // embeds its own Run Date/Time, so a genuine re-run is never byte-identical;
+        // an exact repeat within the window is always a retransmission.
+        if (def.protocol === 'beckman-au' && this.isAuRetransmission(id, msg.raw)) {
+          logger.debug('engine', `${def.name}: ignoring retransmitted frame (${msg.raw.length}B)`)
           continue
         }
         void this.processMessage(id, msg)

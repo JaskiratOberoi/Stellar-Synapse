@@ -23,6 +23,10 @@ interface SerialPortLike extends EventEmitter {
   open(cb?: (err: Error | null) => void): void
   close(cb?: (err: Error | null) => void): void
   write(data: Buffer | string, cb?: (err: Error | null | undefined) => void): boolean
+  /** Assert modem control lines. Some adapters/devices ignore RX until DTR/RTS are high. */
+  set?(opts: { dtr?: boolean; rts?: boolean; brk?: boolean }, cb?: (err: Error | null) => void): void
+  /** Resolves once the OS has pushed the write buffer out of the UART. */
+  drain?(cb?: (err: Error | null | undefined) => void): void
 }
 
 export class SerialTransport extends EventEmitter implements ITransport {
@@ -110,6 +114,16 @@ export class SerialTransport extends EventEmitter implements ITransport {
         'serial',
         `Opened ${path}@${baudRate} ${framing}${this.passive ? ' (passive read-only)' : ''} (${this.instrumentId})`
       )
+      // Explicitly raise DTR/RTS on an active link. Several USB/PCIe adapters
+      // leave these low until asked, and a device that watches them will ignore
+      // everything we transmit — the link then looks receive-only: we see the
+      // analyzer fine, it never sees our ACKs. Harmless when already asserted.
+      if (!this.passive && typeof port.set === 'function') {
+        port.set({ dtr: true, rts: true }, (err) => {
+          if (err) logger.warn('serial', `${path}: could not assert DTR/RTS: ${err.message}`)
+          else logger.info('serial', `${path}: DTR/RTS asserted (TX enabled)`)
+        })
+      }
       this.emitStatus('online', `${path}@${baudRate}`)
     })
   }
@@ -140,7 +154,23 @@ export class SerialTransport extends EventEmitter implements ITransport {
       logger.warn('serial', `Suppressed write on passive serial tap (${this.instrumentId})`)
       return
     }
-    if (this.port?.isOpen) this.port.write(data)
+    const port = this.port
+    if (!port?.isOpen) {
+      logger.warn('serial', `Dropped ${data.length}B write — port not open (${this.instrumentId})`)
+      return
+    }
+    // Report write/flush failures instead of swallowing them: when an analyzer
+    // behaves as if it never receives us, the first question is whether the bytes
+    // even left this machine. A clean drain means they reached the UART — i.e.
+    // any remaining fault is in the cable/adapter, not here.
+    port.write(data, (err) => {
+      if (err) logger.warn('serial', `${this.config.serialPath}: write failed: ${err.message}`)
+      else if (typeof port.drain === 'function') {
+        port.drain((derr) => {
+          if (derr) logger.warn('serial', `${this.config.serialPath}: drain failed: ${derr.message}`)
+        })
+      }
+    })
   }
 
   private emitStatus(status: ConnectionStatus, peer?: string): void {
