@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.2.97",
+  "version": "0.2.98",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
@@ -25,7 +25,8 @@
     "verify:units": "esbuild scripts/verify-units.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-units.mjs && node scripts/.verify-units.mjs",
     "verify:rohtak": "esbuild scripts/verify-rohtak.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak.mjs && node scripts/.verify-rohtak.mjs",
     "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "verify:rohtak-magicl": "esbuild scripts/verify-rohtak-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak-magicl.mjs && node scripts/.verify-rohtak-magicl.mjs"
   },
   "dependencies": {
     "electron-store": "^8.2.0",

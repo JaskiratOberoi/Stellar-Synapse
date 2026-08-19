@@ -43,6 +43,7 @@ export function roundResultValue(value: string, maxDp: number): string {
  */
 const FT3_PATTERN = /\bFT3\b|free\s*t3/i
 
+
 /**
  * pmol/L -> pg/mL is molar-mass dependent, so it can NEVER be applied
  * generically: the factor is molar mass / 1000. Free T3 is 650.98 g/mol ->
@@ -50,6 +51,15 @@ const FT3_PATTERN = /\bFT3\b|free\s*t3/i
  * rather than silently scaled by the wrong constant.
  */
 const FT3_PMOL_L_TO_PG_ML = 0.651
+
+
+/**
+ * ug/dL -> ng/dL is purely dimensional (x1000). The Rohtak MAGICL sends
+ * testosterone in ug/dL where Noble's field holds ng/dL; writing it raw reads a
+ * normal 500 ng/dL male as 0.5 — profoundly hypogonadal. Dimensional, so no
+ * per-analyte guard is needed.
+ */
+const UG_DL_TO_NG_DL = 1000
 
 /**
  * Convert an analyzer result into the unit the mapped LIS field holds.
@@ -88,6 +98,12 @@ export function convertForLis(
     if (!Number.isNaN(n)) {
       return { value: (n * FT3_PMOL_L_TO_PG_ML).toFixed(2), unit: 'pg/mL' }
     }
+  }
+
+  // ug/dL -> ng/dL (testosterone on the Rohtak MAGICL). Purely dimensional.
+  if ((srcUnit === 'ug/dl' || srcUnit === 'µg/dl') && tgtUnit === 'ng/dl') {
+    const n = parseFloat(result.value)
+    if (!Number.isNaN(n)) return { value: String(parseFloat((n * UG_DL_TO_NG_DL).toFixed(2))), unit: 'ng/dL' }
   }
 
   // ng/dL -> ng/L is purely dimensional (x10) and independent of the analyte,

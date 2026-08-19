@@ -10,8 +10,15 @@
       "category": "Clinical Chemistry",
       "protocol": "beckman-au",
       "mode": "bidirectional",
-      "transports": ["serial"],
-      "serial": { "baudRate": 9600, "dataBits": 8, "parity": "none", "stopBits": 1 },
+      "transports": [
+        "serial"
+      ],
+      "serial": {
+        "baudRate": 9600,
+        "dataBits": 8,
+        "parity": "none",
+        "stopBits": 1
+      },
       "auFormat": {
         "rack": 4,
         "cup": 2,
@@ -32,7 +39,11 @@
         "responseDemographics=false: the analyzer's S order-response is just '…barcode␠␠␠␠E<testNos>' with NO M00000+patient-name block (confirmed against eLab's S frames, e.g. 'S 000801 0220 ... 9153004    E014'). Sending the default demographics block would push the Online Test Nos to the wrong offset and the analyzer would run the wrong assays."
       ],
       "source": "Rohtak DxC 700 AU. Online Test No. table, Protocol and Format read off the analyzer's Configuration > Online screens (2026-07-26), cross-validated against the eLab Assist serial logs (logDetails/logINMessage 22-26 Jul 2026). Noble LIS targets resolved against the live catalog; shared analytes reuse the IDs already verified on the Karnal AU480 (same Noble DB), DxC-only analytes (CK, LDH, Lipase, Amylase, Mg, LDL, HbA1c) resolved and checked on 2026-07-26.",
-      "mappingsSummary": { "total": 38, "mapped": 31, "unmapped": 7 },
+      "mappingsSummary": {
+        "total": 38,
+        "mapped": 31,
+        "unmapped": 7
+      },
       "_protocolNotes": [
         "Connection is SERIAL RS-232, 9600 8-N-1, STX/ETX framing, no BCC checksum (Protocol screen: Character 8/None/1, Start 02h STX, End 03h ETX, 9600 bps, Class B, BCC unchecked). eLab currently drives it over a serial write port.",
         "Format (Format Configuration screen): Rack ID 4 digits, Online Test No. 3 digits, Result 6 digits, 2 flags, Run Date/Time on, Zero Suppress on — i.e. the default Synapse AU frame layout. Verified against real D-blocks e.g. 'D 001006 0187 ... E20260722000759 001  3.33  009 0.335 ...' where each pair is testNo(3)+value(6).",
@@ -47,77 +58,608 @@
         "GLU (014) and RF (022) use Synapse's AU variant groups: the single analyzer channel fills whichever ordered variant (glucose Fasting/PP/Random; RA-factor method) the sample carried."
       ],
       "onlineTestMenu": [
-        { "no": 1, "code": "ALB", "name": "Albumin (ALB1N)", "unit": "g/dL" },
-        { "no": 2, "code": "ALP", "name": "Alkaline Phosphatase (ALP1N)", "unit": "U/L" },
-        { "no": 3, "code": "ALT", "name": "Alanine Aminotransferase (ALT1N)", "unit": "U/L" },
-        { "no": 4, "code": "AMY", "name": "Amylase (AMY1N)", "unit": "U/L" },
-        { "no": 5, "code": "AST", "name": "Aspartate Aminotransferase (AST1N)", "unit": "U/L" },
-        { "no": 6, "code": "CA", "name": "Calcium Arsenazo (CAZ1N)", "unit": "mg/dL" },
-        { "no": 7, "code": "CHOL", "name": "Cholesterol Total (CHO2N)", "unit": "mg/dL" },
-        { "no": 8, "code": "CK", "name": "Creatine Kinase (CKN1N)", "unit": "U/L" },
-        { "no": 9, "code": "CRE", "name": "Creatinine (CRE2N)", "unit": "mg/dL" },
-        { "no": 10, "code": "CRP", "name": "C-Reactive Protein (CRP1N)", "unit": "mg/L" },
-        { "no": 11, "code": "DBILB", "name": "Direct Bilirubin BuBc (DBB1N)", "unit": "mg/dL" },
-        { "no": 12, "code": "DBIL", "name": "Direct Bilirubin DCA (DBC1N)", "unit": "mg/dL" },
-        { "no": 13, "code": "GGT", "name": "Gamma GT (GGT2N)", "unit": "U/L" },
-        { "no": 14, "code": "GLU", "name": "Glucose (GLU1N)", "unit": "mg/dL" },
-        { "no": 15, "code": "HDL", "name": "HDL Cholesterol (HDL1N)", "unit": "mg/dL" },
-        { "no": 16, "code": "PHOS", "name": "Phosphorus Inorganic (PHO1N)", "unit": "mg/dL" },
-        { "no": 17, "code": "FE", "name": "Iron (FE-1N)", "unit": "ug/dL" },
-        { "no": 18, "code": "LDH", "name": "Lactate Dehydrogenase (LDH2N)", "unit": "U/L" },
-        { "no": 19, "code": "LDL", "name": "LDL Cholesterol Direct (LDL1N)", "unit": "mg/dL" },
-        { "no": 20, "code": "LIP", "name": "Lipase (LIP1N)", "unit": "U/L" },
-        { "no": 21, "code": "MG", "name": "Magnesium (MG-1N)", "unit": "mg/dL" },
-        { "no": 22, "code": "RF", "name": "Rheumatoid Factor (RF-1G)", "unit": "IU/mL" },
-        { "no": 23, "code": "TBILB", "name": "Total Bilirubin BuBc (TBB1N)", "unit": "mg/dL" },
-        { "no": 24, "code": "TBIL", "name": "Total Bilirubin DCA (TBC1N)", "unit": "mg/dL" },
-        { "no": 25, "code": "TP", "name": "Total Protein (TP-1N)", "unit": "g/dL" },
-        { "no": 26, "code": "TRIG", "name": "Triglycerides (TRG1N)", "unit": "mg/dL" },
-        { "no": 27, "code": "UIBC", "name": "UIBC (UBC1N)", "unit": "ug/dL" },
-        { "no": 28, "code": "UREA", "name": "Urea (analyzer test BUN1N; transmits urea value)", "unit": "mg/dL" },
-        { "no": 29, "code": "UA", "name": "Uric Acid (UA-1N)", "unit": "mg/dL" },
-        { "no": 30, "code": "UCP", "name": "Urine/CSF Protein (UCP1N)", "unit": "mg/dL" },
-        { "no": 31, "code": "MALB", "name": "Microalbumin Urine (ULB1G)", "unit": "mg/L" },
-        { "no": 96, "code": "LIH", "name": "Serum Index Lipemia/Icterus/Hemolysis", "unit": "" },
-        { "no": 97, "code": "Na", "name": "Sodium", "unit": "mmol/L" },
-        { "no": 98, "code": "K", "name": "Potassium", "unit": "mmol/L" },
-        { "no": 99, "code": "Cl", "name": "Chloride", "unit": "mmol/L" },
-        { "no": 100, "code": "HBA1C", "name": "HbA1c", "unit": "%" },
-        { "no": 101, "code": "THB", "name": "Total Hemoglobin (HbA1c intermediate)", "unit": "g/dL" },
-        { "no": 102, "code": "A1C", "name": "A1c (HbA1c intermediate)", "unit": "%" }
+        {
+          "no": 1,
+          "code": "ALB",
+          "name": "Albumin (ALB1N)",
+          "unit": "g/dL"
+        },
+        {
+          "no": 2,
+          "code": "ALP",
+          "name": "Alkaline Phosphatase (ALP1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 3,
+          "code": "ALT",
+          "name": "Alanine Aminotransferase (ALT1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 4,
+          "code": "AMY",
+          "name": "Amylase (AMY1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 5,
+          "code": "AST",
+          "name": "Aspartate Aminotransferase (AST1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 6,
+          "code": "CA",
+          "name": "Calcium Arsenazo (CAZ1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 7,
+          "code": "CHOL",
+          "name": "Cholesterol Total (CHO2N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 8,
+          "code": "CK",
+          "name": "Creatine Kinase (CKN1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 9,
+          "code": "CRE",
+          "name": "Creatinine (CRE2N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 10,
+          "code": "CRP",
+          "name": "C-Reactive Protein (CRP1N)",
+          "unit": "mg/L"
+        },
+        {
+          "no": 11,
+          "code": "DBILB",
+          "name": "Direct Bilirubin BuBc (DBB1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 12,
+          "code": "DBIL",
+          "name": "Direct Bilirubin DCA (DBC1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 13,
+          "code": "GGT",
+          "name": "Gamma GT (GGT2N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 14,
+          "code": "GLU",
+          "name": "Glucose (GLU1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 15,
+          "code": "HDL",
+          "name": "HDL Cholesterol (HDL1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 16,
+          "code": "PHOS",
+          "name": "Phosphorus Inorganic (PHO1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 17,
+          "code": "FE",
+          "name": "Iron (FE-1N)",
+          "unit": "ug/dL"
+        },
+        {
+          "no": 18,
+          "code": "LDH",
+          "name": "Lactate Dehydrogenase (LDH2N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 19,
+          "code": "LDL",
+          "name": "LDL Cholesterol Direct (LDL1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 20,
+          "code": "LIP",
+          "name": "Lipase (LIP1N)",
+          "unit": "U/L"
+        },
+        {
+          "no": 21,
+          "code": "MG",
+          "name": "Magnesium (MG-1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 22,
+          "code": "RF",
+          "name": "Rheumatoid Factor (RF-1G)",
+          "unit": "IU/mL"
+        },
+        {
+          "no": 23,
+          "code": "TBILB",
+          "name": "Total Bilirubin BuBc (TBB1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 24,
+          "code": "TBIL",
+          "name": "Total Bilirubin DCA (TBC1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 25,
+          "code": "TP",
+          "name": "Total Protein (TP-1N)",
+          "unit": "g/dL"
+        },
+        {
+          "no": 26,
+          "code": "TRIG",
+          "name": "Triglycerides (TRG1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 27,
+          "code": "UIBC",
+          "name": "UIBC (UBC1N)",
+          "unit": "ug/dL"
+        },
+        {
+          "no": 28,
+          "code": "UREA",
+          "name": "Urea (analyzer test BUN1N; transmits urea value)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 29,
+          "code": "UA",
+          "name": "Uric Acid (UA-1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 30,
+          "code": "UCP",
+          "name": "Urine/CSF Protein (UCP1N)",
+          "unit": "mg/dL"
+        },
+        {
+          "no": 31,
+          "code": "MALB",
+          "name": "Microalbumin Urine (ULB1G)",
+          "unit": "mg/L"
+        },
+        {
+          "no": 96,
+          "code": "LIH",
+          "name": "Serum Index Lipemia/Icterus/Hemolysis",
+          "unit": ""
+        },
+        {
+          "no": 97,
+          "code": "Na",
+          "name": "Sodium",
+          "unit": "mmol/L"
+        },
+        {
+          "no": 98,
+          "code": "K",
+          "name": "Potassium",
+          "unit": "mmol/L"
+        },
+        {
+          "no": 99,
+          "code": "Cl",
+          "name": "Chloride",
+          "unit": "mmol/L"
+        },
+        {
+          "no": 100,
+          "code": "HBA1C",
+          "name": "HbA1c",
+          "unit": "%"
+        },
+        {
+          "no": 101,
+          "code": "THB",
+          "name": "Total Hemoglobin (HbA1c intermediate)",
+          "unit": "g/dL"
+        },
+        {
+          "no": 102,
+          "code": "A1C",
+          "name": "A1c (HbA1c intermediate)",
+          "unit": "%"
+        }
       ],
       "mappings": [
-        { "instrumentCode": "ALB", "instrumentName": "Albumin", "lisTestId": 163, "lisTestCode": "BI213", "lisTestName": "Total protein (with albumin and globulin)", "lisParamId": 676, "lisParamName": "Albumin - Serum", "unit": "g/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "ALP", "instrumentName": "Alkaline Phosphatase", "lisTestId": 279, "lisTestCode": "BI023", "lisTestName": "Alkaline Phosphatase (ALP)", "lisParamId": 405, "lisParamName": "Alkaline Phosphatase - ALP", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "ALT", "instrumentName": "ALT (SGPT)", "lisTestId": 79, "lisTestCode": "BI014", "lisTestName": "Alanine amino Transferase - (ALT / SGPT)", "lisParamId": 395, "lisParamName": "Alanine aminotransferase - (ALT / SGPT)", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "AMY", "instrumentName": "Amylase", "lisTestId": 623, "lisTestCode": "BI031", "lisTestName": "Amylase", "lisParamId": 414, "lisParamName": "Amylase", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "AST", "instrumentName": "AST (SGOT)", "lisTestId": 81, "lisTestCode": "BI040", "lisTestName": "Aspartate Aminotransferase (AST/SGOT)", "lisParamId": 423, "lisParamName": "Aspartate Aminotransferase (AST/SGOT)", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "CA", "instrumentName": "Calcium", "lisTestId": 96, "lisTestCode": "BI064", "lisTestName": "Calcium - Serum", "lisParamId": 468, "lisParamName": "Calcium - Serum", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "CHOL", "instrumentName": "Cholesterol Total", "lisTestId": 104, "lisTestCode": "BI079", "lisTestName": "Cholesterol - Total", "lisParamId": 483, "lisParamName": "Cholesterol Total - Serum", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "CK", "instrumentName": "Creatine Kinase", "lisTestId": 107, "lisTestCode": "BI088", "lisTestName": "Creatine kinase CK (CPK)", "lisParamId": 485, "lisParamName": "Creatine Kinase(CPK) - Serum", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "CRE", "instrumentName": "Creatinine", "lisTestId": 114, "lisTestCode": "BI089", "lisTestName": "Creatinine", "lisParamId": 492, "lisParamName": "Creatinine", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "CRP", "instrumentName": "C-Reactive Protein", "lisTestId": 113, "lisTestCode": "MS024", "lisTestName": "C-Reactive Protein (CRP)", "lisParamId": 491, "lisParamName": "C-Reactive Protein (CRP)", "unit": "mg/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "DBIL", "instrumentName": "Direct Bilirubin", "lisTestId": 87, "lisTestCode": "BI046", "lisTestName": "Bilirubin (Total Direct & Indirect )", "lisParamId": 430, "lisParamName": "Bilirubin Conjugated", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "GGT", "instrumentName": "Gamma GT", "lisTestId": 130, "lisTestCode": "BI112", "lisTestName": "Gamma Glutamyl Transferase (GGT)", "lisParamId": 528, "lisParamName": "Gamma Glutamyl Transferase (GGT)", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "GLU", "instrumentName": "Glucose", "lisTestId": 284, "lisTestCode": "BI114", "lisTestName": "Glucose - Fasting", "lisParamId": 531, "lisParamName": "Glucose - Fasting", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "HDL", "instrumentName": "HDL Cholesterol", "lisTestId": 102, "lisTestCode": "BI077", "lisTestName": "Cholesterol - HDL", "lisParamId": 481, "lisParamName": "Cholesterol - HDL (Direct)", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "PHOS", "instrumentName": "Phosphorus Inorganic", "lisTestId": 146, "lisTestCode": "BI165", "lisTestName": "Phosphorus Inorganic", "lisParamId": 613, "lisParamName": "Phosphorous Inorganic", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "FE", "instrumentName": "Iron", "lisTestId": 135, "lisTestCode": "BI137", "lisTestName": "Iron", "lisParamId": 578, "lisParamName": "Iron", "unit": "ug/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "LDH", "instrumentName": "Lactate Dehydrogenase", "lisTestId": 137, "lisTestCode": "BI143", "lisTestName": "Lactate dehydrogenase (LDH)", "lisParamId": 587, "lisParamName": "Lactate Dehyderogenase (LDH)-Serum", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "LDL", "instrumentName": "LDL Cholesterol Direct", "lisTestId": 103, "lisTestCode": "BI078", "lisTestName": "Cholesterol - LDL", "lisParamId": 482, "lisParamName": "Cholesterol - LDL", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "LIP", "instrumentName": "Lipase", "lisTestId": 139, "lisTestCode": "BI146", "lisTestName": "Lipase", "lisParamId": 590, "lisParamName": "Lipase", "unit": "U/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "MG", "instrumentName": "Magnesium", "lisTestId": 141, "lisTestCode": "BI148", "lisTestName": "Magnesium- Serum", "lisParamId": 592, "lisParamName": "Magnesium -Serum", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "RF", "instrumentName": "Rheumatoid Factor", "lisTestId": 154, "lisTestCode": "MS085", "lisTestName": "Rheumatoid Arthritis Factor (RA Factor)", "lisParamId": 2628, "lisParamName": "Rheumatoid Arthritis Factor (RA Factor)", "unit": "IU/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "TBIL", "instrumentName": "Total Bilirubin", "lisTestId": 87, "lisTestCode": "BI046", "lisTestName": "Bilirubin (Total Direct & Indirect )", "lisParamId": 431, "lisParamName": "Bilirubin Total", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "TP", "instrumentName": "Total Protein", "lisTestId": 163, "lisTestCode": "BI213", "lisTestName": "Total protein (with albumin and globulin)", "lisParamId": 678, "lisParamName": "Protein Total Serum", "unit": "g/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "TRIG", "instrumentName": "Triglycerides", "lisTestId": 168, "lisTestCode": "BI218", "lisTestName": "Triglycerides", "lisParamId": 685, "lisParamName": "Triglycerides", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "UIBC", "instrumentName": "UIBC", "lisTestId": 252, "lisTestCode": "BI222", "lisTestName": "Unsaturated Iron Binding Capacity (UIBC)", "lisParamId": 688, "lisParamName": "Unsaturated Iron Binding Capacity (UIBC)", "unit": "ug/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "UREA", "instrumentName": "Urea", "lisTestId": 172, "lisTestCode": "BI224", "lisTestName": "Urea", "lisParamId": 690, "lisParamName": "Urea", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "UA", "instrumentName": "Uric Acid", "lisTestId": 173, "lisTestCode": "BI227", "lisTestName": "Uric acid", "lisParamId": 693, "lisParamName": "Uric acid", "unit": "mg/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "Na", "instrumentName": "Sodium", "lisTestId": 157, "lisTestCode": "BI205", "lisTestName": "Sodium", "lisParamId": 666, "lisParamName": "Sodium- Serum", "unit": "mmol/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "K", "instrumentName": "Potassium", "lisTestId": 297, "lisTestCode": "BI174", "lisTestName": "Potassium", "lisParamId": 617, "lisParamName": "Potassium - Serum", "unit": "mmol/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "Cl", "instrumentName": "Chloride", "lisTestId": 101, "lisTestCode": "BI074", "lisTestName": "Chloride", "lisParamId": 478, "lisParamName": "Chloride - Serum", "unit": "mmol/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "HBA1C", "instrumentName": "HbA1c", "lisTestId": 291, "lisTestCode": "BI127", "lisTestName": "Glycated  Hemoglobin (HBA1c)", "lisParamId": 545, "lisParamName": "Glycated Hemoglobin  HbA1c", "unit": "%", "status": "manual", "confidence": 1 }
+        {
+          "instrumentCode": "ALB",
+          "instrumentName": "Albumin",
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 676,
+          "lisParamName": "Albumin - Serum",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "ALP",
+          "instrumentName": "Alkaline Phosphatase",
+          "lisTestId": 279,
+          "lisTestCode": "BI023",
+          "lisTestName": "Alkaline Phosphatase (ALP)",
+          "lisParamId": 405,
+          "lisParamName": "Alkaline Phosphatase - ALP",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "ALT",
+          "instrumentName": "ALT (SGPT)",
+          "lisTestId": 79,
+          "lisTestCode": "BI014",
+          "lisTestName": "Alanine amino Transferase - (ALT / SGPT)",
+          "lisParamId": 395,
+          "lisParamName": "Alanine aminotransferase - (ALT / SGPT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "AMY",
+          "instrumentName": "Amylase",
+          "lisTestId": 623,
+          "lisTestCode": "BI031",
+          "lisTestName": "Amylase",
+          "lisParamId": 414,
+          "lisParamName": "Amylase",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "AST",
+          "instrumentName": "AST (SGOT)",
+          "lisTestId": 81,
+          "lisTestCode": "BI040",
+          "lisTestName": "Aspartate Aminotransferase (AST/SGOT)",
+          "lisParamId": 423,
+          "lisParamName": "Aspartate Aminotransferase (AST/SGOT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CA",
+          "instrumentName": "Calcium",
+          "lisTestId": 96,
+          "lisTestCode": "BI064",
+          "lisTestName": "Calcium - Serum",
+          "lisParamId": 468,
+          "lisParamName": "Calcium - Serum",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CHOL",
+          "instrumentName": "Cholesterol Total",
+          "lisTestId": 104,
+          "lisTestCode": "BI079",
+          "lisTestName": "Cholesterol - Total",
+          "lisParamId": 483,
+          "lisParamName": "Cholesterol Total - Serum",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CK",
+          "instrumentName": "Creatine Kinase",
+          "lisTestId": 107,
+          "lisTestCode": "BI088",
+          "lisTestName": "Creatine kinase CK (CPK)",
+          "lisParamId": 485,
+          "lisParamName": "Creatine Kinase(CPK) - Serum",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CRE",
+          "instrumentName": "Creatinine",
+          "lisTestId": 114,
+          "lisTestCode": "BI089",
+          "lisTestName": "Creatinine",
+          "lisParamId": 492,
+          "lisParamName": "Creatinine",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CRP",
+          "instrumentName": "C-Reactive Protein",
+          "lisTestId": 113,
+          "lisTestCode": "MS024",
+          "lisTestName": "C-Reactive Protein (CRP)",
+          "lisParamId": 491,
+          "lisParamName": "C-Reactive Protein (CRP)",
+          "unit": "mg/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "DBIL",
+          "instrumentName": "Direct Bilirubin",
+          "lisTestId": 87,
+          "lisTestCode": "BI046",
+          "lisTestName": "Bilirubin (Total Direct & Indirect )",
+          "lisParamId": 430,
+          "lisParamName": "Bilirubin Conjugated",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "GGT",
+          "instrumentName": "Gamma GT",
+          "lisTestId": 130,
+          "lisTestCode": "BI112",
+          "lisTestName": "Gamma Glutamyl Transferase (GGT)",
+          "lisParamId": 528,
+          "lisParamName": "Gamma Glutamyl Transferase (GGT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "GLU",
+          "instrumentName": "Glucose",
+          "lisTestId": 284,
+          "lisTestCode": "BI114",
+          "lisTestName": "Glucose - Fasting",
+          "lisParamId": 531,
+          "lisParamName": "Glucose - Fasting",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "HDL",
+          "instrumentName": "HDL Cholesterol",
+          "lisTestId": 102,
+          "lisTestCode": "BI077",
+          "lisTestName": "Cholesterol - HDL",
+          "lisParamId": 481,
+          "lisParamName": "Cholesterol - HDL (Direct)",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "PHOS",
+          "instrumentName": "Phosphorus Inorganic",
+          "lisTestId": 146,
+          "lisTestCode": "BI165",
+          "lisTestName": "Phosphorus Inorganic",
+          "lisParamId": 613,
+          "lisParamName": "Phosphorous Inorganic",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "FE",
+          "instrumentName": "Iron",
+          "lisTestId": 135,
+          "lisTestCode": "BI137",
+          "lisTestName": "Iron",
+          "lisParamId": 578,
+          "lisParamName": "Iron",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "LDH",
+          "instrumentName": "Lactate Dehydrogenase",
+          "lisTestId": 137,
+          "lisTestCode": "BI143",
+          "lisTestName": "Lactate dehydrogenase (LDH)",
+          "lisParamId": 587,
+          "lisParamName": "Lactate Dehyderogenase (LDH)-Serum",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "LDL",
+          "instrumentName": "LDL Cholesterol Direct",
+          "lisTestId": 103,
+          "lisTestCode": "BI078",
+          "lisTestName": "Cholesterol - LDL",
+          "lisParamId": 482,
+          "lisParamName": "Cholesterol - LDL",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "LIP",
+          "instrumentName": "Lipase",
+          "lisTestId": 139,
+          "lisTestCode": "BI146",
+          "lisTestName": "Lipase",
+          "lisParamId": 590,
+          "lisParamName": "Lipase",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "MG",
+          "instrumentName": "Magnesium",
+          "lisTestId": 141,
+          "lisTestCode": "BI148",
+          "lisTestName": "Magnesium- Serum",
+          "lisParamId": 592,
+          "lisParamName": "Magnesium -Serum",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "RF",
+          "instrumentName": "Rheumatoid Factor",
+          "lisTestId": 154,
+          "lisTestCode": "MS085",
+          "lisTestName": "Rheumatoid Arthritis Factor (RA Factor)",
+          "lisParamId": 2628,
+          "lisParamName": "Rheumatoid Arthritis Factor (RA Factor)",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "TBIL",
+          "instrumentName": "Total Bilirubin",
+          "lisTestId": 87,
+          "lisTestCode": "BI046",
+          "lisTestName": "Bilirubin (Total Direct & Indirect )",
+          "lisParamId": 431,
+          "lisParamName": "Bilirubin Total",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "TP",
+          "instrumentName": "Total Protein",
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 678,
+          "lisParamName": "Protein Total Serum",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "TRIG",
+          "instrumentName": "Triglycerides",
+          "lisTestId": 168,
+          "lisTestCode": "BI218",
+          "lisTestName": "Triglycerides",
+          "lisParamId": 685,
+          "lisParamName": "Triglycerides",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "UIBC",
+          "instrumentName": "UIBC",
+          "lisTestId": 252,
+          "lisTestCode": "BI222",
+          "lisTestName": "Unsaturated Iron Binding Capacity (UIBC)",
+          "lisParamId": 688,
+          "lisParamName": "Unsaturated Iron Binding Capacity (UIBC)",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "UREA",
+          "instrumentName": "Urea",
+          "lisTestId": 172,
+          "lisTestCode": "BI224",
+          "lisTestName": "Urea",
+          "lisParamId": 690,
+          "lisParamName": "Urea",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "UA",
+          "instrumentName": "Uric Acid",
+          "lisTestId": 173,
+          "lisTestCode": "BI227",
+          "lisTestName": "Uric acid",
+          "lisParamId": 693,
+          "lisParamName": "Uric acid",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "Na",
+          "instrumentName": "Sodium",
+          "lisTestId": 157,
+          "lisTestCode": "BI205",
+          "lisTestName": "Sodium",
+          "lisParamId": 666,
+          "lisParamName": "Sodium- Serum",
+          "unit": "mmol/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "K",
+          "instrumentName": "Potassium",
+          "lisTestId": 297,
+          "lisTestCode": "BI174",
+          "lisTestName": "Potassium",
+          "lisParamId": 617,
+          "lisParamName": "Potassium - Serum",
+          "unit": "mmol/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "Cl",
+          "instrumentName": "Chloride",
+          "lisTestId": 101,
+          "lisTestCode": "BI074",
+          "lisTestName": "Chloride",
+          "lisParamId": 478,
+          "lisParamName": "Chloride - Serum",
+          "unit": "mmol/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "HBA1C",
+          "instrumentName": "HbA1c",
+          "lisTestId": 291,
+          "lisTestCode": "BI127",
+          "lisTestName": "Glycated  Hemoglobin (HBA1c)",
+          "lisParamId": 545,
+          "lisParamName": "Glycated Hemoglobin  HbA1c",
+          "unit": "%",
+          "status": "manual",
+          "confidence": 1
+        }
       ]
     },
     {
@@ -128,9 +670,15 @@
       "protocol": "hl7",
       "mode": "bidirectional",
       "defaultPort": 8081,
-      "transports": ["tcp-server"],
+      "transports": [
+        "tcp-server"
+      ],
       "source": "Rohtak Getein MAGICL 6200. HL7 v2.3.1 over MLLP, captured from the eLab Assist logs (06-08 Aug 2026): QRY^Q02 host query (barcode in QRD-8) answered by QCK+DSR^Q03, ORU^R01 result upload ACKed. Identical getein dialect to the Delhi 6000i — only the assay item-ids differ. 14 assays actually in use; every Noble target reused from the Delhi MAGICL (same Noble DB) and re-confirmed on 2026-08-08.",
-      "mappingsSummary": { "total": 14, "mapped": 14, "unmapped": 0 },
+      "mappingsSummary": {
+        "total": 14,
+        "mapped": 14,
+        "unmapped": 0
+      },
       "_mappingNotes": [
         "Analyte key (instrumentCode) is the MAGICL numeric assay item-id from OBX-3; the analyzer also puts the friendly name in OBX-4, so decoding is unambiguous. The 6200 uses 4-digit ids (TSH=1018, T3=1019, …) — the 6000i's ids + 1000 for most, EXCEPT 25-OH-VD which is 1151 (not 1042). Read verbatim from the ORU frames, not inferred.",
         "Same getein HL7 flow as the Delhi 6000i, so no driver change was needed — only this per-site item-id -> Noble map. The host query answers QRY^Q02 (QRD-8 barcode) with the ordered item-ids in the DSR, and ACKs each ORU^R01.",
@@ -139,20 +687,689 @@
         "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer's HL7/Ethernet Server IP to this host's instrument-LAN IP and its port to match; Synapse listens as tcp-server on that port (8081 default, as at Delhi). Confirm the port on the analyzer's LIS screen. This is a SEPARATE instrument from the Rohtak DxC 700 AU (serial) in this same preset."
       ],
       "mappings": [
-        { "instrumentCode": "1006", "instrumentName": "Ferritin", "lisTestId": 123, "lisTestCode": "BI104", "lisTestName": "Ferritin", "lisParamId": 517, "lisParamName": "Ferritin", "unit": "ng/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1008", "instrumentName": "tPSA", "lisTestId": 151, "lisTestCode": "BI181", "lisTestName": "PSA (Prostate Specific Antigen) Total", "lisParamId": 624, "lisParamName": "PSA Total (Prostatic Specific Antigen Total)", "unit": "ng/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1018", "instrumentName": "TSH", "lisTestId": 170, "lisTestCode": "BI221", "lisTestName": "TSH : Thyroid Stimulating Hormone", "unit": "uIU/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1019", "instrumentName": "T3", "lisTestId": 164, "lisTestCode": "BI214", "lisTestName": "T3 (Tri Iodothyronine )", "unit": "ng/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1020", "instrumentName": "T4", "lisTestId": 165, "lisTestCode": "BI215", "lisTestName": "T4 (Thyroxine )", "unit": "ug/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1021", "instrumentName": "FT3", "lisTestId": 128, "lisTestCode": "BI109", "lisTestName": "Free T3 (FT3)", "lisParamId": 525, "lisParamName": "T3 - Free (Tri-iodothyronine-Free)", "unit": "pg/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1022", "instrumentName": "FT4", "lisTestId": 129, "lisTestCode": "BI110", "lisTestName": "Free T4 (FT4)", "lisParamId": 526, "lisParamName": "T4 - Free (Thyroxine - Free)", "unit": "ng/L", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1025", "instrumentName": "IgE", "lisTestId": 133, "lisTestCode": "BI133", "lisTestName": "Total IgE", "lisParamId": 568, "lisParamName": "IgE Total", "unit": "IU/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1034", "instrumentName": "Testosterone", "lisTestId": 158, "lisTestCode": "BI209", "lisTestName": "Testosterone  - Total", "lisParamId": 670, "lisParamName": "Testosterone - Total", "unit": "ng/dL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1041", "instrumentName": "NT-proBNP", "lisTestId": 147, "lisTestCode": "BI177", "lisTestName": "NT-PRO BNP", "lisParamId": 620, "lisParamName": "ProBNP (Pro-Beta Natriuretic Peptide)", "unit": "pg/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1079", "instrumentName": "AMH", "lisTestId": 626, "lisTestCode": "BI034", "lisTestName": "Anti - Mullerian Hormone (AMH)", "lisParamId": 417, "lisParamName": "Anti - Mullerian Hormone AMH", "unit": "ng/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1101", "instrumentName": "Estradiol", "lisTestId": 121, "lisTestCode": "BI102", "lisTestName": "Estradiol (E2)", "lisParamId": 514, "lisParamName": "Estradiol  E2", "unit": "pg/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1139", "instrumentName": "Vitamin B12", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "lisParamId": 701, "lisParamName": "Vitamin B12", "unit": "pg/mL", "status": "manual", "confidence": 1 },
-        { "instrumentCode": "1151", "instrumentName": "25-OH-VD", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 }
+        {
+          "instrumentCode": "1006",
+          "instrumentName": "Ferritin",
+          "lisTestId": 123,
+          "lisTestCode": "BI104",
+          "lisTestName": "Ferritin",
+          "lisParamId": 517,
+          "lisParamName": "Ferritin",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1008",
+          "instrumentName": "tPSA",
+          "lisTestId": 151,
+          "lisTestCode": "BI181",
+          "lisTestName": "PSA (Prostate Specific Antigen) Total",
+          "lisParamId": 624,
+          "lisParamName": "PSA Total (Prostatic Specific Antigen Total)",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1018",
+          "instrumentName": "TSH",
+          "lisTestId": 170,
+          "lisTestCode": "BI221",
+          "lisTestName": "TSH : Thyroid Stimulating Hormone",
+          "unit": "uIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1019",
+          "instrumentName": "T3",
+          "lisTestId": 164,
+          "lisTestCode": "BI214",
+          "lisTestName": "T3 (Tri Iodothyronine )",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1020",
+          "instrumentName": "T4",
+          "lisTestId": 165,
+          "lisTestCode": "BI215",
+          "lisTestName": "T4 (Thyroxine )",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1021",
+          "instrumentName": "FT3",
+          "lisTestId": 128,
+          "lisTestCode": "BI109",
+          "lisTestName": "Free T3 (FT3)",
+          "lisParamId": 525,
+          "lisParamName": "T3 - Free (Tri-iodothyronine-Free)",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1022",
+          "instrumentName": "FT4",
+          "lisTestId": 129,
+          "lisTestCode": "BI110",
+          "lisTestName": "Free T4 (FT4)",
+          "lisParamId": 526,
+          "lisParamName": "T4 - Free (Thyroxine - Free)",
+          "unit": "ng/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1025",
+          "instrumentName": "IgE",
+          "lisTestId": 133,
+          "lisTestCode": "BI133",
+          "lisTestName": "Total IgE",
+          "lisParamId": 568,
+          "lisParamName": "IgE Total",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1034",
+          "instrumentName": "Testosterone",
+          "lisTestId": 158,
+          "lisTestCode": "BI209",
+          "lisTestName": "Testosterone  - Total",
+          "lisParamId": 670,
+          "lisParamName": "Testosterone - Total",
+          "unit": "ng/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1041",
+          "instrumentName": "NT-proBNP",
+          "lisTestId": 147,
+          "lisTestCode": "BI177",
+          "lisTestName": "NT-PRO BNP",
+          "lisParamId": 620,
+          "lisParamName": "ProBNP (Pro-Beta Natriuretic Peptide)",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1079",
+          "instrumentName": "AMH",
+          "lisTestId": 626,
+          "lisTestCode": "BI034",
+          "lisTestName": "Anti - Mullerian Hormone (AMH)",
+          "lisParamId": 417,
+          "lisParamName": "Anti - Mullerian Hormone AMH",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1101",
+          "instrumentName": "Estradiol",
+          "lisTestId": 121,
+          "lisTestCode": "BI102",
+          "lisTestName": "Estradiol (E2)",
+          "lisParamId": 514,
+          "lisParamName": "Estradiol  E2",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1139",
+          "instrumentName": "Vitamin B12",
+          "lisTestId": 175,
+          "lisTestCode": "BI235",
+          "lisTestName": "Vitamin B12 -Serum",
+          "lisParamId": 701,
+          "lisParamName": "Vitamin B12",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "1151",
+          "instrumentName": "25-OH-VD",
+          "lisTestId": 74,
+          "lisTestCode": "BI005",
+          "lisTestName": "VITAMIN D",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        }
+      ]
+    },
+    {
+      "driverId": "magicl-6000i",
+      "model": "Getein MAGICL 6000i",
+      "vendor": "Getein Biotech",
+      "category": "Immunoassay (CLIA)",
+      "protocol": "hl7",
+      "mode": "bidirectional",
+      "defaultPort": 8081,
+      "transports": [
+        "tcp-server"
+      ],
+      "source": "Rohtak Getein MAGICL 6000i. Item ids and units read verbatim off the analyzer’s System Setup > Item Param screens (44 photographs, 2026-08-19). Same getein HL7 v2.3.1 / MLLP dialect as the Delhi 6000i and the Rohtak 6200, so no driver change was needed — only this per-site item-id -> Noble map. 43 assays configured and enabled.",
+      "mappingsSummary": {
+        "total": 43,
+        "mapped": 43,
+        "unmapped": 0
+      },
+      "_mappingNotes": [
+        "Analyte key (instrumentCode) is the MAGICL numeric item id from OBX-3 (the friendly name rides in OBX-4, so decoding is unambiguous). This 6000i uses the SAME 2-3 digit ids as the Delhi 6000i — TSH=18, T3=19, T4=20, FT3=21, FT4=22 — unlike the Rohtak 6200, which uses those ids + 1000. Do not copy ids between the two Rohtak MAGICLs.",
+        "Every Noble target is reused from the Delhi MAGICL 6000i rows, which were verified against this same central Noble DB. The five TORCH IgM/HSV entries are new: Toxo IgM / Rubella IgM / CMV IgM take TORCH PROFILE 10 (t2666) params 5343/5344/5345, resolved from tbl_med_parameter_master; HSV-I/II IgM have no TCH10 member so they target the standalone tests CP3105 (t1797) and CP3106 (t1798).",
+        "UNIT TRAPS — three analytes transmit a unit other than the Noble field’s. FT3 (21) pmol/L -> Noble pg/mL: converted x0.651 by units.ts (verified 400/400 rows). Testosterone (34) ug/dL -> Noble ng/dL: converted x1000 by units.ts; this analyzer is configured differently from the Rohtak 6200, which sends ng/dL, so writing raw would read a normal 500 ng/dL male as 0.5. FT4 (22) pmol/L: deliberately NOT converted — Noble’s FT4 field at this site is calibrated to the raw analyzer number (verified on the 6200: wire 12.64 -> Noble 12.64) and the lab’s reference range is set for it. Do not add a pmol/L -> ng/L rule without the lab’s sign-off.",
+        "The analyzer’s Item Param list also carries a SECOND 25-OH-VD entry at id 151 alongside id 42 (both enabled, both ng/mL). Only 42 is mapped — the Rohtak 6200 uses 1151 for vitamin D, so 151 is most likely the newer kit generation. If vitamin D results arrive undecoded, check which id the wire actually carries and move the mapping.",
+        "AFP appears as a tile on the analyzer but its Item Param detail was not photographed, so it is NOT mapped. The Delhi 6000i uses id 1 for AFP -> BI024 (t1808); confirm the id on this analyzer before adding it.",
+        "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer’s HL7/Ethernet Server IP to this host’s instrument-LAN IP and its port to match; Synapse listens as tcp-server (8081 default). This is a THIRD instrument in this preset, separate from the DxC 700 AU (serial) and the MAGICL 6200."
+      ],
+      "mappings": [
+        {
+          "instrumentCode": "2",
+          "instrumentName": "CA125",
+          "lisTestId": 92,
+          "lisTestCode": "BI058",
+          "lisTestName": "CA 125 (Cancer Antigen)",
+          "lisParamId": 462,
+          "lisParamName": "CA 125 (Cancer Antigen 125)",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "3",
+          "instrumentName": "CA19-9",
+          "lisTestId": 94,
+          "lisTestCode": "BI060",
+          "lisTestName": "CA 19.9 (Cancer Antigen)",
+          "lisParamId": 464,
+          "lisParamName": "CA 19.9 (Cancer Antigen 19.9)",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "4",
+          "instrumentName": "CEA",
+          "lisTestId": 99,
+          "lisTestCode": "BI068",
+          "lisTestName": "CEA - Carcino embryonic antigen (Serum)",
+          "lisParamId": 472,
+          "lisParamName": "CEA (Carcino Embryonic Antigen)",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "6",
+          "instrumentName": "Ferritin",
+          "lisTestId": 123,
+          "lisTestCode": "BI104",
+          "lisTestName": "Ferritin",
+          "lisParamId": 517,
+          "lisParamName": "Ferritin",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "8",
+          "instrumentName": "tPSA",
+          "lisTestId": 151,
+          "lisTestCode": "BI181",
+          "lisTestName": "PSA (Prostate Specific Antigen) Total",
+          "lisParamId": 624,
+          "lisParamName": "PSA Total (Prostatic Specific Antigen Total)",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "13",
+          "instrumentName": "HBsAg",
+          "lisTestId": 2636,
+          "lisTestCode": "HBSCL",
+          "lisTestName": "HbsAg CLIA",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "17",
+          "instrumentName": "TPO-Ab",
+          "lisTestId": 758,
+          "lisTestCode": "BC170",
+          "lisTestName": "Anti Thyroid Peroxidase (Anti TPO) Anti body",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "18",
+          "instrumentName": "TSH",
+          "lisTestId": 170,
+          "lisTestCode": "BI221",
+          "lisTestName": "TSH : Thyroid Stimulating Hormone",
+          "unit": "uIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "19",
+          "instrumentName": "T3",
+          "lisTestId": 164,
+          "lisTestCode": "BI214",
+          "lisTestName": "T3 (Tri Iodothyronine )",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "20",
+          "instrumentName": "T4",
+          "lisTestId": 165,
+          "lisTestCode": "BI215",
+          "lisTestName": "T4 (Thyroxine )",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "21",
+          "instrumentName": "FT3",
+          "lisTestId": 128,
+          "lisTestCode": "BI109",
+          "lisTestName": "Free T3 (FT3)",
+          "lisParamId": 525,
+          "lisParamName": "T3 - Free (Tri-iodothyronine-Free)",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Arrives pmol/L; Noble holds pg/mL. units.ts converts x0.651 (verified 400/400 rows)."
+        },
+        {
+          "instrumentCode": "22",
+          "instrumentName": "FT4",
+          "lisTestId": 129,
+          "lisTestCode": "BI110",
+          "lisTestName": "Free T4 (FT4)",
+          "lisParamId": 526,
+          "lisParamName": "T4 - Free (Thyroxine - Free)",
+          "unit": "ng/L",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Arrives pmol/L. Noble’s FT4 field is calibrated to the RAW analyzer number here (verified on the 6200: wire 12.64 -> Noble 12.64), so NO conversion is applied. Do not add one without the lab’s sign-off."
+        },
+        {
+          "instrumentCode": "24",
+          "instrumentName": "FSH",
+          "lisTestId": 125,
+          "lisTestCode": "BI106",
+          "lisTestName": "FSH Follicle Stimulating Hormone",
+          "lisParamId": 519,
+          "lisParamName": "Follicle Stimulating Hormone FSH",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "25",
+          "instrumentName": "IgE",
+          "lisTestId": 133,
+          "lisTestCode": "BI133",
+          "lisTestName": "Total IgE",
+          "lisParamId": 568,
+          "lisParamName": "IgE Total",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "26",
+          "instrumentName": "b-HCG",
+          "lisTestId": 85,
+          "lisTestCode": "BI044",
+          "lisTestName": "Beta-hCG (Quantitative) Serum",
+          "lisParamId": 427,
+          "lisParamName": "Beta hCG (Quantitative)-Serum",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "27",
+          "instrumentName": "LH",
+          "lisTestId": 138,
+          "lisTestCode": "BI145",
+          "lisTestName": "LH (Luteinizing Hormone) - Serum",
+          "lisParamId": 589,
+          "lisParamName": "Leutinizing Hormone LH",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "29",
+          "instrumentName": "HCV",
+          "lisTestId": 2634,
+          "lisTestCode": "hcvcl",
+          "lisTestName": "Anti HCV CLIA",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "30",
+          "instrumentName": "hs-cTnI",
+          "lisTestId": 2003,
+          "lisTestCode": "BI412",
+          "lisTestName": "Troponin I(Quantitative)",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "31",
+          "instrumentName": "PCT",
+          "lisTestId": 148,
+          "lisTestCode": "BI178",
+          "lisTestName": "Procalcitonin -PCT",
+          "lisParamId": 621,
+          "lisParamName": "Procalcitonin  PCT",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "32",
+          "instrumentName": "Progesterone",
+          "lisTestId": 149,
+          "lisTestCode": "BI179",
+          "lisTestName": "Progesterone",
+          "lisParamId": 622,
+          "lisParamName": "Progesterone",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "34",
+          "instrumentName": "Testosterone",
+          "lisTestId": 158,
+          "lisTestCode": "BI209",
+          "lisTestName": "Testosterone  - Total",
+          "lisParamId": 670,
+          "lisParamName": "Testosterone - Total",
+          "unit": "ng/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Analyzer LIS Unit is ug/dL; Noble holds ng/dL. units.ts converts x1000 (dimensional). If the analyzer is ever switched to ng/dL, this keeps working."
+        },
+        {
+          "instrumentCode": "35",
+          "instrumentName": "Insulin",
+          "lisTestId": 134,
+          "lisTestCode": "BI136",
+          "lisTestName": "Insulin Fasting",
+          "lisParamId": 577,
+          "lisParamName": "Insulin",
+          "unit": "uIU/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "38",
+          "instrumentName": "PTH",
+          "lisTestId": 143,
+          "lisTestCode": "BI161",
+          "lisTestName": "Intact Parathyroid Hormone(PTH)",
+          "lisParamId": 608,
+          "lisParamName": "Intact Parathyroid Hormone(PTH)",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "40",
+          "instrumentName": "CK-MB",
+          "lisTestId": 1848,
+          "lisTestCode": "BI259",
+          "lisTestName": "CK-MB",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "41",
+          "instrumentName": "NT-proBNP",
+          "lisTestId": 147,
+          "lisTestCode": "BI177",
+          "lisTestName": "NT-PRO BNP",
+          "lisParamId": 620,
+          "lisParamName": "ProBNP (Pro-Beta Natriuretic Peptide)",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "42",
+          "instrumentName": "25-OH-VD",
+          "lisTestId": 74,
+          "lisTestCode": "BI005",
+          "lisTestName": "VITAMIN D",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "48",
+          "instrumentName": "HIV",
+          "lisTestId": 2635,
+          "lisTestCode": "HIVCL",
+          "lisTestName": "HIV 1&2 Screening",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "65",
+          "instrumentName": "Toxo IgM",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5343,
+          "lisParamName": "Toxoplasma IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "67",
+          "instrumentName": "CMV IgM",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5345,
+          "lisParamName": "Cytomegalovirus IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "69",
+          "instrumentName": "Rubella IgM",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5344,
+          "lisParamName": "Rubella IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "71",
+          "instrumentName": "HSV-I IgM",
+          "lisTestId": 1797,
+          "lisTestCode": "CP3105",
+          "lisTestName": "Herpes Simplex Virus (HSV) 1 - IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "72",
+          "instrumentName": "HSV-II IgM",
+          "lisTestId": 1798,
+          "lisTestCode": "CP3106",
+          "lisTestName": "Herpes Simplex Virus (HSV) 2 - IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "73",
+          "instrumentName": "HSV-I IgG",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5341,
+          "lisParamName": "HSV 1 IgG",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "74",
+          "instrumentName": "HSV-II IgG",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5342,
+          "lisParamName": "HSV 2 IgG",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "79",
+          "instrumentName": "AMH",
+          "lisTestId": 626,
+          "lisTestCode": "BI034",
+          "lisTestName": "Anti - Mullerian Hormone (AMH)",
+          "lisParamId": 417,
+          "lisParamName": "Anti - Mullerian Hormone AMH",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "101",
+          "instrumentName": "Estradiol",
+          "lisTestId": 121,
+          "lisTestCode": "BI102",
+          "lisTestName": "Estradiol (E2)",
+          "lisParamId": 514,
+          "lisParamName": "Estradiol  E2",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "102",
+          "instrumentName": "PRL",
+          "lisTestId": 150,
+          "lisTestCode": "BI180",
+          "lisTestName": "Prolactin- Serum",
+          "lisParamId": 623,
+          "lisParamName": "Prolactin",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "139",
+          "instrumentName": "Vitamin B12",
+          "lisTestId": 175,
+          "lisTestCode": "BI235",
+          "lisTestName": "Vitamin B12 -Serum",
+          "lisParamId": 701,
+          "lisParamName": "Vitamin B12",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "140",
+          "instrumentName": "Folate",
+          "lisTestId": 124,
+          "lisTestCode": "BI105",
+          "lisTestName": "Folate Serum (Folic Acid)",
+          "lisParamId": 518,
+          "lisParamName": "Folate (Folic Acid)",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "144",
+          "instrumentName": "CMV IgG",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5340,
+          "lisParamName": "Cytomegalovirus IgG",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "145",
+          "instrumentName": "Rubella IgG",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5339,
+          "lisParamName": "Rubella IgG",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "146",
+          "instrumentName": "Toxo IgG",
+          "lisTestId": 2666,
+          "lisTestCode": "TCH10",
+          "lisTestName": "TORCH PROFILE 10",
+          "lisParamId": 5338,
+          "lisParamName": "Toxoplasma IgG",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "157",
+          "instrumentName": "CCP",
+          "lisTestId": 629,
+          "lisTestCode": "BI036",
+          "lisTestName": "Anti Cyclic Citrullinated Peptide (Anti - CCP)",
+          "lisParamId": 419,
+          "lisParamName": "Anti Cyclic Citrullinated Peptide (Anti - CCP)",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1
+        }
       ]
     }
   ]
