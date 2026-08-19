@@ -7,7 +7,8 @@ import type {
   LisConnectionResult,
   LisConnectionSettings,
   MappingRule,
-  SerialPortInfo
+  SerialPortInfo,
+  SerialLoopbackResult
 } from '../../shared/types'
 import { listDriverInfos } from '../core/drivers/registry'
 import { listPresets } from '../core/presets/registry'
@@ -121,6 +122,121 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
       return []
     }
   })
+
+  // Serial TX self-test. When an analyzer behaves as if it never hears us, this
+  // answers the only question that matters next: can this PC drive the TX line at
+  // all? The operator unplugs the analyzer and bridges pins 2-3; bytes that come
+  // back prove the port + adapter are fine and move the fault to the cable or the
+  // analyzer's own port. The instrument must be stopped first — a COM port has a
+  // single owner, so an in-use port reports that rather than a false negative.
+  ipcMain.handle(
+    IPC.serialLoopbackTest,
+    async (
+      _e,
+      opts: { path: string; baudRate?: number; dataBits?: number; parity?: string; stopBits?: number }
+    ): Promise<SerialLoopbackResult> => {
+      const fail = (message: string): SerialLoopbackResult => ({
+        ok: false,
+        echoed: false,
+        sent: 0,
+        received: 0,
+        message
+      })
+      let SerialPortCtor: new (o: Record<string, unknown>) => {
+        isOpen: boolean
+        open(cb?: (e: Error | null) => void): void
+        close(cb?: (e: Error | null) => void): void
+        write(d: Buffer, cb?: (e?: Error | null) => void): boolean
+        on(ev: string, cb: (...a: unknown[]) => void): unknown
+        set?(o: Record<string, boolean>, cb?: (e: Error | null) => void): void
+      }
+      try {
+        type Sp = { SerialPort: new (o: Record<string, unknown>) => never }
+        const mod = (await import('serialport')) as unknown as Sp & { default?: Sp }
+        SerialPortCtor = (mod.SerialPort ?? mod.default?.SerialPort) as never
+        if (!SerialPortCtor) throw new Error('SerialPort export not found')
+      } catch (err) {
+        return fail(`Serial support unavailable: ${(err as Error).message}`)
+      }
+
+      const pattern = Buffer.from(`SYNAPSE-TX-TEST-${Date.now()}`, 'latin1')
+      return await new Promise<SerialLoopbackResult>((resolve) => {
+        let port: ReturnType<typeof Object> | null = null
+        let received = Buffer.alloc(0)
+        let settled = false
+        const finish = (r: SerialLoopbackResult): void => {
+          if (settled) return
+          settled = true
+          try {
+            const p = port as { isOpen?: boolean; close?: (cb?: unknown) => void } | null
+            if (p?.isOpen) p.close?.(() => undefined)
+          } catch {
+            /* closing is best-effort */
+          }
+          resolve(r)
+        }
+        try {
+          const p = new SerialPortCtor({
+            path: opts.path,
+            baudRate: opts.baudRate ?? 9600,
+            dataBits: opts.dataBits ?? 8,
+            parity: opts.parity ?? 'none',
+            stopBits: opts.stopBits ?? 1,
+            autoOpen: false
+          })
+          port = p as never
+          p.on('data', (chunk: unknown) => {
+            received = Buffer.concat([received, chunk as Buffer])
+            if (received.includes(pattern.subarray(0, pattern.length - 1))) {
+              finish({
+                ok: true,
+                echoed: true,
+                sent: pattern.length,
+                received: received.length,
+                message:
+                  `TX works. ${opts.path} sent ${pattern.length} bytes and received them back, so ` +
+                  `this PC's serial port and adapter drive the line correctly. If the analyzer still ` +
+                  `reports a link timeout, the fault is in the cable or the analyzer's port — not here.`
+              })
+            }
+          })
+          p.on('error', (err: unknown) => finish(fail(`${opts.path}: ${(err as Error).message}`)))
+          p.open((err) => {
+            if (err) {
+              const busy = /access denied|resource busy|cannot open/i.test(err.message)
+              return finish(
+                fail(
+                  busy
+                    ? `${opts.path} is in use. Stop the instrument that owns it, then run the test again.`
+                    : `Could not open ${opts.path}: ${err.message}`
+                )
+              )
+            }
+            p.set?.({ dtr: true, rts: true })
+            p.write(pattern, (werr) => {
+              if (werr) finish(fail(`${opts.path}: write failed: ${werr.message}`))
+            })
+            setTimeout(
+              () =>
+                finish({
+                  ok: true,
+                  echoed: false,
+                  sent: pattern.length,
+                  received: received.length,
+                  message:
+                    `No echo on ${opts.path}. With pins 2-3 bridged this means the port is NOT ` +
+                    `transmitting — replace the adapter/board. Without the jumper fitted this result ` +
+                    `is expected and proves nothing, so refit it and retest.`
+                }),
+              3000
+            )
+          })
+        } catch (err) {
+          finish(fail(`${opts.path}: ${(err as Error).message}`))
+        }
+      })
+    }
+  )
 
   // Mapping
   ipcMain.handle(IPC.mappingsList, (_e, driverId?: string) => orchestrator.mapping.list(driverId))

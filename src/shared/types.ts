@@ -135,6 +135,24 @@ export interface InstrumentConnectionConfig {
   idleReconnectMs?: number
 }
 
+/**
+ * Outcome of a serial TX self-test. `echoed` is the decisive bit: bytes that
+ * come back prove this PC's port and adapter can drive the TX line, so any
+ * remaining "the analyzer never hears us" fault lies in the cable or the
+ * analyzer's own port.
+ */
+export interface SerialLoopbackResult {
+  ok: boolean
+  /** True when the sent pattern came back on RX (jumper fitted, TX alive). */
+  echoed: boolean
+  /** Bytes written to the port. */
+  sent: number
+  /** Bytes seen back within the wait window. */
+  received: number
+  /** Human-readable verdict for the UI. */
+  message: string
+}
+
 /** A serial port enumerated from the host, for the COM-port picker. */
 export interface SerialPortInfo {
   /** Port path, e.g. "COM3". */

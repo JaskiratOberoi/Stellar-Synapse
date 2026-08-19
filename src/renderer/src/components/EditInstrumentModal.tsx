@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/Button'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { useAppStore } from '@/store/useAppStore'
-import type { InstrumentRuntime, ProtocolKind, SerialPortInfo, TransportKind } from '@shared/types'
+import type {
+  InstrumentRuntime,
+  ProtocolKind,
+  SerialLoopbackResult,
+  SerialPortInfo,
+  TransportKind
+} from '@shared/types'
 
 /**
  * Edit the connection config of an already-onboarded instrument so a setting can
@@ -41,6 +47,9 @@ export function EditInstrumentModal({
   const [host, setHost] = useState(c.host ?? '127.0.0.1')
   const [port, setPort] = useState(String(c.port ?? 9100))
   const [serialPath, setSerialPath] = useState(c.serialPath ?? 'COM3')
+  const [txTest, setTxTest] = useState<{ busy: boolean; result?: SerialLoopbackResult }>({
+    busy: false
+  })
   const [ports, setPorts] = useState<SerialPortInfo[]>([])
   const [portsLoading, setPortsLoading] = useState(false)
   const [portsScanned, setPortsScanned] = useState(false)
@@ -74,6 +83,33 @@ export function EditInstrumentModal({
     setEnabled(instrument.enabled)
     setPortsScanned(false)
   }, [open, instrument])
+
+  // Serial TX self-test: proves whether this PC can drive the line at all, which
+  // is the question left when an analyzer acts as though it never hears us.
+  const runTxTest = async (): Promise<void> => {
+    setTxTest({ busy: true })
+    try {
+      const result = await window.api.serial.loopbackTest({
+        path: serialPath,
+        baudRate: Number(baudRate),
+        dataBits: Number(dataBits),
+        parity,
+        stopBits: Number(stopBits)
+      })
+      setTxTest({ busy: false, result })
+    } catch (err) {
+      setTxTest({
+        busy: false,
+        result: {
+          ok: false,
+          echoed: false,
+          sent: 0,
+          received: 0,
+          message: (err as Error).message
+        }
+      })
+    }
+  }
 
   const refreshPorts = async (): Promise<void> => {
     setPortsLoading(true)

@@ -25,6 +25,7 @@ import type {
   MonitorEvent,
   ScanProgress,
   SerialPortInfo,
+  SerialLoopbackResult,
   UpdateStatus
 } from './types'
 
@@ -47,6 +48,7 @@ export const IPC = {
 
   // Serial
   serialListPorts: 'serial:list-ports',
+  serialLoopbackTest: 'serial:loopback-test',
 
   // Mapping
   mappingsList: 'mappings:list',
@@ -131,6 +133,19 @@ export interface StellarApi {
   serial: {
     /** Enumerate serial ports on the host. Empty if serialport can't load. */
     listPorts(): Promise<SerialPortInfo[]>
+    /**
+     * Prove whether this port can actually TRANSMIT. The operator unplugs the
+     * analyzer and bridges pins 2-3 on the connector; we send a pattern and see
+     * whether it returns. Isolates a dead PC-side TX from a bad cable when an
+     * analyzer behaves as if it never hears us.
+     */
+    loopbackTest(opts: {
+      path: string
+      baudRate?: number
+      dataBits?: number
+      parity?: string
+      stopBits?: number
+    }): Promise<SerialLoopbackResult>
   }
   mappings: {
     list(driverId?: string): Promise<MappingRule[]>
