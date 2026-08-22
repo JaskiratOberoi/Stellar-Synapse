@@ -179,9 +179,9 @@ export function EditInstrumentModal({
       className="max-w-2xl"
     >
       <div className="space-y-4">
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-primary">
-            <Check className="h-4 w-4" /> {driver?.name ?? instrument.driverId}
+        <div className="rounded-2xl bg-secondary/40 p-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Check className="h-4 w-4 text-success" strokeWidth={1.75} /> {driver?.name ?? instrument.driverId}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {driver?.vendor}
@@ -265,9 +265,9 @@ export function EditInstrumentModal({
                   type="button"
                   onClick={refreshPorts}
                   disabled={portsLoading}
-                  className="flex items-center gap-1 text-xs text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
                 >
-                  <RefreshCw className={`h-3 w-3 ${portsLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 ${portsLoading ? 'animate-spin' : ''}`} strokeWidth={1.75} />
                   {portsLoading ? 'Detecting...' : 'Detect'}
                 </button>
               </div>
@@ -368,9 +368,9 @@ export function EditInstrumentModal({
           </div>
         )}
 
-        <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl bg-warning/10 px-4 py-3">
           <div className="pr-3">
-            <p className="text-sm font-medium text-amber-300">Passive (read-only tap)</p>
+            <p className="text-sm font-medium text-warning">Passive (read-only tap)</p>
             <p className="text-xs text-muted-foreground">
               Connect and listen only - never writes to the analyzer or the LIS DB. Safe for live
               instruments already talking to another host.
@@ -379,7 +379,7 @@ export function EditInstrumentModal({
           <Switch checked={passive} onChange={setPassive} />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
           <div>
             <p className="text-sm font-medium">Host Query</p>
             <p className="text-xs text-muted-foreground">
@@ -395,7 +395,7 @@ export function EditInstrumentModal({
           />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
           <div>
             <p className="text-sm font-medium">Enabled</p>
             <p className="text-xs text-muted-foreground">Listen/connect when running</p>

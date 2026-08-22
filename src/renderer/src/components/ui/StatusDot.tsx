@@ -1,33 +1,36 @@
 import { cn } from '@/lib/utils'
 import type { ConnectionStatus } from '@shared/types'
 
-const map: Record<ConnectionStatus, { color: string; glow: string; label: string; pulse?: boolean }> = {
-  online: { color: 'bg-success', glow: 'shadow-success', label: 'Online', pulse: true },
-  listening: { color: 'bg-accent', glow: 'shadow-accent', label: 'Listening', pulse: true },
-  connecting: { color: 'bg-warning', glow: 'shadow-warning', label: 'Connecting', pulse: true },
-  offline: { color: 'bg-muted-foreground/50', glow: '', label: 'Offline' },
-  error: { color: 'bg-destructive', glow: 'shadow-destructive', label: 'Error' }
+/* Status is the product: green = flowing, amber = trying, red = broken,
+   listening = armed and waiting (accent), offline = a deliberate hollow ring —
+   quiet, but still legible from across the lab. The label carries the tone
+   too, so state survives even where the dot is the only mark. */
+const map: Record<
+  ConnectionStatus,
+  { dot: string; ping?: string; text: string; label: string }
+> = {
+  online: { dot: 'bg-success', ping: 'bg-success', text: 'text-success', label: 'Online' },
+  listening: { dot: 'bg-accent', ping: 'bg-accent', text: 'text-accent', label: 'Listening' },
+  connecting: { dot: 'bg-warning', ping: 'bg-warning', text: 'text-warning', label: 'Connecting' },
+  offline: {
+    dot: 'border-[1.5px] border-muted-foreground bg-transparent',
+    text: 'text-muted-foreground',
+    label: 'Offline'
+  },
+  error: { dot: 'bg-destructive', text: 'text-destructive', label: 'Error' }
 }
 
 export function StatusDot({ status, showLabel = true }: { status: ConnectionStatus; showLabel?: boolean }) {
   const s = map[status]
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="relative flex h-2.5 w-2.5">
-        {s.pulse && (
-          <span
-            className={cn('absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping', s.color)}
-          />
+      <span className="relative flex h-2 w-2">
+        {s.ping && (
+          <span className={cn('absolute inline-flex h-full w-full rounded-full opacity-50 animate-ping', s.ping)} />
         )}
-        <span
-          className={cn(
-            'relative inline-flex h-2.5 w-2.5 rounded-full transition-shadow',
-            s.color,
-            s.pulse && `shadow-[0_0_8px_1px] ${s.glow}`
-          )}
-        />
+        <span className={cn('relative inline-flex h-2 w-2 rounded-full', s.dot)} />
       </span>
-      {showLabel && <span className="text-xs font-medium text-muted-foreground">{s.label}</span>}
+      {showLabel && <span className={cn('text-xs font-medium', s.text)}>{s.label}</span>}
     </span>
   )
 }

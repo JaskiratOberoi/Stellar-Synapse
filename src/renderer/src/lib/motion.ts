@@ -59,10 +59,3 @@ export const pageTransition: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.18, ease: 'easeIn' } }
 }
-
-/** Hover/press feedback shared by interactive cards. */
-export const hoverLift = {
-  whileHover: { y: -3 },
-  whileTap: { scale: 0.99 },
-  transition: spring
-}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput, Eraser, Pencil } from 'lucide-react'
@@ -43,7 +43,7 @@ function buildLd560Rows(
       id: `${ld}-eAG-calc`,
       analyteCode: 'eAG (Calculated)',
       value: mgdl.toFixed(1),
-      unit: `mg/dL · ${mgDlToMmolL(mgdl).toFixed(1)} mmol/L`
+      unit: `mg/dL Â· ${mgDlToMmolL(mgdl).toFixed(1)} mmol/L`
     })
   }
   return rows
@@ -105,7 +105,7 @@ export function InstrumentDetail() {
           continue
         }
       }
-      // 2) Generic decoded analyte result (ASTM/HL7/Simple) — group by frame.
+      // 2) Generic decoded analyte result (ASTM/HL7/Simple) â€” group by frame.
       if (
         m.stage === 'decoded' &&
         m.analyteCode &&
@@ -189,7 +189,7 @@ export function InstrumentDetail() {
       <div className="flex flex-col items-center justify-center gap-3 py-20">
         <p className="text-muted-foreground">Instrument not found.</p>
         <Button variant="outline" onClick={() => navigate('/instruments')}>
-          Back to Instruments
+          Back to instruments
         </Button>
       </div>
     )
@@ -285,43 +285,46 @@ export function InstrumentDetail() {
     <motion.div className="space-y-6" variants={staggerContainer} initial="hidden" animate="show">
       <motion.div className="flex items-center justify-between" variants={fadeInUp}>
         <Button variant="ghost" size="sm" onClick={() => navigate('/instruments')}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} /> Back
         </Button>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-            <Pencil className="h-4 w-4" /> Edit Config
+            <Pencil className="h-4 w-4" strokeWidth={1.75} /> Edit config
           </Button>
           <Button variant="outline" size="sm" onClick={emitSample} disabled={!running}>
-            <Beaker className="h-4 w-4" /> Emit Test Sample
+            <Beaker className="h-4 w-4" strokeWidth={1.75} /> Emit test sample
           </Button>
           <Button
             variant={running ? 'outline' : 'success'}
             size="sm"
             onClick={() => (running ? window.api.instruments.stop(inst.id) : window.api.instruments.start(inst.id))}
           >
-            {running ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            {running ? <Square className="h-3.5 w-3.5" strokeWidth={1.75} /> : <Play className="h-3.5 w-3.5" strokeWidth={1.75} />}
             {running ? 'Stop' : 'Start'}
           </Button>
         </div>
       </motion.div>
 
       <motion.div className="flex items-center gap-4" variants={fadeInUp}>
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 text-primary">
-          <Cpu className="h-7 w-7" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-foreground">
+          <Cpu className="h-6 w-6" strokeWidth={1.75} />
         </div>
         <div className="flex-1">
-          <h2 className="text-xl font-semibold">{inst.name}</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-3xl font-light tracking-tight">{inst.name}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             {driver?.name} - {driver?.vendor}
             {inst.serialNumber ? (
               <>
-                {' · '}
+                {' Â· '}
                 <span className="font-mono">S/N {inst.serialNumber}</span>
               </>
             ) : null}
           </p>
         </div>
-        <StatusDot status={inst.status} />
+        <div className="flex items-center gap-3">
+          <Badge tone="muted">{inst.protocol.toUpperCase()}</Badge>
+          <StatusDot status={inst.status} />
+        </div>
       </motion.div>
 
       <motion.div className="grid gap-6 lg:grid-cols-3" variants={staggerContainer}>
@@ -333,12 +336,13 @@ export function InstrumentDetail() {
           <CardContent className="space-y-3 text-sm">
             <Row label="Transport" value={inst.connection.transport} />
             <Row
-              label={inst.connection.transport === 'serial' ? 'COM Port' : 'Address'}
+              label={inst.connection.transport === 'serial' ? 'COM port' : 'Address'}
               value={
                 inst.connection.transport === 'serial'
                   ? `${inst.connection.serialPath} @ ${inst.connection.baudRate ?? 9600}`
                   : `${inst.connection.host}:${inst.connection.port}`
               }
+              mono
             />
             <Row label="Protocol" value={inst.protocol.toUpperCase()} />
             <Row label="Peer" value={inst.peer ?? '-'} />
@@ -350,12 +354,12 @@ export function InstrumentDetail() {
         <motion.div variants={fadeInUp}>
         <Card>
           <CardHeader>
-            <CardTitle>Protocol Options</CardTitle>
+            <CardTitle>Protocol options</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
-                <p className="text-sm font-medium">Host Query</p>
+                <p className="text-sm font-medium">Host query</p>
                 <p className="text-xs text-muted-foreground">Query LIS by barcode</p>
               </div>
               <Switch
@@ -365,7 +369,7 @@ export function InstrumentDetail() {
               />
             </div>
             {inst.connection.hostQuery && (
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">Skip already-run tests</p>
                   <p className="text-xs text-muted-foreground">
@@ -380,25 +384,27 @@ export function InstrumentDetail() {
               </div>
             )}
             {driver?.derivesEag && (
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">Auto-calculate eAG</p>
                   <p className="text-xs text-muted-foreground">
-                    Estimated Average Glucose from HbA1c → LIS
+                    Estimated Average Glucose from HbA1c â†’ LIS
                   </p>
                 </div>
                 <Switch checked={inst.connection.autoEag !== false} onChange={setAutoEag} />
               </div>
             )}
-            <div className="rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
-              <p className="text-xs uppercase text-muted-foreground">Driver mode</p>
+            <div className="rounded-2xl bg-secondary/40 px-4 py-3">
+              <p className="microlabel">Driver mode</p>
               <p className="mt-1 text-sm font-medium capitalize">{driver?.mode}</p>
             </div>
-            <div className="rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
-              <p className="text-xs uppercase text-muted-foreground">Maturity</p>
-              <Badge tone={driver?.maturity === 'stable' ? 'success' : driver?.maturity === 'beta' ? 'warning' : 'muted'}>
-                {driver?.maturity}
-              </Badge>
+            <div className="rounded-2xl bg-secondary/40 px-4 py-3">
+              <p className="microlabel">Maturity</p>
+              <div className="mt-1.5">
+                <Badge tone={driver?.maturity === 'stable' ? 'success' : driver?.maturity === 'beta' ? 'warning' : 'muted'}>
+                  {driver?.maturity}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -427,7 +433,7 @@ export function InstrumentDetail() {
       <motion.div variants={fadeInUp}>
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Received Results</CardTitle>
+          <CardTitle>Received results</CardTitle>
           <div className="flex items-center gap-2">
             {writeFeedback && (
               <span className="max-w-xs truncate text-xs text-muted-foreground">{writeFeedback}</span>
@@ -436,12 +442,12 @@ export function InstrumentDetail() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 gap-1 px-2 text-xs"
+                className="h-7 gap-1 px-2.5 text-xs"
                 disabled={parsingAll}
                 onClick={parseAllToLis}
               >
-                <FileInput className="h-3 w-3" />
-                {parsingAll ? 'Parsing…' : `LIS Parse all (${unparsedCount})`}
+                <FileInput className="h-3 w-3" strokeWidth={1.75} />
+                {parsingAll ? 'Parsingâ€¦' : `LIS parse all (${unparsedCount})`}
               </Button>
             )}
             <Badge tone="muted">{resultFrames.length} sample{resultFrames.length === 1 ? '' : 's'}</Badge>
@@ -452,9 +458,9 @@ export function InstrumentDetail() {
             {resultFrames.map((frame) => (
               <div
                 key={frame.raw ?? `${frame.sampleId}-${frame.timestamp}`}
-                className="rounded-lg border border-border/50 bg-background/70"
+                className="rounded-2xl bg-secondary/40"
               >
-                <div className="flex items-center justify-between border-b border-border/40 px-3 py-2 text-xs">
+                <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-xs">
                   <span>
                     <span className="font-mono font-medium text-accent">{frame.sampleId}</span>
                     {frame.internalSeq && (
@@ -472,18 +478,18 @@ export function InstrumentDetail() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 gap-1 px-2 text-xs"
+                        className="h-7 gap-1 px-2.5 text-xs"
                         disabled={parsingRaw === frame.raw}
                         onClick={() => parseFrameToLis(frame.raw, frame.sampleId)}
                       >
-                        <FileInput className="h-3 w-3" />
-                        {parsingRaw === frame.raw ? 'Parsing…' : 'LIS Parse'}
+                        <FileInput className="h-3 w-3" strokeWidth={1.75} />
+                        {parsingRaw === frame.raw ? 'Parsingâ€¦' : 'LIS parse'}
                       </Button>
                     )}
                     <span className="text-muted-foreground">{formatTime(frame.timestamp)}</span>
                   </div>
                 </div>
-                <div className="divide-y divide-border/30 px-3 py-1">
+                <div className="divide-y divide-border/30 px-4 py-1">
                   {frame.rows.map((r) => (
                     <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
                       <span className="font-medium">
@@ -494,7 +500,7 @@ export function InstrumentDetail() {
                           </span>
                         )}
                       </span>
-                      <span>
+                      <span className="tabular-nums">
                         {r.originalValue && (
                           <span
                             className="mr-1.5 text-xs text-muted-foreground line-through"
@@ -504,7 +510,7 @@ export function InstrumentDetail() {
                           </span>
                         )}
                         <span className="font-semibold">{r.value}</span>
-                        {r.unit && <span className="ml-1 text-xs text-muted-foreground">{r.unit}</span>}
+                        {r.unit && <span className="ml-1 text-xs font-normal text-muted-foreground">{r.unit}</span>}
                       </span>
                     </div>
                   ))}
@@ -512,7 +518,7 @@ export function InstrumentDetail() {
               </div>
             ))}
             {resultFrames.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p className="py-10 text-center text-sm text-muted-foreground">
                 No decoded results yet. Results are retained across restarts once received.
               </p>
             )}
@@ -524,41 +530,41 @@ export function InstrumentDetail() {
       <motion.div variants={fadeInUp}>
       <Card>
         <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Activity Log</CardTitle>
+          <CardTitle>Activity log</CardTitle>
           <div className="flex items-center gap-2">
             <Badge tone="muted">{activityLog.length} events</Badge>
             <Badge tone={running ? 'success' : 'muted'}>{running ? 'Live' : 'Stopped'}</Badge>
-            <div className="flex rounded-lg border border-border p-0.5">
+            <div className="flex rounded-full bg-secondary/60 p-0.5">
               <button
                 onClick={() => setLogView('parsed')}
                 className={cn(
-                  'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                   logView === 'parsed' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {logView === 'parsed' && (
-                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-md bg-secondary" />
+                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-full bg-secondary" />
                 )}
-                <List className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Parsed</span>
+                <List className="relative z-10 h-3.5 w-3.5" strokeWidth={1.75} /> <span className="relative z-10">Parsed</span>
               </button>
               <button
                 onClick={() => setLogView('raw')}
                 className={cn(
-                  'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                   logView === 'raw' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {logView === 'raw' && (
-                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-md bg-secondary" />
+                  <motion.span layoutId="detail-logview" transition={spring} className="absolute inset-0 rounded-full bg-secondary" />
                 )}
-                <Code2 className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Raw</span>
+                <Code2 className="relative z-10 h-3.5 w-3.5" strokeWidth={1.75} /> <span className="relative z-10">Raw</span>
               </button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {logView === 'parsed' ? (
-            <div className="max-h-80 space-y-1 overflow-y-auto font-mono text-xs">
+            <div className="max-h-80 space-y-1 overflow-y-auto font-mono text-xs tabular-nums">
               <AnimatePresence initial={false}>
               {activityLog.map((m) => (
                 <motion.div
@@ -569,11 +575,11 @@ export function InstrumentDetail() {
                   animate="show"
                   exit="exit"
                   // The reason (skip/error message) shows as a native tooltip on
-                  // hover — an operator can see exactly WHY a value wasn't written
+                  // hover â€” an operator can see exactly WHY a value wasn't written
                   // without opening the Logs page.
                   title={m.message || undefined}
                   className={cn(
-                    'flex gap-3 rounded px-2 py-1 hover:bg-secondary/40',
+                    'flex gap-3 rounded-2xl px-2.5 py-1 transition-colors hover:bg-secondary/60',
                     m.message && (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed')
                       ? 'cursor-help'
                       : undefined
@@ -598,31 +604,31 @@ export function InstrumentDetail() {
                     {/* Inline hint that a hover reason exists for skips/errors. */}
                     {m.message &&
                       (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed') && (
-                        <span className="ml-1.5 text-muted-foreground">ⓘ</span>
+                        <span className="ml-1.5 text-muted-foreground">â“˜</span>
                       )}
                   </span>
                 </motion.div>
               ))}
               </AnimatePresence>
               {activityLog.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
+                <p className="py-10 text-center font-sans text-sm text-muted-foreground">No activity yet.</p>
               )}
             </div>
           ) : (
             <div className="max-h-[28rem] space-y-3 overflow-y-auto">
               {rawFrames.map((f) => (
-                <div key={f.id} className="rounded-lg border border-border/50 bg-background/70">
-                  <div className="flex items-center justify-between border-b border-border/40 px-3 py-1.5 text-xs">
+                <div key={f.id} className="rounded-2xl bg-secondary/40">
+                  <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs">
                     <span className="font-mono text-accent">{f.sampleId}</span>
                     <span className="text-muted-foreground">{formatTime(f.timestamp)}</span>
                   </div>
-                  <pre className="overflow-x-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-all">
+                  <pre className="overflow-x-auto px-4 py-2.5 font-mono text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-all">
                     {f.raw}
                   </pre>
                 </div>
               ))}
               {rawFrames.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <p className="py-10 text-center text-sm text-muted-foreground">
                   No raw frames received yet.
                 </p>
               )}
@@ -637,11 +643,11 @@ export function InstrumentDetail() {
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+    <div className="flex items-center justify-between py-1">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+      <span className={cn('font-medium', mono && 'font-mono tabular-nums')}>{value}</span>
     </div>
   )
 }
@@ -659,22 +665,22 @@ function Counter({
   onClear?: () => void
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-secondary/30 px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
       <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-3">
         {onClear && value > 0 && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
             onClick={onClear}
             title="Reset this counter to zero"
           >
-            <Eraser className="h-3.5 w-3.5" />
+            <Eraser className="h-3.5 w-3.5" strokeWidth={1.75} />
             Clear
           </Button>
         )}
-        <span className={cn('text-2xl font-bold', tone)}>
+        <span className={cn('text-2xl font-light tabular-nums', tone)}>
           <AnimatedNumber value={value} />
         </span>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, Play, Square, Trash2, Cpu, Radio, ArrowRight, Pencil } from 'lucide-react'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AddInstrumentModal } from '@/components/AddInstrumentModal'
 import { EditInstrumentModal } from '@/components/EditInstrumentModal'
 import { useAppStore } from '@/store/useAppStore'
@@ -41,14 +42,17 @@ export function Instruments() {
 
   return (
     <motion.div className="space-y-6" variants={staggerContainer} initial="hidden" animate="show">
-      <motion.div className="flex items-center justify-between" variants={fadeInUp}>
-        <p className="text-sm text-muted-foreground">
-          {instruments.length} configured - {drivers.length} drivers available
-        </p>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> Add Instrument
-        </Button>
+      <motion.div variants={fadeInUp}>
+        <PageHeader title="Instruments" subtitle="Configure and control connected analyzers">
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" strokeWidth={1.75} /> Add instrument
+          </Button>
+        </PageHeader>
       </motion.div>
+
+      <motion.p className="text-sm text-muted-foreground" variants={fadeInUp}>
+        {instruments.length} configured - {drivers.length} drivers available
+      </motion.p>
 
       <motion.div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" variants={staggerContainer}>
         <AnimatePresence>
@@ -76,17 +80,17 @@ export function Instruments() {
               }}
               className="group relative h-full cursor-pointer overflow-hidden"
             >
-              <CardContent className="space-y-4 p-5">
+              <CardContent className="space-y-4 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 text-primary">
-                      <Cpu className="h-5 w-5" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-foreground">
+                      <Cpu className="h-5 w-5" strokeWidth={1.75} />
                     </div>
                     <div>
-                      <p className="font-semibold leading-tight">{inst.name}</p>
+                      <p className="font-medium leading-tight">{inst.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {driverName(inst.driverId)}
-                        {inst.serialNumber ? ` · S/N ${inst.serialNumber}` : ''}
+                        {inst.serialNumber ? ` Â· S/N ${inst.serialNumber}` : ''}
                       </p>
                     </div>
                   </div>
@@ -95,33 +99,33 @@ export function Instruments() {
 
                 <div className="flex flex-wrap gap-2">
                   <Badge tone="primary">{inst.protocol.toUpperCase()}</Badge>
-                  <Badge tone="muted">
-                    <Radio className="h-3 w-3" />
+                  <Badge tone="muted" className="font-mono">
+                    <Radio className="h-3 w-3" strokeWidth={1.75} />
                     {inst.connection.transport === 'serial'
                       ? inst.connection.serialPath
                       : `:${inst.connection.port}`}
                   </Badge>
-                  {inst.connection.hostQuery && <Badge tone="accent">Host Query</Badge>}
+                  {inst.connection.hostQuery && <Badge tone="accent">Host query</Badge>}
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 rounded-lg bg-secondary/30 p-3 text-center">
+                <div className="grid grid-cols-3 gap-2 rounded-2xl bg-secondary/40 p-3 text-center">
                   <div>
-                    <p className="text-lg font-bold">
+                    <p className="text-lg font-semibold tabular-nums">
                       <AnimatedNumber value={inst.messagesReceived} />
                     </p>
-                    <p className="text-[10px] uppercase text-muted-foreground">Messages</p>
+                    <p className="microlabel">Messages</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-success">
+                    <p className="text-lg font-semibold tabular-nums text-success">
                       <AnimatedNumber value={inst.resultsProcessed} />
                     </p>
-                    <p className="text-[10px] uppercase text-muted-foreground">Results</p>
+                    <p className="microlabel">Results</p>
                   </div>
                   <div>
-                    <p className={cn('text-lg font-bold', inst.errors > 0 && 'text-destructive')}>
+                    <p className={cn('text-lg font-semibold tabular-nums', inst.errors > 0 && 'text-destructive')}>
                       <AnimatedNumber value={inst.errors} />
                     </p>
-                    <p className="text-[10px] uppercase text-muted-foreground">Errors</p>
+                    <p className="microlabel">Errors</p>
                   </div>
                 </div>
 
@@ -139,7 +143,7 @@ export function Instruments() {
                         toggle(inst.id, running)
                       }}
                     >
-                      {running ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                      {running ? <Square className="h-3.5 w-3.5" strokeWidth={1.75} /> : <Play className="h-3.5 w-3.5" strokeWidth={1.75} />}
                       {running ? 'Stop' : 'Start'}
                     </Button>
                     <Button
@@ -151,7 +155,7 @@ export function Instruments() {
                       }}
                       title="Edit configuration"
                     >
-                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                      <Pencil className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -161,7 +165,7 @@ export function Instruments() {
                         remove(inst.id)
                       }}
                     >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      <Trash2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -171,7 +175,7 @@ export function Instruments() {
                         navigate(`/instruments/${inst.id}`)
                       }}
                     >
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                     </Button>
                   </div>
                 </div>
@@ -184,15 +188,13 @@ export function Instruments() {
 
         <motion.button
           variants={fadeInUp}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
           onClick={() => setOpen(true)}
-          className="group flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border/60 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+          className="group flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/50 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary/15">
-            <Plus className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/50 transition-colors duration-300 group-hover:bg-secondary">
+            <Plus className="h-6 w-6" strokeWidth={1.75} />
           </div>
-          <span className="text-sm font-medium">Add Instrument</span>
+          <span className="text-sm font-medium">Add instrument</span>
         </motion.button>
       </motion.div>
 

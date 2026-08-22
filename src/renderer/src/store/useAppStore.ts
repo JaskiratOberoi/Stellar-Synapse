@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type {
   AppSettings,
+  CloudSyncStatus,
   DashboardStats,
   InstrumentDriverInfo,
   InstrumentRuntime,
@@ -27,6 +28,7 @@ interface AppState {
   settings: AppSettings | null
   lisSettings: LisConnectionSettings | null
   stats: DashboardStats | null
+  cloudStatus: CloudSyncStatus | null
 
   init: () => Promise<void>
   refreshInstruments: () => Promise<void>
@@ -49,6 +51,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: null,
   lisSettings: null,
   stats: null,
+  cloudStatus: null,
 
   init: async () => {
     const api = window.api
@@ -101,6 +104,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         })
       )
       api.logs.onLog((entry) => set((st) => ({ logs: [entry, ...st.logs].slice(0, 500) })))
+      api.cloud.status().then((cloudStatus) => set({ cloudStatus })).catch(() => undefined)
+      api.cloud.onStatus((cloudStatus) => set({ cloudStatus }))
 
       // Periodic dashboard refresh.
       setInterval(() => get().refreshStats(), 4000)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Radar,
@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AddInstrumentModal, type InstrumentPrefill } from '@/components/AddInstrumentModal'
 import { useDiscoveryStore } from '@/store/useDiscoveryStore'
 import { cn } from '@/lib/utils'
@@ -45,7 +46,7 @@ export function Discovery() {
 
   const candidates = useMemo(() => hosts.filter((h) => h.guessedDriverId), [hosts])
 
-  // Free IPs = the scanned /24 (.1–.254) minus every host that responded or was
+  // Free IPs = the scanned /24 (.1â€“.254) minus every host that responded or was
   // in the ARP cache. Heuristic ("no device answered"), handy for picking a
   // static address when adding an instrument.
   const freeIps = useMemo(() => {
@@ -74,10 +75,26 @@ export function Discovery() {
 
   return (
     <motion.div className="space-y-6" variants={staggerContainer} initial="hidden" animate="show">
-      <motion.div className="flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/10 p-4" variants={fadeInUp}>
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+      <motion.div variants={fadeInUp}>
+        <PageHeader title="Network discovery" subtitle="Read-only scan for instruments on your LAN">
+          {scanning ? (
+            <Button variant="danger" onClick={stop}>
+              <Square className="h-4 w-4" strokeWidth={1.75} /> Stop
+            </Button>
+          ) : (
+            <Button onClick={() => scan(cidr)} disabled={!cidr}>
+              <Radar className="h-4 w-4" strokeWidth={1.75} /> Scan network
+            </Button>
+          )}
+        </PageHeader>
+      </motion.div>
+
+      <motion.div className="flex items-start gap-3 rounded-3xl bg-secondary/40 p-4" variants={fadeInUp}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+          <ShieldCheck className="h-5 w-5" strokeWidth={1.75} />
+        </div>
         <div className="text-sm">
-          <p className="font-semibold text-accent">Read-only discovery</p>
+          <p className="font-medium">Read-only discovery</p>
           <p className="text-muted-foreground">
             Stellar Synapse probes the selected subnet using TCP connect checks and reads the local
             ARP cache. No data is sent to any device and no settings are changed.
@@ -87,8 +104,8 @@ export function Discovery() {
 
       <motion.div variants={fadeInUp}>
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <Radar className={cn('h-5 w-5 text-primary', scanning && 'animate-spin')} />
+        <CardContent className="flex flex-wrap items-center gap-3 p-6">
+          <Radar className={cn('h-5 w-5 text-muted-foreground', scanning && 'animate-spin')} strokeWidth={1.75} />
           <Select value={cidr} onChange={(e) => setCidr(e.target.value)} className="w-72" disabled={scanning}>
             {subnets.map((s) => (
               <option key={s.cidr + s.interfaceName} value={s.cidr}>
@@ -97,15 +114,6 @@ export function Discovery() {
               </option>
             ))}
           </Select>
-          {scanning ? (
-            <Button variant="danger" onClick={stop}>
-              <Square className="h-4 w-4" /> Stop
-            </Button>
-          ) : (
-            <Button onClick={() => scan(cidr)} disabled={!cidr}>
-              <Radar className="h-4 w-4" /> Scan Network
-            </Button>
-          )}
 
           <div className="ml-auto flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
@@ -116,18 +124,18 @@ export function Discovery() {
 
           {progress && (
             <div className="w-full">
-              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+              <div className="mb-1.5 flex justify-between text-xs text-muted-foreground">
                 <span>{scanning ? `Scanning ${progress.cidr}...` : 'Scan complete'}</span>
-                <span>{progress.percent}%</span>
+                <span className="tabular-nums">{progress.percent}%</span>
               </div>
               <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                  className="h-full rounded-full bg-foreground"
                   animate={{ width: `${progress.percent}%` }}
                   transition={{ ease: 'easeOut', duration: 0.4 }}
                 />
                 {scanning && (
-                  <div className="pointer-events-none absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <div className="pointer-events-none absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.1),transparent)]" />
                 )}
               </div>
             </div>
@@ -142,12 +150,12 @@ export function Discovery() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border/60 text-left text-xs uppercase text-muted-foreground">
-                  <th className="px-5 py-3 font-medium">IP Address</th>
-                  <th className="px-5 py-3 font-medium">Type</th>
-                  <th className="px-5 py-3 font-medium">MAC / Vendor</th>
-                  <th className="px-5 py-3 font-medium">Open Ports</th>
-                  <th className="px-5 py-3 text-right font-medium">Action</th>
+                <tr className="border-b border-border text-left">
+                  <th className="microlabel px-5 py-3 text-left">IP address</th>
+                  <th className="microlabel px-5 py-3 text-left">Type</th>
+                  <th className="microlabel px-5 py-3 text-left">MAC / vendor</th>
+                  <th className="microlabel px-5 py-3 text-left">Open ports</th>
+                  <th className="microlabel px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,15 +169,15 @@ export function Discovery() {
                       initial="hidden"
                       animate="show"
                       exit="exit"
-                      className="border-b border-border/30 hover:bg-secondary/30"
+                      className="border-b border-border transition-colors hover:bg-secondary/40"
                     >
                       <td className="px-5 py-3">
-                        <span className="font-mono font-semibold">{h.ip}</span>
+                        <span className="font-mono font-medium tabular-nums">{h.ip}</span>
                         {h.isSelf && <Badge tone="muted" className="ml-2">self</Badge>}
                       </td>
                       <td className="px-5 py-3">
                         <span className="inline-flex items-center gap-2">
-                          <kind.icon className="h-4 w-4 text-muted-foreground" />
+                          <kind.icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
                           <Badge tone={kind.tone}>{kind.label}</Badge>
                         </span>
                         {h.guessedInstrument && (
@@ -196,6 +204,7 @@ export function Discovery() {
                               key={p.port}
                               tone={p.service.startsWith('Instrument') ? 'primary' : 'muted'}
                               title={p.service}
+                              className="font-mono tabular-nums"
                             >
                               {p.port}
                             </Badge>
@@ -205,7 +214,7 @@ export function Discovery() {
                       <td className="px-5 py-3 text-right">
                         {!h.isSelf && (h.guessedDriverId || h.openPorts.length > 0) ? (
                           <Button variant="ghost" size="sm" onClick={() => addAsInstrument(h)}>
-                            <Plus className="h-3.5 w-3.5" /> Add
+                            <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add
                           </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">-</span>
@@ -217,8 +226,8 @@ export function Discovery() {
                 </AnimatePresence>
                 {hosts.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-16 text-center text-sm text-muted-foreground">
-                      {scanning ? 'Scanning the network...' : 'No scan yet. Choose a subnet and press Scan Network.'}
+                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      {scanning ? 'Scanning the network...' : 'No scan yet. Choose a subnet and press Scan network.'}
                     </td>
                   </tr>
                 )}
@@ -232,12 +241,12 @@ export function Discovery() {
       {progress?.done && !scanning && (
         <motion.div variants={fadeInUp}>
           <Card>
-            <CardContent className="p-5">
+            <CardContent className="p-6">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold">Available IPs</p>
+                <p className="text-sm font-medium">Available IPs</p>
                 <Badge tone="success">{freeIps.length}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  No device responded on this subnet — likely free to assign (click to copy)
+                  No device responded on this subnet â€” likely free to assign (click to copy)
                 </span>
               </div>
               <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
@@ -248,8 +257,8 @@ export function Discovery() {
                     onClick={() => copyIp(ip)}
                     title="Click to copy"
                     className={cn(
-                      'rounded-md border border-border/60 bg-secondary/40 px-2 py-1 font-mono text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground',
-                      copiedIp === ip && 'border-success/60 text-success'
+                      'rounded-full bg-secondary/60 px-2.5 py-1 font-mono text-xs tabular-nums text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                      copiedIp === ip && 'bg-success/15 text-success'
                     )}
                   >
                     {copiedIp === ip ? 'Copied!' : ip}

@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-22T00:00:00Z",
+  "title": "Design System: Stellar Synapse",
+  "extensions": {
+    "colorMeta": {
+      "graphite-ground": { "role": "neutral", "displayName": "Graphite Ground", "canonical": "hsl(220 9% 5%)", "tonalRamp": ["hsl(220 9% 5%)", "hsl(220 8% 8%)", "hsl(220 7% 12%)", "hsl(220 6% 14%)", "hsl(220 6% 28%)", "hsl(218 8% 50%)", "hsl(218 8% 64%)", "hsl(216 12% 92%)"] },
+      "graphite-plate": { "role": "neutral", "displayName": "Graphite Plate", "canonical": "hsl(220 8% 8%)", "tonalRamp": ["hsl(220 8% 5%)", "hsl(220 8% 8%)", "hsl(220 8% 15%)", "hsl(220 8% 25%)", "hsl(220 8% 40%)", "hsl(220 8% 60%)", "hsl(220 8% 78%)", "hsl(220 8% 94%)"] },
+      "graphite-well": { "role": "neutral", "displayName": "Graphite Well", "canonical": "hsl(220 7% 12%)", "tonalRamp": ["hsl(220 7% 6%)", "hsl(220 7% 12%)", "hsl(220 7% 20%)", "hsl(220 7% 32%)", "hsl(220 7% 46%)", "hsl(220 7% 62%)", "hsl(220 7% 80%)", "hsl(220 7% 94%)"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "hsl(216 12% 92%)", "tonalRamp": ["hsl(216 12% 15%)", "hsl(216 12% 28%)", "hsl(216 12% 42%)", "hsl(218 8% 64%)", "hsl(216 12% 74%)", "hsl(216 12% 84%)", "hsl(216 12% 92%)", "hsl(216 14% 96%)"] },
+      "moonlight": { "role": "primary", "displayName": "Moonlight", "canonical": "hsl(216 14% 93%)", "tonalRamp": ["hsl(216 14% 15%)", "hsl(216 14% 28%)", "hsl(216 14% 42%)", "hsl(216 14% 56%)", "hsl(216 14% 70%)", "hsl(216 14% 80%)", "hsl(216 14% 88%)", "hsl(216 14% 93%)"] },
+      "sage": { "role": "secondary", "displayName": "Sage", "canonical": "hsl(140 14% 72%)", "tonalRamp": ["hsl(140 14% 15%)", "hsl(140 14% 26%)", "hsl(140 16% 36%)", "hsl(140 16% 46%)", "hsl(140 14% 56%)", "hsl(140 14% 64%)", "hsl(140 14% 72%)", "hsl(140 14% 88%)"] },
+      "signal-green": { "role": "status", "displayName": "Signal Green", "canonical": "hsl(145 58% 46%)", "tonalRamp": ["hsl(145 58% 14%)", "hsl(145 60% 22%)", "hsl(145 60% 33%)", "hsl(145 58% 40%)", "hsl(145 58% 46%)", "hsl(145 52% 58%)", "hsl(145 48% 72%)", "hsl(145 44% 88%)"] },
+      "signal-amber": { "role": "status", "displayName": "Signal Amber", "canonical": "hsl(32 92% 56%)", "tonalRamp": ["hsl(32 90% 15%)", "hsl(32 90% 25%)", "hsl(30 90% 40%)", "hsl(32 92% 48%)", "hsl(32 92% 56%)", "hsl(32 90% 66%)", "hsl(32 88% 78%)", "hsl(32 86% 90%)"] },
+      "signal-red": { "role": "status", "displayName": "Signal Red", "canonical": "hsl(4 74% 56%)", "tonalRamp": ["hsl(4 74% 15%)", "hsl(4 74% 26%)", "hsl(4 72% 36%)", "hsl(4 72% 46%)", "hsl(4 74% 56%)", "hsl(4 72% 66%)", "hsl(4 70% 78%)", "hsl(4 68% 90%)"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "hsl(218 10% 88% / 0.08)", "tonalRamp": ["hsl(218 10% 88% / 0.04)", "hsl(218 10% 88% / 0.06)", "hsl(218 10% 88% / 0.08)", "hsl(218 10% 88% / 0.1)", "hsl(218 10% 88% / 0.12)", "hsl(218 10% 88% / 0.16)", "hsl(218 10% 88% / 0.22)", "hsl(218 10% 88% / 0.3)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page headlines and modal titles; extralight, tracking-tight." },
+      "display-number": { "displayName": "Display Number", "purpose": "Hero count numerals; weight 200, tabular-nums so live counters don't jitter." },
+      "title": { "displayName": "Title", "purpose": "Card titles and the app name; 15px medium, tracking-tight." },
+      "body": { "displayName": "Body", "purpose": "Default UI text; 15px Urbanist with 0.01em tracking." },
+      "microlabel": { "displayName": "Microlabel", "purpose": "Metadata voice: form labels, table heads, stat captions, pipeline stages. Uppercase, 0.14em tracked." },
+      "mono": { "displayName": "Mono", "purpose": "Machine data only: sample IDs, IPs, timestamps, raw frames, versions." }
+    },
+    "shadows": [
+      { "name": "raised-plate", "value": "0 24px 48px -24px hsl(220 40% 2% / 0.7)", "purpose": "Hero stat plates only (.surface-raised); ordinary cards are shadowless." },
+      { "name": "modal", "value": "shadow-2xl + rgba(0,0,0,0.5) tint on the frosted dialog", "purpose": "The modal/command layer; the only other shadow in the system." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "0.32s cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default entrance/state easing (fadeInUp, scaleIn, modal)." },
+      { "name": "spring", "value": "spring(stiffness 420, damping 32, mass 0.8)", "purpose": "Nav active pill, switch knob, press feedback." },
+      { "name": "soft-spring", "value": "spring(stiffness 260, damping 26)", "purpose": "Gentler spring for larger elements." },
+      { "name": "stagger", "value": "staggerChildren 0.06s, delayChildren 0.04s", "purpose": "Page grid mount sequencing." },
+      { "name": "page-transition", "value": "in 0.28s rise 8px; out 0.18s easeIn", "purpose": "Route changes." },
+      { "name": "reduced-motion", "value": "global prefers-reduced-motion guard collapses all animation/transition durations", "purpose": "Accessibility invariant in globals.css." }
+    ],
+    "breakpoints": [
+      { "name": "note", "value": "desktop-only Electron; lg/xl/2xl used only to tune desktop density, no mobile layouts" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The filled light pill — the reference's primary action.",
+      "html": "<button class=\"ds-btn-primary\">Add instrument</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 1.25rem; gap: 0.5rem; border: none; border-radius: 9999px; background: hsl(216 14% 93%); color: hsl(220 9% 8%); font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease-out; } .ds-btn-primary:hover { background: hsl(216 14% 93% / 0.85); } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 1px hsl(220 9% 5%), 0 0 0 3px hsl(216 14% 80% / 0.6); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Graphite well pill for supporting actions.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 1.25rem; border: none; border-radius: 9999px; background: hsl(220 7% 12%); color: hsl(216 12% 88%); font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease-out; } .ds-btn-secondary:hover { background: hsl(220 6% 14%); } .ds-btn-secondary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet pill; text-only until hover fills it.",
+      "html": "<button class=\"ds-btn-ghost\">View logs</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 1.25rem; border: none; border-radius: 9999px; background: transparent; color: hsl(218 8% 64%); font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease-out, color 0.2s ease-out; } .ds-btn-ghost:hover { background: hsl(220 7% 12%); color: hsl(216 12% 92%); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Tinted pill chip — low-alpha status fill with toned text, no border.",
+      "html": "<span class=\"ds-badge-success\">Online</span> <span class=\"ds-badge-warning\">Connecting</span> <span class=\"ds-badge-danger\">Error</span>",
+      "css": ".ds-badge-success, .ds-badge-warning, .ds-badge-danger { display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; padding: 0.25rem 0.625rem; font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; } .ds-badge-success { background: hsl(145 58% 46% / 0.15); color: hsl(145 58% 46%); } .ds-badge-warning { background: hsl(32 92% 56% / 0.15); color: hsl(32 92% 56%); } .ds-badge-danger { background: hsl(4 74% 56% / 0.15); color: hsl(4 74% 56%); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Soft filled field — no hard outline until focus.",
+      "html": "<label class=\"ds-microlabel\" for=\"ds-ip\">Host address</label><br/><input class=\"ds-input\" id=\"ds-ip\" placeholder=\"192.168.1.50\" />",
+      "css": ".ds-input { height: 40px; width: 100%; max-width: 280px; border-radius: 1rem; border: 1px solid transparent; background: hsl(220 7% 13%); padding: 0 1rem; font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; color: hsl(216 12% 92%); outline: none; caret-color: hsl(140 14% 72%); transition: all 0.2s; } .ds-input::placeholder { color: hsl(218 8% 64% / 0.7); } .ds-input:hover { background: hsl(220 6% 14%); } .ds-input:focus { border-color: hsl(216 12% 92% / 0.25); background: hsl(220 8% 8%); box-shadow: 0 0 0 2px hsl(216 14% 80% / 0.25); } .ds-microlabel { font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: hsl(218 8% 64%); }"
+    },
+    {
+      "name": "Pill Navigation",
+      "kind": "nav",
+      "description": "Top pill rail; active item carries a graphite-well pill, inactive items are quiet text.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-active\" href=\"#\">Dashboard</a><a class=\"ds-nav-item\" href=\"#\">Instruments</a><a class=\"ds-nav-item\" href=\"#\">Monitor</a><a class=\"ds-nav-item\" href=\"#\">Logs</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 0.25rem; background: hsl(220 9% 5%); padding: 0.5rem; border-radius: 9999px; } .ds-nav-item { border-radius: 9999px; padding: 0.5rem 1rem; font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; color: hsl(218 8% 64%); text-decoration: none; transition: color 0.2s; } .ds-nav-item:hover { color: hsl(216 12% 92%); } .ds-nav-active { background: hsl(220 7% 12%); color: hsl(216 12% 92%); font-weight: 500; }"
+    },
+    {
+      "name": "Stat Plate",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Raised hero plate with an ultralight display numeral — the across-the-room count.",
+      "html": "<div class=\"ds-plate\"><div class=\"ds-plate-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.801 10A10 10 0 1 1 17 3.335\"/><path d=\"m9 11 3 3L22 4\"/></svg></div><div class=\"ds-plate-row\"><div><p class=\"ds-plate-label\">Online</p><p class=\"ds-plate-number\">12</p></div><p class=\"ds-plate-meta\">of 14</p></div></div>",
+      "css": ".ds-plate { background: linear-gradient(180deg, hsl(220 8% 8%) 0%, hsl(220 8% 8% / 0.75) 100%); border: 1px solid hsl(218 10% 88% / 0.08); border-radius: 1.5rem; box-shadow: 0 24px 48px -24px hsl(220 40% 2% / 0.7); padding: 1.5rem; min-width: 240px; font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; } .ds-plate-icon { display: flex; height: 36px; width: 36px; align-items: center; justify-content: center; border-radius: 9999px; background: hsl(145 58% 46% / 0.15); color: hsl(145 58% 46%); } .ds-plate-row { margin-top: 1.25rem; display: flex; align-items: flex-end; justify-content: space-between; } .ds-plate-label { font-size: 0.9375rem; color: hsl(218 8% 64%); margin: 0; } .ds-plate-number { font-size: 3.75rem; font-weight: 200; letter-spacing: -0.01em; line-height: 1; font-variant-numeric: tabular-nums; color: hsl(216 12% 92%); margin: 0.25rem 0 0; } .ds-plate-meta { padding-bottom: 0.25rem; font-size: 0.875rem; color: hsl(218 8% 64%); margin: 0; }"
+    },
+    {
+      "name": "Status Dot",
+      "kind": "custom",
+      "description": "Signature state mark: toned dot plus toned label; offline is a deliberate hollow ring.",
+      "html": "<span class=\"ds-status\"><span class=\"ds-dot ds-dot-online\"></span><span class=\"ds-status-label ds-label-online\">Online</span></span> <span class=\"ds-status\"><span class=\"ds-dot ds-dot-offline\"></span><span class=\"ds-status-label ds-label-offline\">Offline</span></span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 0.5rem; margin-right: 1rem; font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; } .ds-dot { display: inline-block; height: 8px; width: 8px; border-radius: 9999px; } .ds-dot-online { background: hsl(145 58% 46%); } .ds-dot-offline { background: transparent; border: 1.5px solid hsl(218 8% 64%); } .ds-status-label { font-size: 0.75rem; font-weight: 500; } .ds-label-online { color: hsl(145 58% 46%); } .ds-label-offline { color: hsl(218 8% 64%); }"
+    },
+    {
+      "name": "Frosted Modal",
+      "kind": "custom",
+      "description": "The one place glass is spent: blurred graphite dialog with an extralight title.",
+      "html": "<div class=\"ds-modal\"><h2 class=\"ds-modal-title\">Add instrument</h2><p class=\"ds-modal-desc\">Choose a driver and connection for the new analyzer.</p></div>",
+      "css": ".ds-modal { background: hsl(220 8% 7% / 0.82); backdrop-filter: blur(20px) saturate(1.1); border: 1px solid hsl(218 10% 88% / 0.12); border-radius: 1.5rem; padding: 1.5rem; max-width: 32rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif; } .ds-modal-title { font-size: 1.5rem; font-weight: 200; letter-spacing: -0.025em; color: hsl(216 12% 92%); margin: 0; } .ds-modal-desc { margin: 0.25rem 0 0; font-size: 0.875rem; color: hsl(218 8% 64%); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Graphite Control Room",
+    "overview": "Stellar Synapse is a desktop-only Electron operator console rendered as a quiet, near-black control room. Everything at rest is graphite: the ground, the plates, the controls, even the charts. Color is rationed to a single job — connection and pipeline status (green flowing, amber trying, red broken) plus one soft sage highlight for 'armed and listening' states and accents. The direction contract explicitly refuses the boxed sidebar-admin template and the glowing-gradient dashboard, and the build follows through: navigation is a top pill rail, cards are soft 24px-radius plates with hairline edges, and the loudest thing on any screen is an ultralight display numeral you can read from across the lab.\n\nThe tone is calm competence. Interactive surfaces lighten instead of lifting; edges are foreground-tinted hairlines, never solid strokes; frosted glass is spent exactly once, on the modal layer. A daylight variant (.light class) re-points the same tokens to a bright bench palette without changing any of the logic — one monochrome system, two exposures.",
+    "keyCharacteristics": [
+      "Near-black graphite ground with tonal plate layering; shadow used only under hero plates",
+      "Color is status semantics only (green/amber/red) plus one sage accent",
+      "Every control is a pill; every card is a soft large-radius plate",
+      "Ultralight (weight 200) tabular display numerals; wide-tracked uppercase micro labels",
+      "Monochrome hairline charts drawn in currentColor with dashed reference targets",
+      "Fonts bundled locally — the app must render identically on offline lab PCs"
+    ],
+    "rules": [
+      { "name": "The Status-Only Rule", "body": "Chromatic color appears only as status semantics (green/amber/red) plus the single sage accent. If an element is not communicating state, it is graphite. Status fills are always low-alpha tints (/15 background with full-strength text), never saturated blocks.", "section": "colors" },
+      { "name": "The Hairline Rule", "body": "Every border is the foreground-tinted hairline at --border-alpha (8% dark, 10% light). No solid strokes, no tinted borders on chips — edges stay quiet; hover may double the alpha, nothing more.", "section": "colors" },
+      { "name": "The Mono-Only-For-Data Rule", "body": "Monospace is reserved for machine-originated data (IDs, IPs, timestamps, frames, versions). UI copy, labels, and headings are always Urbanist.", "section": "typography" },
+      { "name": "The Weight-Is-Hierarchy Rule", "body": "Scale jumps pair with weight drops: the bigger the type, the lighter it gets (text-6xl at weight 200; 11px labels at weight 600). Never a bold headline.", "section": "typography" },
+      { "name": "The Lighten-Don't-Lift Rule", "body": "Interactive plates respond by lightening (.surface-hover → secondary fill, hairline alpha doubled) — no translate, no scale-up, no hover shadow. Calm, no parallax.", "section": "elevation" },
+      { "name": "The One-Glass Rule", "body": "Frosted glass (.frost) is reserved for the modal/command layer. Page surfaces are opaque graphite.", "section": "elevation" },
+      { "name": "The Pill Rule", "body": "If it can be clicked, it is a pill. Rectangular interactive elements do not exist in this system.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do ration color by the Status-Only Rule — green/amber/red for state, sage as the lone accent, graphite for everything else.",
+      "Do make every interactive element a pill and every card a 24px plate with a hairline edge.",
+      "Do set hero numerals in .display-number (weight 200, tabular) and metadata in .microlabel (11px, 0.14em, uppercase).",
+      "Do draw charts in currentColor hairlines with dashed reference targets and hsl(var(--…)) inline styles so both themes work untouched.",
+      "Do respond to hover by lightening the fill (.surface-hover, hover:bg-secondary/60 rows); keep motion to the shared presets in lib/motion.ts and honor reduced-motion.",
+      "Do keep all assets (fonts included) in the bundle — offline lab PCs are the operating floor."
+    ],
+    "donts": [
+      "Don't introduce a boxed sidebar layout, gradient washes, or glow effects — the world refuses the sidebar-admin and glowing-dashboard templates.",
+      "Don't use saturated color blocks; status fills are /15 tints with toned text.",
+      "Don't put solid or tinted borders on anything; the hairline (border-border) is the only edge.",
+      "Don't lift, scale up, or shadow surfaces on hover; shadow exists only on .surface-raised hero plates and the modal.",
+      "Don't use monospace for UI copy, or bold weights for headlines — data is mono, hierarchy is lightness.",
+      "Don't spend frost outside the modal layer."
+    ]
+  }
+}

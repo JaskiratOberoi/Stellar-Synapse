@@ -1,8 +1,7 @@
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Topbar } from '@/components/layout/Topbar'
+import { TopNav } from '@/components/layout/TopNav'
 import { useAppStore } from '@/store/useAppStore'
 import { pageTransition } from '@/lib/motion'
 import { Dashboard } from '@/pages/Dashboard'
@@ -19,21 +18,21 @@ import { Waypoints } from 'lucide-react'
 
 function Loading() {
   return (
-    <div className="flex h-screen items-center justify-center aurora">
+    <div className="flex h-screen items-center justify-center">
       <motion.div
-        className="flex flex-col items-center gap-3"
-        initial={{ opacity: 0, scale: 0.9 }}
+        className="flex flex-col items-center gap-4"
+        initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <motion.div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-xl shadow-primary/30"
-          animate={{ scale: [1, 1.08, 1] }}
+          className="flex h-14 w-14 items-center justify-center rounded-3xl bg-secondary text-foreground"
+          animate={{ opacity: [1, 0.55, 1] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <Waypoints className="h-7 w-7 text-white" />
+          <Waypoints className="h-6 w-6" strokeWidth={1.5} />
         </motion.div>
-        <p className="text-sm text-muted-foreground">Starting Stellar Synapse...</p>
+        <p className="text-sm font-light text-muted-foreground">Starting Stellar Synapse…</p>
       </motion.div>
     </div>
   )
@@ -74,7 +73,7 @@ function AnimatedRoutes() {
 function ErrorScreen({ message }: { message: string }) {
   return (
     <div className="flex h-screen items-center justify-center p-8">
-      <div className="max-w-md rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center">
+      <div className="max-w-md rounded-3xl bg-destructive/10 p-8 text-center">
         <p className="text-sm font-semibold text-destructive">Failed to start</p>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       </div>
@@ -104,14 +103,13 @@ export default function App() {
 
   return (
     <HashRouter>
-      <div className="flex h-screen overflow-hidden aurora">
-        <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Topbar />
-          <main className="flex-1 overflow-y-auto p-6">
+      <div className="flex h-screen flex-col overflow-hidden">
+        <TopNav />
+        <main className="flex-1 overflow-y-auto px-6 pb-8 pt-2">
+          <div className="mx-auto max-w-[1500px]">
             <AnimatedRoutes />
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </HashRouter>
   )

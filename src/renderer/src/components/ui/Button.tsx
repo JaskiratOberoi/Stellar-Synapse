@@ -9,19 +9,20 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size
 }
 
+/* Every control is a pill. Primary is the filled light pill of the reference;
+   danger/success fill only on explicit destructive/confirming actions. */
 const variants: Record<Variant, string> = {
-  primary:
-    'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-px',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  ghost: 'hover:bg-secondary/70 text-foreground',
-  outline: 'border border-border bg-transparent hover:bg-secondary/60 text-foreground',
-  danger: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:-translate-y-px',
-  success: 'bg-success text-success-foreground hover:bg-success/90 hover:-translate-y-px'
+  primary: 'bg-primary text-primary-foreground hover:bg-primary/85',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-muted',
+  ghost: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+  outline: 'border border-border bg-transparent text-foreground hover:bg-secondary',
+  danger: 'bg-destructive/15 text-destructive hover:bg-destructive/25',
+  success: 'bg-success/15 text-success hover:bg-success/25'
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
+  sm: 'h-8 px-3.5 text-xs gap-1.5',
+  md: 'h-10 px-5 text-sm gap-2',
   lg: 'h-11 px-6 text-sm gap-2',
   icon: 'h-9 w-9'
 }
@@ -31,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 ease-out active:scale-[0.97] active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center rounded-full font-medium transition-colors duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
         sizes[size],
         className

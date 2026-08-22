@@ -2,70 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Urbanist variable — bundled so offline lab PCs never fall back to a system
+   display face. Weight axis 100–900 carries the ultralight display numerals. */
+@font-face {
+  font-family: 'Urbanist';
+  src: url('../assets/fonts/urbanist-var.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Urbanist';
+  src: url('../assets/fonts/urbanist-var-italic.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    --background: 222 47% 7%;
-    --foreground: 213 31% 91%;
-    --card: 222 44% 10%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 246 80% 65%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 30% 16%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 28% 15%;
-    --muted-foreground: 215 18% 60%;
-    --accent: 190 90% 50%;
-    --accent-foreground: 222 47% 7%;
-    --destructive: 0 72% 58%;
+    /* Graphite control-room. Raw HSL triplets; alpha applied at use sites. */
+    --background: 220 9% 5%;
+    --foreground: 216 12% 92%;
+    --card: 220 8% 8%;
+    --card-foreground: 216 12% 92%;
+    --popover: 220 8% 7%;
+    --popover-foreground: 216 12% 92%;
+    /* Primary action = the filled light pill of the reference. */
+    --primary: 216 14% 93%;
+    --primary-foreground: 220 9% 8%;
+    --secondary: 220 7% 12%;
+    --secondary-foreground: 216 12% 88%;
+    --muted: 220 6% 14%;
+    --muted-foreground: 218 8% 64%;
+    /* Sage — the one non-status tint, used sparingly (highlight card, accents). */
+    --accent: 140 14% 72%;
+    --accent-foreground: 220 9% 8%;
+    --destructive: 4 74% 56%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 62% 45%;
+    --success: 145 58% 46%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 7%;
-    --border: 222 28% 18%;
-    --input: 222 28% 18%;
-    --ring: 246 80% 65%;
-    --radius: 0.75rem;
+    --warning: 32 92% 56%;
+    --warning-foreground: 220 9% 8%;
+    --border: 218 10% 88%;
+    --border-alpha: 0.08;
+    --input: 220 7% 13%;
+    --ring: 216 14% 80%;
+    --radius: 1.25rem;
   }
 
   .light {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Daylight variant for bright lab benches; same quiet monochrome logic. */
+    --background: 216 20% 96%;
+    --foreground: 220 12% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 12% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 246 80% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 214 32% 93%;
-    --muted-foreground: 215 16% 42%;
-    --accent: 190 90% 42%;
+    --popover-foreground: 220 12% 12%;
+    --primary: 220 10% 12%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 216 14% 91%;
+    --secondary-foreground: 220 12% 16%;
+    --muted: 216 14% 90%;
+    --muted-foreground: 218 8% 42%;
+    --accent: 140 16% 46%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
+    --destructive: 4 72% 46%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 62% 38%;
+    --success: 145 60% 33%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 48%;
+    --warning: 30 90% 40%;
     --warning-foreground: 0 0% 100%;
-    --border: 214 32% 86%;
-    --input: 214 32% 86%;
-    --ring: 246 80% 60%;
+    --border: 220 12% 10%;
+    --border-alpha: 0.1;
+    --input: 216 14% 92%;
+    --ring: 220 10% 30%;
   }
 
   * {
-    @apply border-border;
+    border-color: hsl(var(--border) / var(--border-alpha));
+  }
+
+  html {
+    color-scheme: dark;
+  }
+  html.light {
+    color-scheme: light;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'cv11', 'ss01';
+    font-family: 'Urbanist', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    letter-spacing: 0.01em;
     overflow: hidden;
   }
 
+  /* Browser surfaces carry the design too. */
+  ::selection {
+    background: hsl(var(--foreground) / 0.14);
+  }
+  input,
+  textarea {
+    caret-color: hsl(var(--accent));
+  }
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -74,99 +114,80 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted rounded-full border-2 border-solid border-transparent bg-clip-padding;
+    background: hsl(var(--foreground) / 0.12);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/40;
+    background: hsl(var(--foreground) / 0.22);
+    border: 3px solid transparent;
+    background-clip: padding-box;
   }
 }
 
 @layer components {
-  .glass {
-    background: linear-gradient(
-      160deg,
-      hsl(var(--card) / 0.9),
-      hsl(var(--card) / 0.6)
-    );
-    backdrop-filter: blur(12px);
-    @apply border border-border/60;
+  /* The one card material: soft graphite plate, generous radius, hairline edge. */
+  .surface {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border) / var(--border-alpha));
+    border-radius: 1.5rem;
   }
-
-  .stat-grid {
-    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4;
+  .surface-raised {
+    background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.75) 100%);
+    border: 1px solid hsl(var(--border) / var(--border-alpha));
+    border-radius: 1.5rem;
+    box-shadow: 0 24px 48px -24px hsl(220 40% 2% / 0.7);
   }
-
-  .aurora {
-    position: relative;
-  }
-  .aurora::before {
-    content: '';
-    position: absolute;
-    inset: -10%;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(60% 60% at 15% 0%, hsl(246 80% 65% / 0.18), transparent 60%),
-      radial-gradient(50% 50% at 100% 0%, hsl(190 90% 50% / 0.12), transparent 55%),
-      radial-gradient(60% 50% at 50% 100%, hsl(280 80% 60% / 0.1), transparent 60%);
-    will-change: transform;
-    animation: aurora-drift 24s ease-in-out infinite;
-  }
-  .aurora > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Depth on hover for interactive cards (opt-in). */
-  .card-hover {
+  /* Interactive plates lighten instead of lifting — calm, no parallax. */
+  .surface-hover {
     transition:
-      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 0.25s ease;
+      background-color 0.2s ease,
+      border-color 0.2s ease;
   }
-  .card-hover:hover {
-    transform: translateY(-3px);
-    box-shadow:
-      0 18px 40px -18px hsl(246 80% 30% / 0.55),
-      0 2px 8px -4px hsl(0 0% 0% / 0.4);
-    @apply border-primary/40;
+  .surface-hover:hover {
+    background: hsl(var(--secondary));
+    border-color: hsl(var(--border) / calc(var(--border-alpha) * 2));
   }
 
-  .text-gradient {
-    background-image: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--accent)));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  /* Wide-tracked micro label — the reference's metadata voice. */
+  .microlabel {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Ultralight display numerals (78.3%-style). Tabular so counters don't jitter. */
+  .display-number {
+    font-weight: 200;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  /* Frosted overlay — reserved for modals and the command layer, per reference. */
+  .frost {
+    background: hsl(var(--popover) / 0.82);
+    backdrop-filter: blur(20px) saturate(1.1);
+    border: 1px solid hsl(var(--border) / calc(var(--border-alpha) * 1.5));
   }
 
   /* Shimmering skeleton placeholder. */
   .skeleton {
     position: relative;
     overflow: hidden;
-    @apply bg-muted/50 rounded-md;
+    background: hsl(var(--muted) / 0.5);
+    border-radius: 0.75rem;
   }
   .skeleton::after {
     content: '';
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(
-      90deg,
-      transparent,
-      hsl(var(--foreground) / 0.06),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.06), transparent);
     animation: shimmer 1.8s ease-in-out infinite;
-  }
-}
-
-@keyframes aurora-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-2%, 1.5%, 0) scale(1.05);
   }
 }
 
@@ -199,8 +220,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
-  }
-  .aurora::before {
-    animation: none !important;
   }
 }

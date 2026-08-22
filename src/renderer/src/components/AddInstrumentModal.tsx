@@ -277,7 +277,7 @@ export function AddInstrumentModal({
         <div className="space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -306,23 +306,23 @@ export function AddInstrumentModal({
             <button
               key={d.id}
               onClick={() => choose(d)}
-              className="group flex flex-col gap-2 rounded-xl border border-border bg-secondary/30 p-4 text-left transition-all hover:border-primary/50 hover:bg-secondary/60"
+              className="group flex flex-col gap-2 rounded-2xl bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary/70"
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                  <Cpu className="h-4 w-4" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground">
+                  <Cpu className="h-4 w-4" strokeWidth={1.75} />
                 </div>
                 <Badge tone={maturityTone[d.maturity]}>{d.maturity}</Badge>
               </div>
               <div>
-                <p className="text-sm font-semibold">{d.name}</p>
+                <p className="text-sm font-medium">{d.name}</p>
                 <p className="text-xs text-muted-foreground">{d.vendor} - {d.category}</p>
               </div>
               <p className="line-clamp-2 text-xs text-muted-foreground">{d.description}</p>
               <div className="mt-1 flex items-center gap-2">
                 <Badge tone="primary">{d.protocol.toUpperCase()}</Badge>
-                <span className="flex items-center text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                  Configure <ChevronRight className="h-3 w-3" />
+                <span className="flex items-center text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                  Configure <ChevronRight className="h-3 w-3" strokeWidth={1.75} />
                 </span>
               </div>
             </button>
@@ -331,9 +331,9 @@ export function AddInstrumentModal({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-              <Check className="h-4 w-4" /> {driver?.name}
+          <div className="rounded-2xl bg-secondary/40 p-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Check className="h-4 w-4 text-success" strokeWidth={1.75} /> {driver?.name}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">{driver?.description}</p>
           </div>
@@ -446,9 +446,9 @@ export function AddInstrumentModal({
                     type="button"
                     onClick={refreshPorts}
                     disabled={portsLoading}
-                    className="flex items-center gap-1 text-xs text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
                   >
-                    <RefreshCw className={`h-3 w-3 ${portsLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-3 w-3 ${portsLoading ? 'animate-spin' : ''}`} strokeWidth={1.75} />
                     {portsLoading ? 'Detecting...' : 'Detect'}
                   </button>
                 </div>
@@ -549,9 +549,9 @@ export function AddInstrumentModal({
             </div>
           )}
 
-          <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-center justify-between rounded-2xl bg-warning/10 px-4 py-3">
             <div className="pr-3">
-              <p className="text-sm font-medium text-amber-300">Passive (read-only tap)</p>
+              <p className="text-sm font-medium text-warning">Passive (read-only tap)</p>
               <p className="text-xs text-muted-foreground">
                 Connect and listen only - never writes to the analyzer or the LIS DB. Safe for live
                 instruments already talking to another host.
@@ -560,7 +560,7 @@ export function AddInstrumentModal({
             <Switch checked={passive} onChange={setPassive} />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+          <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
             <div>
               <p className="text-sm font-medium">Host Query</p>
               <p className="text-xs text-muted-foreground">
@@ -576,7 +576,7 @@ export function AddInstrumentModal({
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+          <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
             <div>
               <p className="text-sm font-medium">Start immediately</p>
               <p className="text-xs text-muted-foreground">Begin listening as soon as it is added</p>

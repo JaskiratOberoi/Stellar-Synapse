@@ -15,6 +15,7 @@ interface ModalProps {
   className?: string
 }
 
+/* The frosted command layer — the one place glass is spent, per the reference. */
 export function Modal({ open, onClose, title, description, children, footer, className }: ModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -29,7 +30,7 @@ export function Modal({ open, onClose, title, description, children, footer, cla
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/70 backdrop-blur-md"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -39,27 +40,24 @@ export function Modal({ open, onClose, title, description, children, footer, cla
           <motion.div
             role="dialog"
             aria-modal="true"
-            className={cn(
-              'relative z-10 w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl',
-              className
-            )}
-            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            className={cn('frost relative z-10 w-full max-w-lg rounded-3xl shadow-2xl shadow-black/50', className)}
+            initial={{ opacity: 0, scale: 0.97, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
             transition={ease}
           >
-            <div className="flex items-start justify-between border-b border-border/60 p-5">
+            <div className="flex items-start justify-between p-6 pb-4">
               <div>
-                <h2 className="text-lg font-semibold">{title}</h2>
-                {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
+                <h2 className="text-2xl font-extralight tracking-tight">{title}</h2>
+                {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={onClose} title="Close">
+                <X className="h-4 w-4" strokeWidth={1.75} />
               </Button>
             </div>
-            <div className="max-h-[65vh] overflow-y-auto p-5">{children}</div>
+            <div className="max-h-[65vh] overflow-y-auto px-6 pb-6">{children}</div>
             {footer && (
-              <div className="flex justify-end gap-2 border-t border-border/60 p-4">{footer}</div>
+              <div className="flex justify-end gap-2 border-t border-border px-6 py-4">{footer}</div>
             )}
           </motion.div>
         </div>

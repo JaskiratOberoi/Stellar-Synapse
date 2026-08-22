@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Search, Check, Ban } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -76,34 +76,34 @@ export function MappingEditor({
       footer={
         <>
           <Button variant="outline" onClick={() => save('ignored')}>
-            <Ban className="h-4 w-4" /> Ignore Analyte
+            <Ban className="h-4 w-4" strokeWidth={1.75} /> Ignore analyte
           </Button>
           <Button onClick={() => save('manual')} disabled={!selTest}>
-            <Check className="h-4 w-4" /> Save Mapping
+            <Check className="h-4 w-4" strokeWidth={1.75} /> Save mapping
           </Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-border/60 bg-secondary/30 p-3">
-            <p className="text-xs uppercase text-muted-foreground">Instrument analyte</p>
+          <div className="rounded-2xl bg-secondary/40 p-4">
+            <p className="microlabel">Instrument analyte</p>
             <p className="mt-1 font-mono font-semibold text-accent">{rule.instrumentCode}</p>
             <p className="text-xs text-muted-foreground">{rule.instrumentName}</p>
           </div>
-          <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
-            <p className="text-xs uppercase text-muted-foreground">Mapped LIS target</p>
-            <p className="mt-1 font-semibold text-primary">
+          <div className="rounded-2xl bg-primary/10 p-4">
+            <p className="microlabel">Mapped LIS target</p>
+            <p className="mt-1 font-semibold text-foreground">
               {selParam ? selParam.name : selTest ? selTest.testName : 'Not selected'}
             </p>
-            {selTest && <p className="text-xs text-muted-foreground">{selTest.testCode}</p>}
+            {selTest && <p className="font-mono text-xs text-muted-foreground">{selTest.testCode}</p>}
           </div>
         </div>
 
         <div className="space-y-1.5">
           <Label>Search LIS test catalog</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} />
             <Input
               autoFocus
               value={search}
@@ -114,7 +114,7 @@ export function MappingEditor({
           </div>
         </div>
 
-        <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border/60 p-1">
+        <div className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-border p-1.5">
           {filtered.map((t) => (
             <button
               key={t.id}
@@ -123,8 +123,8 @@ export function MappingEditor({
                 setSelParam(null)
               }}
               className={cn(
-                'flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors',
-                selTest?.id === t.id ? 'bg-primary/15 text-primary' : 'hover:bg-secondary/60'
+                'flex w-full items-center justify-between rounded-2xl px-3 py-2 text-left text-sm transition-colors',
+                selTest?.id === t.id ? 'bg-primary/15 text-foreground' : 'hover:bg-secondary/60'
               )}
             >
               <span>
@@ -148,10 +148,10 @@ export function MappingEditor({
                   key={p.id}
                   onClick={() => setSelParam(selParam?.id === p.id ? null : p)}
                   className={cn(
-                    'rounded-md border px-2.5 py-1 text-xs transition-colors',
+                    'rounded-full px-3 py-1 text-xs transition-colors',
                     selParam?.id === p.id
-                      ? 'border-primary bg-primary/15 text-primary'
-                      : 'border-border hover:bg-secondary/60'
+                      ? 'bg-primary/15 text-foreground'
+                      : 'bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
                   {p.name}

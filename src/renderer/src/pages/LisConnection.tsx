@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Label } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useAppStore } from '@/store/useAppStore'
 import type { LisConnectionResult, LisConnectionSettings } from '@shared/types'
 import { formatTime } from '@/lib/utils'
@@ -47,6 +48,10 @@ export function LisConnection() {
 
   return (
     <motion.div className="max-w-4xl space-y-6" variants={staggerContainer} initial="hidden" animate="show">
+      <motion.div variants={fadeInUp}>
+        <PageHeader title="LIS connection" subtitle="Noble SQL Server database configuration" />
+      </motion.div>
+
       <AnimatePresence>
       {!form.live && (
         <motion.div
@@ -54,11 +59,11 @@ export function LisConnection() {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           transition={ease}
-          className="flex items-start gap-3 overflow-hidden rounded-xl border border-warning/30 bg-warning/10 p-4"
+          className="flex items-start gap-3 overflow-hidden rounded-2xl bg-warning/10 p-4"
         >
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" strokeWidth={1.75} />
           <div className="text-sm">
-            <p className="font-semibold text-warning">Mock mode active</p>
+            <p className="font-medium text-warning">Mock mode active</p>
             <p className="text-muted-foreground">
               The configured target is the production Noble database. In this scaffold phase, live
               writes are disabled and results are recorded to an in-memory buffer. Enable Live Mode
@@ -73,11 +78,11 @@ export function LisConnection() {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           transition={ease}
-          className="flex items-start gap-3 overflow-hidden rounded-xl border border-warning/30 bg-warning/10 p-4"
+          className="flex items-start gap-3 overflow-hidden rounded-2xl bg-warning/10 p-4"
         >
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" strokeWidth={1.75} />
           <div className="text-sm">
-            <p className="font-semibold text-warning">Read-only (safe) mode active</p>
+            <p className="font-medium text-warning">Read-only (safe) mode active</p>
             <p className="text-muted-foreground">
               Synapse reads live Noble data for host-query order lookups, but every result write is
               blocked — nothing is persisted to the production database. Turn this off only when you
@@ -93,7 +98,7 @@ export function LisConnection() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-4 w-4" /> Noble SQL Server
+              <Database className="h-4 w-4" strokeWidth={1.75} /> Noble SQL Server
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -131,7 +136,7 @@ export function LisConnection() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Encrypt connection</p>
                 <p className="text-xs text-muted-foreground">TLS to SQL Server</p>
@@ -139,7 +144,7 @@ export function LisConnection() {
               <Switch checked={form.encrypt} onChange={(v) => update({ encrypt: v })} />
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-destructive/10 px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-destructive">Live Mode</p>
                 <p className="text-xs text-muted-foreground">Enable real reads/writes to Noble</p>
@@ -148,7 +153,7 @@ export function LisConnection() {
             </div>
 
             {form.live && (
-              <div className="flex items-center justify-between rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+              <div className="flex items-center justify-between rounded-2xl bg-warning/10 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-warning">Read-only (safe) Mode</p>
                   <p className="text-xs text-muted-foreground">
@@ -161,11 +166,15 @@ export function LisConnection() {
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={test} disabled={testing} className="flex-1">
-                {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                {testing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                ) : (
+                  <Database className="h-4 w-4" strokeWidth={1.75} />
+                )}
                 Test Connection
               </Button>
               <Button onClick={save} className="flex-1">
-                <Save className="h-4 w-4" /> Save
+                <Save className="h-4 w-4" strokeWidth={1.75} /> Save
               </Button>
             </div>
 
@@ -176,20 +185,20 @@ export function LisConnection() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={spring}
-                className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                className={`flex items-start gap-2 rounded-2xl p-3 text-sm ${
                   result.state === 'connected'
-                    ? 'border-success/30 bg-success/10'
+                    ? 'bg-success/10'
                     : result.state === 'error'
-                      ? 'border-destructive/30 bg-destructive/10'
-                      : 'border-warning/30 bg-warning/10'
+                      ? 'bg-destructive/10'
+                      : 'bg-warning/10'
                 }`}
               >
                 {result.state === 'connected' ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" strokeWidth={1.75} />
                 ) : result.state === 'error' ? (
-                  <XCircle className="mt-0.5 h-4 w-4 text-destructive" />
+                  <XCircle className="mt-0.5 h-4 w-4 text-destructive" strokeWidth={1.75} />
                 ) : (
-                  <ShieldAlert className="mt-0.5 h-4 w-4 text-warning" />
+                  <ShieldAlert className="mt-0.5 h-4 w-4 text-warning" strokeWidth={1.75} />
                 )}
                 <div>
                   <p className="font-medium capitalize">{result.state}</p>
@@ -205,7 +214,7 @@ export function LisConnection() {
         <motion.div variants={fadeInUp}>
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Recent LIS Writes</CardTitle>
+            <CardTitle>Recent LIS writes</CardTitle>
             <Badge tone="muted">{recent.length}</Badge>
           </CardHeader>
           <CardContent>
@@ -219,19 +228,19 @@ export function LisConnection() {
                   initial="hidden"
                   animate="show"
                   exit="exit"
-                  className="flex items-center justify-between rounded-lg border border-border/40 bg-secondary/20 px-3 py-2 text-sm"
+                  className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm transition-colors hover:bg-secondary/60"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">
-                      <span className="font-mono text-accent">{w.vailid}</span> {w.testCode}
+                      <span className="font-mono text-xs">{w.vailid}</span> {w.testCode}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {w.machineName} - {formatTime(w.addedDate)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">
-                      {w.value} <span className="text-xs text-muted-foreground">{w.unit}</span>
+                    <p className="font-semibold tabular-nums">
+                      {w.value} <span className="text-xs font-normal text-muted-foreground">{w.unit}</span>
                     </p>
                     {w.abnormal && <Badge tone="danger">abnormal</Badge>}
                   </div>
@@ -239,7 +248,7 @@ export function LisConnection() {
               ))}
               </AnimatePresence>
               {recent.length === 0 && (
-                <p className="py-12 text-center text-sm text-muted-foreground">
+                <p className="py-10 text-center text-sm text-muted-foreground">
                   No results written yet.
                 </p>
               )}

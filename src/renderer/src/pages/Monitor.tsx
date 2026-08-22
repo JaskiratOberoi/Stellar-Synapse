@@ -1,24 +1,26 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pause, Play, Code2, List } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Input'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime } from '@/lib/utils'
 import { ease, spring } from '@/lib/motion'
 import type { MonitorEvent, MonitorStage } from '@shared/types'
 
-const stageTone: Record<MonitorStage, 'muted' | 'accent' | 'primary' | 'success' | 'warning' | 'danger'> = {
-  received: 'muted',
-  decoded: 'accent',
-  mapped: 'primary',
-  written: 'success',
-  skipped: 'warning',
-  suppressed: 'warning',
-  queued: 'accent',
-  error: 'danger'
+/* Stage accents live in the text only â€” no tinted rows or borders. */
+const stageTone: Record<MonitorStage, string> = {
+  received: 'text-muted-foreground',
+  decoded: 'text-foreground/80',
+  mapped: 'text-accent',
+  written: 'text-success',
+  skipped: 'text-warning',
+  suppressed: 'text-warning',
+  queued: 'text-accent',
+  error: 'text-destructive'
 }
 
 export function Monitor() {
@@ -50,67 +52,71 @@ export function Monitor() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <Button variant={paused ? 'success' : 'outline'} size="sm" onClick={togglePause}>
-            {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {paused ? 'Resume' : 'Pause'}
-          </Button>
-          <Select value={inst} onChange={(e) => setInst(e.target.value)} className="w-52">
-            <option value="all">All instruments</option>
-            {instruments.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.name}
-              </option>
-            ))}
-          </Select>
-          <Select value={stage} onChange={(e) => setStage(e.target.value)} className="w-40">
-            <option value="all">All stages</option>
-            <option value="decoded">Decoded</option>
-            <option value="mapped">Mapped</option>
-            <option value="written">Written</option>
-            <option value="skipped">Skipped</option>
-            <option value="error">Error</option>
-          </Select>
-          <div className="ml-auto flex rounded-lg border border-border p-0.5">
-            <button
-              onClick={() => setView('parsed')}
-              className={cn(
-                'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                view === 'parsed' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {view === 'parsed' && (
-                <motion.span
-                  layoutId="monitor-view"
-                  transition={spring}
-                  className="absolute inset-0 rounded-md bg-secondary"
-                />
-              )}
-              <List className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Parsed</span>
-            </button>
-            <button
-              onClick={() => setView('raw')}
-              className={cn(
-                'relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                view === 'raw' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {view === 'raw' && (
-                <motion.span
-                  layoutId="monitor-view"
-                  transition={spring}
-                  className="absolute inset-0 rounded-md bg-secondary"
-                />
-              )}
-              <Code2 className="relative z-10 h-3.5 w-3.5" /> <span className="relative z-10">Raw</span>
-            </button>
-          </div>
-          <Badge tone={paused ? 'warning' : 'success'}>
-            {paused ? 'Paused' : 'Live'} — {filtered.length} shown ({monitor.length} retained)
-          </Badge>
-        </CardContent>
-      </Card>
+      <PageHeader title="Live monitor" subtitle="Real-time decoded result stream">
+        <Badge tone={paused ? 'warning' : 'success'}>
+          {paused ? 'Paused' : 'Live'} â€” {filtered.length} shown ({monitor.length} retained)
+        </Badge>
+        <Select value={inst} onChange={(e) => setInst(e.target.value)} className="w-48">
+          <option value="all">All instruments</option>
+          {instruments.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.name}
+            </option>
+          ))}
+        </Select>
+        <Select value={stage} onChange={(e) => setStage(e.target.value)} className="w-36">
+          <option value="all">All stages</option>
+          <option value="decoded">Decoded</option>
+          <option value="mapped">Mapped</option>
+          <option value="written">Written</option>
+          <option value="skipped">Skipped</option>
+          <option value="error">Error</option>
+        </Select>
+        <div className="flex rounded-full border border-border p-0.5">
+          <button
+            onClick={() => setView('parsed')}
+            className={cn(
+              'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              view === 'parsed' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {view === 'parsed' && (
+              <motion.span
+                layoutId="monitor-view"
+                transition={spring}
+                className="absolute inset-0 rounded-full bg-secondary"
+              />
+            )}
+            <List className="relative z-10 h-3.5 w-3.5" strokeWidth={1.75} />{' '}
+            <span className="relative z-10">Parsed</span>
+          </button>
+          <button
+            onClick={() => setView('raw')}
+            className={cn(
+              'relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              view === 'raw' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {view === 'raw' && (
+              <motion.span
+                layoutId="monitor-view"
+                transition={spring}
+                className="absolute inset-0 rounded-full bg-secondary"
+              />
+            )}
+            <Code2 className="relative z-10 h-3.5 w-3.5" strokeWidth={1.75} />{' '}
+            <span className="relative z-10">Raw</span>
+          </button>
+        </div>
+        <Button variant={paused ? 'success' : 'outline'} size="sm" onClick={togglePause}>
+          {paused ? (
+            <Play className="h-4 w-4" strokeWidth={1.75} />
+          ) : (
+            <Pause className="h-4 w-4" strokeWidth={1.75} />
+          )}
+          {paused ? 'Resume' : 'Pause'}
+        </Button>
+      </PageHeader>
 
       <div className={cn('grid gap-4', selected ? 'lg:grid-cols-3' : 'grid-cols-1')}>
         <Card className={selected ? 'lg:col-span-2' : ''}>
@@ -118,13 +124,15 @@ export function Monitor() {
             <div className="max-h-[calc(100vh-260px)] overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-card/95 backdrop-blur">
-                  <tr className="border-b border-border/60 text-left text-xs uppercase text-muted-foreground">
-                    <th className="px-4 py-2.5 font-medium">Time</th>
-                    <th className="px-4 py-2.5 font-medium">Stage</th>
-                    <th className="px-4 py-2.5 font-medium">Sample</th>
-                    <th className="px-4 py-2.5 font-medium">Analyte</th>
-                    <th className="px-4 py-2.5 font-medium">Value</th>
-                    {view === 'parsed' && <th className="px-4 py-2.5 font-medium">LIS Target</th>}
+                  <tr className="border-b border-border text-left">
+                    <th className="microlabel px-4 py-2.5 text-left">Time</th>
+                    <th className="microlabel px-4 py-2.5 text-left">Stage</th>
+                    <th className="microlabel px-4 py-2.5 text-left">Sample</th>
+                    <th className="microlabel px-4 py-2.5 text-left">Analyte</th>
+                    <th className="microlabel px-4 py-2.5 text-left">Value</th>
+                    {view === 'parsed' && (
+                      <th className="microlabel px-4 py-2.5 text-left">LIS Target</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -138,17 +146,19 @@ export function Monitor() {
                       transition={{ duration: 0.4, ease: 'easeOut' }}
                       onClick={() => setSelected(m)}
                       className={cn(
-                        'cursor-pointer border-b border-border/30 hover:bg-secondary/40',
+                        'cursor-pointer border-b border-border transition-colors hover:bg-secondary/60',
                         selected?.id === m.id && 'bg-secondary/50'
                       )}
                     >
-                      <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
+                      <td className="px-4 py-2 font-mono text-xs tabular-nums text-muted-foreground">
                         {formatTime(m.timestamp)}
                       </td>
                       <td className="px-4 py-2">
-                        <Badge tone={stageTone[m.stage]}>{m.stage}</Badge>
+                        <span className={cn('microlabel !tracking-[0.1em]', stageTone[m.stage])}>
+                          {m.stage}
+                        </span>
                       </td>
-                      <td className="px-4 py-2 font-mono text-xs text-accent">{m.sampleId}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{m.sampleId}</td>
                       <td className="px-4 py-2 font-medium">
                         {m.analyteName || m.analyteCode}
                         {m.analyteName && m.analyteName !== m.analyteCode && (
@@ -157,11 +167,11 @@ export function Monitor() {
                           </span>
                         )}
                         {m.flag && m.flag !== 'N' && (
-                          <span className="ml-1 text-xs font-bold text-destructive">{m.flag}</span>
+                          <span className="ml-1 text-xs font-semibold text-destructive">{m.flag}</span>
                         )}
                       </td>
                       <td className="px-4 py-2">
-                        <span className="font-semibold">{m.value}</span>{' '}
+                        <span className="font-semibold tabular-nums">{m.value}</span>{' '}
                         <span className="text-xs text-muted-foreground">{m.unit}</span>
                       </td>
                       {view === 'parsed' && (
@@ -174,7 +184,7 @@ export function Monitor() {
                   </AnimatePresence>
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-16 text-center text-sm text-muted-foreground">
+                      <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                         Waiting for instrument data...
                       </td>
                     </tr>
@@ -197,7 +207,7 @@ export function Monitor() {
           <Card>
             <CardContent className="space-y-3 p-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Message Detail</h3>
+                <h3 className="text-[15px] font-medium tracking-tight">Message detail</h3>
                 <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
                   Close
                 </Button>
@@ -211,8 +221,8 @@ export function Monitor() {
               <Detail label="LIS Target" value={selected.mappedTo ?? '-'} />
               {selected.message && <Detail label="Message" value={selected.message} />}
               <div>
-                <p className="mb-1 text-xs uppercase text-muted-foreground">Raw Frame</p>
-                <pre className="max-h-64 overflow-auto rounded-lg bg-background/80 p-3 font-mono text-[11px] leading-relaxed text-accent">
+                <p className="microlabel mb-1.5">Raw Frame</p>
+                <pre className="max-h-64 overflow-auto rounded-2xl bg-secondary/40 p-3 font-mono text-[11px] leading-relaxed text-foreground/80">
                   {selected.raw ?? 'n/a'}
                 </pre>
               </div>
@@ -228,9 +238,9 @@ export function Monitor() {
 
 function Detail({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-b border-border/40 pb-2 text-sm">
+    <div className="flex items-center justify-between gap-3 py-0.5 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn('font-medium', mono && 'font-mono text-accent')}>{value}</span>
+      <span className={cn('text-right font-medium', mono && 'font-mono text-xs')}>{value}</span>
     </div>
   )
 }

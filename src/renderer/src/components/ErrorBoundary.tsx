@@ -106,11 +106,11 @@ export class ErrorBoundary extends Component<Props, State> {
               onClick={this.reset}
               style={{
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: 999,
                 border: '1px solid rgba(148,163,184,0.4)',
                 background: 'transparent',
                 color: '#e5e7eb',
-                padding: '8px 16px',
+                padding: '8px 18px',
                 fontSize: 13
               }}
             >
@@ -120,11 +120,11 @@ export class ErrorBoundary extends Component<Props, State> {
               onClick={this.reload}
               style={{
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: 999,
                 border: 'none',
-                background: '#6366f1',
-                color: 'white',
-                padding: '8px 16px',
+                background: '#e8eaed',
+                color: '#121316',
+                padding: '8px 18px',
                 fontSize: 13,
                 fontWeight: 600
               }}

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useAppStore } from '@/store/useAppStore'
 import { fadeInUp, staggerContainer } from '@/lib/motion'
 import type {
@@ -144,10 +145,14 @@ export function Settings() {
       animate="show"
     >
       <motion.div variants={fadeInUp}>
+        <PageHeader title="Settings" subtitle="Application preferences" />
+      </motion.div>
+
+      <motion.div variants={fadeInUp}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Power className="h-4 w-4" /> Background &amp; Startup
+              <Power className="h-4 w-4" strokeWidth={1.75} /> Background &amp; Startup
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Stellar Synapse runs as a background service so machine interfacing never stops by
@@ -155,7 +160,7 @@ export function Settings() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Start automatically on system startup</p>
                 <p className="text-xs text-muted-foreground">
@@ -168,8 +173,8 @@ export function Settings() {
               />
             </div>
 
-            <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
-              <MinusSquare className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="flex items-start gap-2 rounded-2xl bg-secondary/40 px-4 py-3">
+              <MinusSquare className="mt-0.5 h-4 w-4 shrink-0 text-foreground" strokeWidth={1.75} />
               <p className="text-xs text-muted-foreground">
                 Closing the window with the <span className="font-medium text-foreground">✕</span>{' '}
                 button keeps the app running in the system tray — interfacing continues. To fully
@@ -185,7 +190,7 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Beaker className="h-4 w-4" /> Instrument Simulator
+              <Beaker className="h-4 w-4" strokeWidth={1.75} /> Instrument Simulator
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Generates realistic ASTM/HL7 traffic for active instruments so the app can be reviewed
@@ -193,7 +198,7 @@ export function Settings() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Enable simulator</p>
                 <p className="text-xs text-muted-foreground">Emit synthetic results on a timer</p>
@@ -219,7 +224,7 @@ export function Settings() {
             </div>
 
             <Button variant="outline" onClick={() => window.api.simulator.emitOne()}>
-              <Zap className="h-4 w-4" /> Emit one sample now
+              <Zap className="h-4 w-4" strokeWidth={1.75} /> Emit one sample now
             </Button>
           </CardContent>
         </Card>
@@ -229,7 +234,7 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Database className="h-4 w-4" /> LIS Integration (Noble)
+              <Database className="h-4 w-4" strokeWidth={1.75} /> LIS Integration (Noble)
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Live connection writes HbA1c and eAG from the LD-560 into Noble by sample barcode
@@ -237,7 +242,7 @@ export function Settings() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-destructive/10 px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-destructive">Live LIS connection</p>
                 <p className="text-xs text-muted-foreground">
@@ -247,7 +252,7 @@ export function Settings() {
               <Switch checked={lisForm.live} onChange={(v) => applyLis({ live: v })} />
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Auto-write HbA1c to LIS</p>
                 <p className="text-xs text-muted-foreground">
@@ -275,7 +280,7 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Cloud className="h-4 w-4" /> Stellar Infinity Cloud
+              <Cloud className="h-4 w-4" strokeWidth={1.75} /> Stellar Infinity Cloud
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Push live instrument status and daily statistics to the Stellar Infinity platform so
@@ -284,7 +289,7 @@ export function Settings() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Enable cloud sync</p>
                 <p className="text-xs text-muted-foreground">
@@ -344,23 +349,25 @@ export function Settings() {
               </div>
             </div>
 
-            <Button variant="outline" onClick={testCloud} disabled={cloudTesting}>
-              {cloudTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+            <Button variant="secondary" onClick={testCloud} disabled={cloudTesting}>
+              {cloudTesting ? (
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+              ) : (
+                <Cloud className="h-4 w-4" strokeWidth={1.75} />
+              )}
               Test connection
             </Button>
 
             {cloudTest && (
               <div
-                className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
-                  cloudTest.ok
-                    ? 'border-success/30 bg-success/10'
-                    : 'border-destructive/30 bg-destructive/10'
+                className={`flex items-start gap-2 rounded-2xl p-3 text-sm ${
+                  cloudTest.ok ? 'bg-success/10' : 'bg-destructive/10'
                 }`}
               >
                 {cloudTest.ok ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" strokeWidth={1.75} />
                 ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 text-destructive" />
+                  <XCircle className="mt-0.5 h-4 w-4 text-destructive" strokeWidth={1.75} />
                 )}
                 <p className="text-xs text-muted-foreground">
                   {cloudTest.ok
@@ -371,7 +378,7 @@ export function Settings() {
             )}
 
             {cloudStatus && (
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
                 <div className="space-y-1">
                   <Badge tone={cloudStateLabel(cloudStatus).tone}>
                     {cloudStateLabel(cloudStatus).text}
@@ -392,11 +399,11 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Wand2 className="h-4 w-4" /> Mapping
+              <Wand2 className="h-4 w-4" strokeWidth={1.75} /> Mapping
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Auto-map on receive</p>
                 <p className="text-xs text-muted-foreground">
@@ -416,7 +423,7 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DownloadCloud className="h-4 w-4" /> Software Updates
+              <DownloadCloud className="h-4 w-4" strokeWidth={1.75} /> Software Updates
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Stellar Synapse updates itself over the air. New versions download in the background
@@ -425,7 +432,7 @@ export function Settings() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
               <div>
                 <p className="text-sm font-medium">Automatic updates</p>
                 <p className="text-xs text-muted-foreground">
@@ -458,7 +465,7 @@ export function Settings() {
             </div>
 
             {updateStatus && (
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge tone={updateStateLabel(updateStatus).tone}>
@@ -475,7 +482,7 @@ export function Settings() {
                 <div className="flex shrink-0 gap-2">
                   {updateStatus.state === 'downloaded' ? (
                     <Button onClick={() => void window.api.update.install()}>
-                      <RotateCw className="h-4 w-4" /> Restart &amp; install
+                      <RotateCw className="h-4 w-4" strokeWidth={1.75} /> Restart &amp; install
                     </Button>
                   ) : (
                     <Button
@@ -487,7 +494,7 @@ export function Settings() {
                       }
                       onClick={() => void window.api.update.check()}
                     >
-                      <RefreshCw className="h-4 w-4" /> Check now
+                      <RefreshCw className="h-4 w-4" strokeWidth={1.75} /> Check now
                     </Button>
                   )}
                 </div>
@@ -501,16 +508,16 @@ export function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Info className="h-4 w-4" /> About
+              <Info className="h-4 w-4" strokeWidth={1.75} /> About
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent">
-                <Waypoints className="h-6 w-6 text-white" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-foreground">
+                <Waypoints className="h-6 w-6" strokeWidth={1.75} />
               </div>
               <div>
-                <p className="font-semibold">Stellar Synapse</p>
+                <p className="font-medium">Stellar Synapse</p>
                 <p className="text-xs text-muted-foreground">
                   LIS Instrument Integration Middleware · v
                   {updateStatus?.currentVersion ?? __APP_VERSION__}
@@ -519,7 +526,7 @@ export function Settings() {
             </div>
 
             <div>
-              <p className="mb-2 text-xs uppercase text-muted-foreground">Registered drivers</p>
+              <p className="microlabel mb-2">Registered drivers</p>
               <div className="flex flex-wrap gap-2">
                 {drivers.map((d) => (
                   <Badge key={d.id} tone="primary">
