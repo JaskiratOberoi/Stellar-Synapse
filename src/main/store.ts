@@ -19,6 +19,15 @@ export interface InstrumentPersistStats {
   lastMessageAt?: string
 }
 
+/** One instrument's tallies for a single local date (Stellar Infinity rollups). */
+export interface InstrumentDayStats {
+  /** Distinct samples (SIDs) processed. */
+  samples: number
+  /** Individual analyte params processed. */
+  results: number
+  errors: number
+}
+
 interface PersistShape {
   instruments: InstrumentDefinition[]
   mappings: MappingRule[]
@@ -27,6 +36,8 @@ interface PersistShape {
   /** Newest-first monitor events retained across sessions. */
   monitorHistory: MonitorEvent[]
   instrumentStats: Record<string, InstrumentPersistStats>
+  /** Per-local-date (YYYY-MM-DD) -> per-instrument-id daily rollups, newest 14 days. */
+  dailyStats: Record<string, Record<string, InstrumentDayStats>>
   /** Results awaiting the LIS (written here when the LIS is unreachable). */
   pendingWrites: LisResultWrite[]
   /** One-time migration: enable live Noble LIS writes. */
@@ -66,7 +77,14 @@ const defaults: PersistShape = {
     launchAtStartup: false,
     // Over-the-air updates on by default; install downloaded updates at 03:00 local.
     autoUpdateEnabled: true,
-    updateInstallHour: 3
+    updateInstallHour: 3,
+    // Stellar Infinity cloud sync — opt-in, configured per site in Settings.
+    labName: '',
+    labLocation: '',
+    infinityEnabled: false,
+    infinityBaseUrl: '',
+    infinitySiteCode: '',
+    infinitySiteKey: ''
   },
   // Noble LISTEC LIS — live mode on; set password under Settings or LIS Connection.
   lis: {
@@ -80,8 +98,12 @@ const defaults: PersistShape = {
   },
   monitorHistory: [],
   instrumentStats: {},
+  dailyStats: {},
   pendingWrites: []
 }
+
+/** How many local dates of per-instrument daily rollups are retained. */
+export const MAX_DAILY_STAT_DAYS = 14
 
 // Lazily created so the data directory chosen at install time (applyDataDir →
 // app.setPath('userData', ...)) is in effect before the store file is opened.
@@ -119,14 +141,26 @@ export const persist = {
       s.lisAutoWrite === undefined ||
       s.launchAtStartup === undefined ||
       s.autoUpdateEnabled === undefined ||
-      s.updateInstallHour === undefined
+      s.updateInstallHour === undefined ||
+      s.labName === undefined ||
+      s.labLocation === undefined ||
+      s.infinityEnabled === undefined ||
+      s.infinityBaseUrl === undefined ||
+      s.infinitySiteCode === undefined ||
+      s.infinitySiteKey === undefined
     ) {
       const next = {
         ...s,
         lisAutoWrite: s.lisAutoWrite ?? true,
         launchAtStartup: s.launchAtStartup ?? false,
         autoUpdateEnabled: s.autoUpdateEnabled ?? true,
-        updateInstallHour: s.updateInstallHour ?? 3
+        updateInstallHour: s.updateInstallHour ?? 3,
+        labName: s.labName ?? '',
+        labLocation: s.labLocation ?? '',
+        infinityEnabled: s.infinityEnabled ?? false,
+        infinityBaseUrl: s.infinityBaseUrl ?? '',
+        infinitySiteCode: s.infinitySiteCode ?? '',
+        infinitySiteKey: s.infinitySiteKey ?? ''
       }
       store().set('settings', next)
       return next
@@ -176,5 +210,20 @@ export const persist = {
     const all = { ...store().get('instrumentStats') }
     delete all[instrumentId]
     store().set('instrumentStats', all)
+  },
+
+  getDailyStats: (): Record<string, Record<string, InstrumentDayStats>> =>
+    store().get('dailyStats'),
+
+  /** Persist the daily rollups, pruned to the newest MAX_DAILY_STAT_DAYS dates. */
+  setDailyStats: (v: Record<string, Record<string, InstrumentDayStats>>): void => {
+    const dates = Object.keys(v).sort()
+    if (dates.length > MAX_DAILY_STAT_DAYS) {
+      const pruned: Record<string, Record<string, InstrumentDayStats>> = {}
+      for (const date of dates.slice(-MAX_DAILY_STAT_DAYS)) pruned[date] = v[date]
+      store().set('dailyStats', pruned)
+      return
+    }
+    store().set('dailyStats', v)
   }
 }

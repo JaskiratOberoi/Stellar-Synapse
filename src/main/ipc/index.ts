@@ -22,12 +22,14 @@ import { persist } from '../store'
 import { logger } from '../core/logger'
 import { applyLoginItem } from '../autostart'
 import type { AutoUpdater } from '../core/update/AutoUpdater'
+import type { InfinityReporter } from '../core/infinity/InfinityReporter'
 
 interface Services {
   orchestrator: Orchestrator
   simulator: Simulator
   lis: ILisRepository & Partial<Pick<LisRouter, 'configure'>>
   updater: AutoUpdater
+  reporter: InfinityReporter
 }
 
 function buildDashboard(orchestrator: Orchestrator, lis: ILisRepository): DashboardStats {
@@ -67,7 +69,7 @@ function buildDashboard(orchestrator: Orchestrator, lis: ILisRepository): Dashbo
 }
 
 export function registerIpc(win: BrowserWindow, services: Services): void {
-  const { orchestrator, simulator, lis, updater } = services
+  const { orchestrator, simulator, lis, updater, reporter } = services
 
   // Forward backend events to the renderer.
   orchestrator.on('instruments', (list) => win.webContents.send(IPC_EVENT.instrumentsChanged, list))
@@ -75,6 +77,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   orchestrator.on('mappings', (rules) => win.webContents.send(IPC_EVENT.mappingsChanged, rules))
   logger.on('log', (entry) => win.webContents.send(IPC_EVENT.log, entry))
   updater.on('status', (status) => win.webContents.send(IPC_EVENT.updateStatus, status))
+  reporter.on('status', (status) => win.webContents.send(IPC_EVENT.cloudStatus, status))
 
   // Drivers
   ipcMain.handle(IPC.driversList, () => listDriverInfos())
@@ -321,6 +324,16 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     if (patch.autoUpdateEnabled !== undefined || patch.updateInstallHour !== undefined) {
       updater.onSettingsChanged()
     }
+    if (
+      patch.infinityEnabled !== undefined ||
+      patch.infinityBaseUrl !== undefined ||
+      patch.infinitySiteCode !== undefined ||
+      patch.infinitySiteKey !== undefined ||
+      patch.labName !== undefined ||
+      patch.labLocation !== undefined
+    ) {
+      reporter.onSettingsChanged()
+    }
     return next
   })
 
@@ -331,6 +344,12 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     return updater.getStatus()
   })
   ipcMain.handle(IPC.updateInstall, () => updater.installNow())
+
+  // Stellar Infinity cloud sync
+  ipcMain.handle(IPC.cloudStatus, () => reporter.getStatus())
+  ipcMain.handle(IPC.cloudTest, (_e, baseUrl: string, siteCode: string, siteKey: string) =>
+    reporter.testConnection(baseUrl, siteCode, siteKey)
+  )
 
   // Simulator
   ipcMain.handle(IPC.simulatorStart, () => simulator.start(persist.getSettings().simulatorRate))

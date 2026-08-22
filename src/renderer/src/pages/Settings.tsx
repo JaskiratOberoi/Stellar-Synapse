@@ -11,16 +11,26 @@ import {
   MinusSquare,
   RefreshCw,
   DownloadCloud,
-  RotateCw
+  RotateCw,
+  Cloud,
+  CheckCircle2,
+  XCircle,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
-import { Label, Select } from '@/components/ui/Input'
+import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { useAppStore } from '@/store/useAppStore'
 import { fadeInUp, staggerContainer } from '@/lib/motion'
-import type { AppSettings, LisConnectionSettings, UpdateStatus } from '@shared/types'
+import type {
+  AppSettings,
+  CloudSyncStatus,
+  CloudTestResult,
+  LisConnectionSettings,
+  UpdateStatus
+} from '@shared/types'
 
 /** Human-readable label + tone for each updater state. */
 function updateStateLabel(s: UpdateStatus): {
@@ -50,6 +60,20 @@ function updateStateLabel(s: UpdateStatus): {
   }
 }
 
+/** Human-readable label + tone for the cloud sync status line. */
+function cloudStateLabel(s: CloudSyncStatus): {
+  text: string
+  tone: 'primary' | 'success' | 'warning' | 'danger' | 'muted'
+} {
+  if (!s.enabled) return { text: 'Cloud sync off', tone: 'muted' }
+  if (!s.configured) return { text: 'Not configured', tone: 'warning' }
+  if (s.lastError) return { text: `Sync error: ${s.lastError}`, tone: 'danger' }
+  if (s.lastSuccessAt) {
+    return { text: `Last sync ${new Date(s.lastSuccessAt).toLocaleString()}`, tone: 'success' }
+  }
+  return { text: 'Waiting for first sync…', tone: 'primary' }
+}
+
 export function Settings() {
   const settings = useAppStore((s) => s.settings)
   const lisSettings = useAppStore((s) => s.lisSettings)
@@ -58,12 +82,19 @@ export function Settings() {
   const [form, setForm] = useState<AppSettings | null>(settings)
   const [lisForm, setLisForm] = useState<LisConnectionSettings | null>(lisSettings)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
+  const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus | null>(null)
+  const [cloudTesting, setCloudTesting] = useState(false)
+  const [cloudTest, setCloudTest] = useState<CloudTestResult | null>(null)
 
   useEffect(() => setForm(settings), [settings])
   useEffect(() => setLisForm(lisSettings), [lisSettings])
   useEffect(() => {
     void window.api.update.getStatus().then(setUpdateStatus)
     return window.api.update.onStatus(setUpdateStatus)
+  }, [])
+  useEffect(() => {
+    void window.api.cloud.status().then(setCloudStatus)
+    return window.api.cloud.onStatus(setCloudStatus)
   }, [])
   if (!form || !lisForm) return null
 
@@ -79,6 +110,30 @@ export function Settings() {
     setLisForm(next)
     const saved = await window.api.lis.saveSettings(next)
     useAppStore.setState({ lisSettings: saved })
+  }
+
+  /** Update a text field locally while typing; commitField saves it on blur. */
+  const editField = (patch: Partial<AppSettings>): void => setForm({ ...form, ...patch })
+  const commitField = (key: keyof AppSettings): void => {
+    if (settings && form[key] !== settings[key]) {
+      void apply({ [key]: form[key] } as Partial<AppSettings>)
+    }
+  }
+
+  const testCloud = async (): Promise<void> => {
+    setCloudTesting(true)
+    setCloudTest(null)
+    try {
+      setCloudTest(
+        await window.api.cloud.test(
+          form.infinityBaseUrl,
+          form.infinitySiteCode,
+          form.infinitySiteKey
+        )
+      )
+    } finally {
+      setCloudTesting(false)
+    }
   }
 
   return (
@@ -211,6 +266,123 @@ export function Settings() {
                 Live LIS is off — results are stored locally only. Enable live connection to write
                 to Noble.
               </p>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div variants={fadeInUp}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Cloud className="h-4 w-4" /> Stellar Infinity Cloud
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Push live instrument status and daily statistics to the Stellar Infinity platform so
+              every lab site can be monitored centrally. Interfacing is never affected by cloud
+              connectivity.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Enable cloud sync</p>
+                <p className="text-xs text-muted-foreground">
+                  Report instrument status and stats to Stellar Infinity in near-realtime
+                </p>
+              </div>
+              <Switch
+                checked={form.infinityEnabled}
+                onChange={(v) => apply({ infinityEnabled: v })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Base URL</Label>
+              <Input
+                value={form.infinityBaseUrl}
+                placeholder="https://infinity.example.com"
+                onChange={(e) => editField({ infinityBaseUrl: e.target.value })}
+                onBlur={() => commitField('infinityBaseUrl')}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Site code</Label>
+                <Input
+                  value={form.infinitySiteCode}
+                  onChange={(e) => editField({ infinitySiteCode: e.target.value })}
+                  onBlur={() => commitField('infinitySiteCode')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Site key</Label>
+                <Input
+                  type="password"
+                  value={form.infinitySiteKey}
+                  onChange={(e) => editField({ infinitySiteKey: e.target.value })}
+                  onBlur={() => commitField('infinitySiteKey')}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Lab name</Label>
+                <Input
+                  value={form.labName}
+                  onChange={(e) => editField({ labName: e.target.value })}
+                  onBlur={() => commitField('labName')}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Lab location</Label>
+                <Input
+                  value={form.labLocation}
+                  onChange={(e) => editField({ labLocation: e.target.value })}
+                  onBlur={() => commitField('labLocation')}
+                />
+              </div>
+            </div>
+
+            <Button variant="outline" onClick={testCloud} disabled={cloudTesting}>
+              {cloudTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+              Test connection
+            </Button>
+
+            {cloudTest && (
+              <div
+                className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                  cloudTest.ok
+                    ? 'border-success/30 bg-success/10'
+                    : 'border-destructive/30 bg-destructive/10'
+                }`}
+              >
+                {cloudTest.ok ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-success" />
+                ) : (
+                  <XCircle className="mt-0.5 h-4 w-4 text-destructive" />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {cloudTest.ok
+                    ? `Connected as ${cloudTest.siteName ?? 'unknown site'}`
+                    : (cloudTest.error ?? 'Connection failed')}
+                </p>
+              </div>
+            )}
+
+            {cloudStatus && (
+              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-secondary/30 px-4 py-3">
+                <div className="space-y-1">
+                  <Badge tone={cloudStateLabel(cloudStatus).tone}>
+                    {cloudStateLabel(cloudStatus).text}
+                  </Badge>
+                  {cloudStatus.lastAttemptAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Last attempt {new Date(cloudStatus.lastAttemptAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -7,6 +7,7 @@ import { registerIpc } from './ipc'
 import { persist } from './store'
 import { logger } from './core/logger'
 import { AutoUpdater } from './core/update/AutoUpdater'
+import { InfinityReporter } from './core/infinity/InfinityReporter'
 import { applyDataDir } from './dataDir'
 import { applyLoginItem, startedHidden } from './autostart'
 import { LD560_POLL } from './core/connection/InstrumentPollScheduler'
@@ -33,6 +34,10 @@ process.on('unhandledRejection', (reason) => {
 // Some Windows GPUs crash Chromium's network/GPU service on launch, which paints
 // a blank renderer. Disabling hardware acceleration avoids that failure mode.
 app.disableHardwareAcceleration()
+
+// Windows ties toast notifications to the App User Model ID; without the id from
+// electron-builder.yml the instrument disconnect alerts never appear.
+app.setAppUserModelId('com.stellar.synapse')
 
 // Tray + window lifecycle state. The app runs as a background service: closing
 // the window hides it to the tray (interfacing keeps running); it only truly
@@ -281,6 +286,8 @@ app.whenReady().then(() => {
   const updater = new AutoUpdater(() => {
     isQuitting = true
   })
+  // Cloud reporter + local disconnect alerts (alerts run even with sync off).
+  const reporter = new InfinityReporter(orchestrator)
 
   // Open the window and wire IPC FIRST so the UI always loads — even if the
   // Noble LIS is unreachable. Instrument data is still received and queued, then
@@ -288,10 +295,13 @@ app.whenReady().then(() => {
   const win = createWindow()
   mainWindow = win
   createTray()
-  registerIpc(win, { orchestrator, simulator, lis, updater })
+  registerIpc(win, { orchestrator, simulator, lis, updater, reporter })
 
   // Arm over-the-air updates (no-op in dev / when the feed isn't configured).
   updater.start()
+
+  // Arm Stellar Infinity cloud sync (no-op until enabled + configured in Settings).
+  reporter.start()
 
   orchestrator
     .init()

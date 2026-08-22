@@ -8,6 +8,8 @@
 
 import type {
   AppSettings,
+  CloudSyncStatus,
+  CloudTestResult,
   DashboardStats,
   DiscoveredHost,
   DiscoverySubnet,
@@ -87,6 +89,10 @@ export const IPC = {
   updateCheck: 'update:check',
   updateInstall: 'update:install',
 
+  // Stellar Infinity cloud sync
+  cloudStatus: 'cloud:status',
+  cloudTest: 'cloud:test',
+
   // Simulator
   simulatorStart: 'simulator:start',
   simulatorStop: 'simulator:stop',
@@ -107,7 +113,8 @@ export const IPC_EVENT = {
   lisStateChanged: 'evt:lis-state-changed',
   discoveryProgress: 'evt:discovery-progress',
   discoveryHost: 'evt:discovery-host',
-  updateStatus: 'evt:update-status'
+  updateStatus: 'evt:update-status',
+  cloudStatus: 'evt:cloud-status'
 } as const
 
 /** The API surface available to the renderer as `window.api`. */
@@ -212,6 +219,14 @@ export interface StellarApi {
     install(): Promise<void>
     /** Subscribe to update-status changes pushed from the main process. */
     onStatus(cb: (status: UpdateStatus) => void): () => void
+  }
+  cloud: {
+    /** Current Stellar Infinity cloud sync status. */
+    status(): Promise<CloudSyncStatus>
+    /** Probe the Infinity ping endpoint with the given (possibly unsaved) creds. */
+    test(baseUrl: string, siteCode: string, siteKey: string): Promise<CloudTestResult>
+    /** Subscribe to cloud-sync status changes pushed from the main process. */
+    onStatus(cb: (status: CloudSyncStatus) => void): () => void
   }
   simulator: {
     start(): Promise<void>

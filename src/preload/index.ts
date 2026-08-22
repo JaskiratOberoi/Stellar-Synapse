@@ -7,7 +7,8 @@ import type {
   LogEntry,
   ScanProgress,
   DiscoveredHost,
-  UpdateStatus
+  UpdateStatus,
+  CloudSyncStatus
 } from '../shared/types'
 
 /** Helper to subscribe to a push event and return an unsubscribe function. */
@@ -83,6 +84,11 @@ const api: StellarApi = {
     check: () => ipcRenderer.invoke(IPC.updateCheck),
     install: () => ipcRenderer.invoke(IPC.updateInstall),
     onStatus: (cb) => on<UpdateStatus>(IPC_EVENT.updateStatus, cb)
+  },
+  cloud: {
+    status: () => ipcRenderer.invoke(IPC.cloudStatus),
+    test: (baseUrl, siteCode, siteKey) => ipcRenderer.invoke(IPC.cloudTest, baseUrl, siteCode, siteKey),
+    onStatus: (cb) => on<CloudSyncStatus>(IPC_EVENT.cloudStatus, cb)
   },
   simulator: {
     start: () => ipcRenderer.invoke(IPC.simulatorStart),

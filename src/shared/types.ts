@@ -235,6 +235,8 @@ export interface InstrumentDefinition {
 /** A configured instrument plus its live runtime state (sent to the UI). */
 export interface InstrumentRuntime extends InstrumentDefinition {
   status: ConnectionStatus
+  /** ISO time the current `status` began (runtime-only, not persisted). */
+  statusSince?: string
   lastMessageAt?: string
   messagesReceived: number
   /** Distinct samples (SIDs) processed — one sample counts once regardless of how
@@ -630,6 +632,44 @@ export interface AppSettings {
    * mid-shift; the install itself takes only seconds.
    */
   updateInstallHour: number
+  /** Lab display name reported to the Stellar Infinity cloud platform. */
+  labName: string
+  /** Lab location (city/site) reported to the Stellar Infinity cloud platform. */
+  labLocation: string
+  /** Push instrument status/stats to the Stellar Infinity cloud platform. */
+  infinityEnabled: boolean
+  /** Stellar Infinity base URL, e.g. "https://infinity.example.com". */
+  infinityBaseUrl: string
+  /** Site code issued by Stellar Infinity (sent as X-Site-Code). */
+  infinitySiteCode: string
+  /** Site key issued by Stellar Infinity (sent as X-Site-Key). */
+  infinitySiteKey: string
+}
+
+// ---------------------------------------------------------------------------
+// Stellar Infinity cloud sync (main -> renderer)
+// ---------------------------------------------------------------------------
+
+/** State of the Stellar Infinity cloud reporter, surfaced in Settings. */
+export interface CloudSyncStatus {
+  /** Base URL + site code + site key are all set. */
+  configured: boolean
+  /** Cloud sync toggle in Settings. */
+  enabled: boolean
+  /** ISO time of the last push attempt (success or failure). */
+  lastAttemptAt: string | null
+  /** ISO time of the last successful push. */
+  lastSuccessAt: string | null
+  /** Message from the last failed push; null after a success. */
+  lastError: string | null
+}
+
+/** Outcome of a Stellar Infinity credentials test (ping). */
+export interface CloudTestResult {
+  ok: boolean
+  /** Site display name returned by Infinity on success. */
+  siteName?: string
+  error?: string
 }
 
 // ---------------------------------------------------------------------------

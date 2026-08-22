@@ -37,7 +37,7 @@ import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
 import { convertForLis, roundResultValue } from './units'
-import { persist } from '../../store'
+import { persist, MAX_DAILY_STAT_DAYS, type InstrumentDayStats } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
 
@@ -90,6 +90,9 @@ export class Orchestrator extends EventEmitter {
   // manually re-send reports after a link drop).
   private connectedOnce = new Set<string>()
   private offlineSince = new Map<string, number>()
+  // Per-local-date rollups for the Stellar Infinity cloud report. In-memory copy
+  // of the persisted map (write-through on every bump, like instrumentStats).
+  private dailyStats: Record<string, Record<string, InstrumentDayStats>> = {}
   /** `${instrumentId}|${rawFrame}` -> last handled at (ms). Drops AU retransmissions. */
   private recentAuFrames = new Map<string, number>()
   /** instrumentId -> retransmissions seen, for the receive-only-link diagnosis. */
@@ -105,6 +108,7 @@ export class Orchestrator extends EventEmitter {
     // Restore persisted monitor history, counters, and the offline LIS queue.
     this.monitorBuffer = persist.getMonitorHistory()
     this.pendingWrites = persist.getPendingWrites()
+    this.dailyStats = persist.getDailyStats()
 
     // Show the configured instruments to the UI IMMEDIATELY (as offline), BEFORE
     // any slow LIS or connection work. seedDrivers() below makes a cold call to
@@ -464,7 +468,10 @@ export class Orchestrator extends EventEmitter {
         if (!this.offlineSince.has(id)) this.offlineSince.set(id, Date.now())
       }
     })
-    transport.on('error', () => this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 }))
+    transport.on('error', () => {
+      this.patchRuntime(id, { errors: (this.runtimes.get(id)?.errors ?? 0) + 1 })
+      this.bumpDailyStats(id, { errors: 1 })
+    })
     transport.on('data', (rawChunk: Buffer) => {
       let chunk = rawChunk
       this.pollSchedulers.get(id)?.touchInbound()
@@ -1402,6 +1409,37 @@ export class Orchestrator extends EventEmitter {
       resultParamsProcessed: (rt?.resultParamsProcessed ?? 0) + 1,
       ...(newSid ? { resultsProcessed: (rt?.resultsProcessed ?? 0) + 1 } : {})
     })
+    this.bumpDailyStats(id, { samples: newSid ? 1 : 0, results: 1 })
+  }
+
+  /** Local calendar date (YYYY-MM-DD) for the daily rollup keys. */
+  private localDateKey(d = new Date()): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate()
+    ).padStart(2, '0')}`
+  }
+
+  /** Add to today's per-instrument rollup and write it through to the store. */
+  private bumpDailyStats(
+    id: string,
+    delta: { samples?: number; results?: number; errors?: number }
+  ): void {
+    const date = this.localDateKey()
+    const day = (this.dailyStats[date] ??= {})
+    const stats = (day[id] ??= { samples: 0, results: 0, errors: 0 })
+    stats.samples += delta.samples ?? 0
+    stats.results += delta.results ?? 0
+    stats.errors += delta.errors ?? 0
+    const dates = Object.keys(this.dailyStats).sort()
+    for (const old of dates.slice(0, Math.max(0, dates.length - MAX_DAILY_STAT_DAYS))) {
+      delete this.dailyStats[old]
+    }
+    persist.setDailyStats(this.dailyStats)
+  }
+
+  /** Per-local-date -> per-instrument rollups (newest 14 days), for cloud reports. */
+  getDailyStats(): Record<string, Record<string, InstrumentDayStats>> {
+    return this.dailyStats
   }
 
   // ----- offline LIS write queue --------------------------------------------
@@ -1703,6 +1741,9 @@ export class Orchestrator extends EventEmitter {
     const current = this.runtimes.get(id)
     if (!current) return
     const next = { ...current, ...patch }
+    if ('status' in patch && patch.status !== current.status) {
+      next.statusSince = new Date().toISOString()
+    }
     this.runtimes.set(id, next)
     if (
       'messagesReceived' in patch ||
