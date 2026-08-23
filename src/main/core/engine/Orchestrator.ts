@@ -940,7 +940,7 @@ export class Orchestrator extends EventEmitter {
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
-        stage: codes.length ? 'mapped' : 'skipped',
+        stage: codes.length ? 'ordered' : 'skipped',
         value: codes.length ? codes.join(', ') : '(no tests)',
         mappedTo: codes.length ? codes.join(', ') : '(none)',
         message: codes.length
@@ -1025,7 +1025,7 @@ export class Orchestrator extends EventEmitter {
     this.pushMonitor({
       ...baseEvent,
       id: randomUUID(),
-      stage: 'mapped',
+      stage: 'ordered',
       value: codes.join(', '),
       mappedTo: codes.join(', '),
       message: `Ordered to analyzer: ${codes.join(', ')}`

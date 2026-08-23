@@ -169,7 +169,15 @@ export function InstrumentDetail() {
    */
   const sentOrders = useMemo(() => {
     const rows = monitor
-      .filter((m) => m.stage === 'ordered' && m.sampleId && m.sampleId !== '-')
+      // Builds before 0.4.2 recorded host-query answers as 'mapped', the same
+      // stage as an inbound result matched to a LIS field. Accept those too, keyed
+      // on the QUERY analyte, so history already on disk still lists here.
+      .filter(
+        (m) =>
+          (m.stage === 'ordered' || (m.stage === 'mapped' && m.analyteCode === 'QUERY')) &&
+          m.sampleId &&
+          m.sampleId !== '-'
+      )
       .map((m) => ({
         id: m.id,
         sampleId: m.sampleId,
