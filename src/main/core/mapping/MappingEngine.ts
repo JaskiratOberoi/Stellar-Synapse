@@ -550,6 +550,31 @@ export class MappingEngine {
     for (const m of mappings) {
       const code = m.instrumentCode?.trim()
       if (!code) continue
+      // 'ignored' retires a channel the analyzer exposes but this site must not
+      // order — a superseded reagent generation, or an id an older preset mapped
+      // that would otherwise survive on every install that ever applied it.
+      // Applying it needs no Noble target: the point is to suppress the rule.
+      if (m.status === 'ignored') {
+        const at = this.rules.findIndex(
+          (r) => r.driverId === driverId && r.instrumentCode.toUpperCase() === code.toUpperCase()
+        )
+        const prev = at >= 0 ? this.rules[at] : undefined
+        const row: MappingRule = {
+          id: prev?.id ?? randomUUID(),
+          driverId,
+          instrumentCode: prev?.instrumentCode ?? code,
+          instrumentName: m.instrumentName ?? prev?.instrumentName,
+          analyzerCode: prev?.analyzerCode,
+          status: 'ignored',
+          unit: m.unit ?? prev?.unit,
+          updatedAt: now
+        }
+        if (at >= 0) this.rules[at] = row
+        else this.rules.push(row)
+        changed++
+        continue
+      }
+
       const hasTarget =
         m.lisTestId != null || m.lisTestCode || m.lisParamId != null || m.lisParamName
       if (!hasTarget) continue
@@ -658,6 +683,21 @@ export class MappingEngine {
         (r) => r.status !== 'manual' && (r.confidence ?? 0) >= MIN_TRUSTED_CONFIDENCE
       )
       const chosen = manual.length > 0 ? manual : driverHasManual ? [] : auto
+      // More than one channel resolving to a single LIS test means the analyzer
+      // would be asked to run the same test twice — wasted reagent at best, and
+      // on a Getein an unrecognised id in the order makes it reject the WHOLE
+      // task, so unrelated tests in the same request silently stop running too.
+      // Almost always a stale rule an older preset left behind; retire it with
+      // status 'ignored' rather than leaving it to be re-discovered in the lab.
+      if (chosen.length > 1) {
+        logger.warn(
+          'mapping',
+          `${driverId}: ${chosen.length} channels map to the same LIS test ` +
+            `(${chosen.map((r) => r.analyzerCode?.trim() || r.instrumentCode).join(', ')}) -> ` +
+            `"${chosen[0].lisTestName ?? chosen[0].lisTestCode ?? '?'}". The host query will order ` +
+            `all of them; mark the superseded one(s) 'ignored' in Mapping.`
+        )
+      }
       // Send the analyzer's own channel name when set (e.g. MAGLUMI X3 matches the
       // order by Channel No., not our generic code), else the instrument code.
       for (const r of chosen) out.push(r.analyzerCode?.trim() || r.instrumentCode)

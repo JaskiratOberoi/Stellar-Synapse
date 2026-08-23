@@ -13,6 +13,7 @@ import type { MonitorEvent, MonitorStage } from '@shared/types'
 
 /* Stage accents live in the text only â€” no tinted rows or borders. */
 const stageTone: Record<MonitorStage, string> = {
+  ordered: 'text-primary',
   received: 'text-muted-foreground',
   decoded: 'text-foreground/80',
   mapped: 'text-accent',

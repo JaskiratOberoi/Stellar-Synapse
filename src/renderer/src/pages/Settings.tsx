@@ -485,17 +485,27 @@ export function Settings() {
                       <RotateCw className="h-4 w-4" strokeWidth={1.75} /> Restart &amp; install
                     </Button>
                   ) : (
-                    <Button
-                      variant="outline"
-                      disabled={
-                        !form.autoUpdateEnabled ||
-                        updateStatus.state === 'checking' ||
-                        updateStatus.state === 'downloading'
-                      }
-                      onClick={() => void window.api.update.check()}
-                    >
-                      <RefreshCw className="h-4 w-4" strokeWidth={1.75} /> Check now
-                    </Button>
+                    <>
+                      {/* Deliberately NOT gated on autoUpdateEnabled: these are
+                          explicit operator actions, not the background schedule. */}
+                      <Button
+                        variant="outline"
+                        disabled={
+                          updateStatus.state === 'checking' || updateStatus.state === 'downloading'
+                        }
+                        onClick={() => void window.api.update.check()}
+                      >
+                        <RefreshCw className="h-4 w-4" strokeWidth={1.75} /> Check now
+                      </Button>
+                      <Button
+                        disabled={
+                          updateStatus.state === 'checking' || updateStatus.state === 'downloading'
+                        }
+                        onClick={() => void window.api.update.now()}
+                      >
+                        <RotateCw className="h-4 w-4" strokeWidth={1.75} /> Update now
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>

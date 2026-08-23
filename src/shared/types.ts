@@ -279,7 +279,14 @@ export interface PresetMapping {
   instrumentName?: string
   /** Analyte unit captured with the site config. */
   unit?: string
-  status?: 'auto' | 'manual'
+  /**
+   * 'ignored' suppresses a channel the analyzer exposes but this site must not
+   * order or accept — e.g. a superseded reagent generation that still sits in
+   * the analyzer's menu. Ignored rules are skipped by host-query order building,
+   * so a stale duplicate can be retired declaratively instead of surviving as a
+   * leftover rule on every install that ever applied an older preset.
+   */
+  status?: 'auto' | 'manual' | 'ignored'
   lisTestId?: number
   lisTestCode?: string
   lisTestName?: string
@@ -473,6 +480,13 @@ export type MonitorStage =
   | 'received'
   | 'decoded'
   | 'mapped'
+  /**
+   * A host-query answer: the tests Synapse told the analyzer to run for a
+   * barcode. Distinct from 'mapped' (an inbound result matched to a LIS field)
+   * so the UI can show what was SENT to the analyzer separately from what came
+   * back — the two directions fail independently and are diagnosed differently.
+   */
+  | 'ordered'
   | 'written'
   | 'skipped'
   | 'suppressed'

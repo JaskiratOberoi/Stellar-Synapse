@@ -32,6 +32,13 @@ export class AutoUpdater extends EventEmitter {
   private status: UpdateStatus
   private checkTimer: ReturnType<typeof setInterval> | null = null
   private installTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * Set by updateNow(): install the moment the download completes instead of
+   * waiting for the nightly window. Lets an operator pull a fix onto a bench
+   * machine in real time — the usual reason being that the fix is what unblocks
+   * the analyzer in front of them.
+   */
+  private installAssoonAsReady = false
   /** Set true before quitAndInstall so the window's close-to-tray handler yields. */
   private readonly beforeInstall: () => void
   private started = false
@@ -126,6 +133,13 @@ export class AutoUpdater extends EventEmitter {
         progressPercent: 100,
         lastCheckedAt: new Date().toISOString()
       })
+      if (this.installAssoonAsReady) {
+        this.installAssoonAsReady = false
+        logger.info('update', 'Operator asked to update now — installing immediately')
+        this.patch({ pendingInstallAt: undefined })
+        this.installNow()
+        return
+      }
       this.scheduleInstall()
     })
     autoUpdater.on('error', (err: Error) => {
@@ -139,6 +153,27 @@ export class AutoUpdater extends EventEmitter {
     if (!this.started) return
     autoUpdater.checkForUpdates().catch((err: Error) => {
       logger.error('update', `Check failed: ${err?.message ?? String(err)}`)
+      this.patch({ state: 'error', error: err?.message ?? String(err) })
+    })
+  }
+
+  /**
+   * Check, download and install without waiting for the nightly window. Works
+   * even with automatic updates switched off — this is an explicit operator
+   * action, not the background schedule. If an update is already downloaded it
+   * installs straight away.
+   */
+  updateNow(): void {
+    if (this.status.state === 'downloaded') {
+      logger.info('update', 'Update already downloaded — installing now')
+      this.installNow()
+      return
+    }
+    this.installAssoonAsReady = true
+    logger.info('update', 'Operator requested an immediate update')
+    autoUpdater.checkForUpdates().catch((err: Error) => {
+      this.installAssoonAsReady = false
+      logger.error('update', `Immediate update check failed: ${err?.message ?? String(err)}`)
       this.patch({ state: 'error', error: err?.message ?? String(err) })
     })
   }

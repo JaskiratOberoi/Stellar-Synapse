@@ -862,9 +862,9 @@
       ],
       "source": "Rohtak Getein MAGICL 6000i. Item ids and units read verbatim off the analyzer’s System Setup > Item Param screens (44 photographs, 2026-08-19). Same getein HL7 v2.3.1 / MLLP dialect as the Delhi 6000i and the Rohtak 6200, so no driver change was needed — only this per-site item-id -> Noble map. 43 assays configured and enabled.",
       "mappingsSummary": {
-        "total": 43,
+        "total": 45,
         "mapped": 43,
-        "unmapped": 0
+        "ignored": 2
       },
       "_mappingNotes": [
         "Analyte key (instrumentCode) is the MAGICL numeric item id from OBX-3 (the friendly name rides in OBX-4, so decoding is unambiguous). This 6000i uses the SAME 2-3 digit ids as the Delhi 6000i — TSH=18, T3=19, T4=20, FT3=21, FT4=22 — unlike the Rohtak 6200, which uses those ids + 1000. Do not copy ids between the two Rohtak MAGICLs.",
@@ -872,7 +872,8 @@
         "UNIT TRAPS — three analytes transmit a unit other than the Noble field’s. FT3 (21) pmol/L -> Noble pg/mL: converted x0.651 by units.ts (verified 400/400 rows). Testosterone (34) ug/dL -> Noble ng/dL: converted x1000 by units.ts; this analyzer is configured differently from the Rohtak 6200, which sends ng/dL, so writing raw would read a normal 500 ng/dL male as 0.5. FT4 (22) pmol/L: deliberately NOT converted — Noble’s FT4 field at this site is calibrated to the raw analyzer number (verified on the 6200: wire 12.64 -> Noble 12.64) and the lab’s reference range is set for it. Do not add a pmol/L -> ng/L rule without the lab’s sign-off.",
         "Vitamin D: the analyzer’s Item Param list carries TWO 25-OH-VD entries (id 42 and id 151, both enabled, both ng/mL). The channel it actually runs and transmits is 151 — verified live on SID 9502834 and consistent with the sister 6200’s 1151. Only 151 is mapped; mapping both would make the host query order two vitamin D channels for one request.",
         "AFP appears as a tile on the analyzer but its Item Param detail was not photographed, so it is NOT mapped. The Delhi 6000i uses id 1 for AFP -> BI024 (t1808); confirm the id on this analyzer before adding it.",
-        "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer’s HL7/Ethernet Server IP to this host’s instrument-LAN IP and its port to match; Synapse listens as tcp-server (8081 default). This is a THIRD instrument in this preset, separate from the DxC 700 AU (serial) and the MAGICL 6200."
+        "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer’s HL7/Ethernet Server IP to this host’s instrument-LAN IP and its port to match; Synapse listens as tcp-server (8081 default). This is a THIRD instrument in this preset, separate from the DxC 700 AU (serial) and the MAGICL 6200.",
+        "DUPLICATE-CHANNEL HAZARD (2026-08-23): three rules resolved to Noble VITAMIN D at once — 151 (correct), 42 (left behind by the v0.2.98 preset, which mapped Delhi’s id) and VITD (auto-seeded from the driver panel). instrumentCodesForLisTests emits every manual rule in a group, so the DSR carried all three; the Getein treats an unknown item id as a bad task and drops the ENTIRE request, which is why TSH and B12 stopped being picked up on any sample that also ordered vitamin D. 42 and VITD are now status \"ignored\" so they are suppressed even on installs that applied an older preset. Synapse also warns in the log whenever >1 channel resolves to one LIS test."
       ],
       "mappings": [
         {
@@ -1163,6 +1164,13 @@
           "confidence": 1
         },
         {
+          "instrumentCode": "42",
+          "instrumentName": "25-OH-VD (superseded channel)",
+          "unit": "ng/mL",
+          "status": "ignored",
+          "_note": "Superseded vitamin D channel. The analyzer runs and transmits 151; ordering this one alongside it made the host query send three codes for a single VITAMIN D request ([18,19,20,VITD,42,151,139,34] on SID 9502429), and the Getein rejected the whole task — so TSH and B12 in the same request stopped running too. Retired here so it is suppressed on every install, including ones that applied an older preset."
+        },
+        {
           "instrumentCode": "48",
           "instrumentName": "HIV",
           "lisTestId": 2635,
@@ -1370,6 +1378,13 @@
           "unit": "U/mL",
           "status": "manual",
           "confidence": 1
+        },
+        {
+          "instrumentCode": "VITD",
+          "instrumentName": "25-OH Vitamin D (generic panel code)",
+          "unit": "ng/mL",
+          "status": "ignored",
+          "_note": "Seeded from the driver analyte panel, not a real MAGICL order id — the analyzer orders by numeric item id, so sending the name \"VITD\" is an unknown assay to it. Ignored so it can never enter a host query."
         }
       ]
     }

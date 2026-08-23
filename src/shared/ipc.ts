@@ -88,6 +88,7 @@ export const IPC = {
   updateGetStatus: 'update:get-status',
   updateCheck: 'update:check',
   updateInstall: 'update:install',
+  updateNow: 'update:now',
 
   // Stellar Infinity cloud sync
   cloudStatus: 'cloud:status',
@@ -215,6 +216,12 @@ export interface StellarApi {
     getStatus(): Promise<UpdateStatus>
     /** Trigger an immediate check for updates. */
     check(): Promise<UpdateStatus>
+    /**
+     * Check, download and install immediately, bypassing the nightly install
+     * window and working even with automatic updates switched off. For pulling a
+     * fix onto a bench machine in real time.
+     */
+    now(): Promise<void>
     /** Install a downloaded update now (quits, installs, relaunches). */
     install(): Promise<void>
     /** Subscribe to update-status changes pushed from the main process. */

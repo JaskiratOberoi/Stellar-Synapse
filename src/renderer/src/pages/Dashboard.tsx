@@ -22,6 +22,7 @@ import { fadeInUp, listItem, staggerContainer } from '@/lib/motion'
 import type { MonitorStage } from '@shared/types'
 
 const stageTone: Record<MonitorStage, string> = {
+  ordered: 'text-primary',
   received: 'text-muted-foreground',
   decoded: 'text-foreground/80',
   mapped: 'text-accent',

@@ -1118,7 +1118,7 @@ export class Orchestrator extends EventEmitter {
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
-        stage: testNos.length ? 'mapped' : 'skipped',
+        stage: testNos.length ? 'ordered' : 'skipped',
         value: testNos.length ? `Online Test Nos: ${testNos.join(', ')}` : '(no tests)',
         mappedTo: codes.join(', ') || '(none)',
         message: testNos.length

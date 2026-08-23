@@ -161,6 +161,36 @@ export function InstrumentDetail() {
     return [...byKey.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
   }, [monitor, id])
 
+  /**
+   * Host-query answers: what Synapse told the analyzer to run, by barcode.
+   * Kept separate from received results because the two directions fail
+   * independently — an order can go out fine and no result come back, or the
+   * analyzer can reject an order outright and never run anything.
+   */
+  const sentOrders = useMemo(() => {
+    const rows = monitor
+      .filter((m) => m.stage === 'ordered' && m.sampleId && m.sampleId !== '-')
+      .map((m) => ({
+        id: m.id,
+        sampleId: m.sampleId,
+        timestamp: m.timestamp,
+        tests: (m.mappedTo || m.value || '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      }))
+    // The analyzer re-asks for the same barcode until it is satisfied, so keep
+    // only the most recent answer per sample instead of listing every retry.
+    const seen = new Set<string>()
+    const out: typeof rows = []
+    for (const r of rows) {
+      if (seen.has(r.sampleId)) continue
+      seen.add(r.sampleId)
+      out.push(r)
+    }
+    return out.slice(0, 20)
+  }, [monitor])
+
   const unparsedCount = useMemo(
     () => resultFrames.filter((f) => f.kind === 'ld560' && f.lisStatus !== 'done').length,
     [resultFrames]
@@ -429,6 +459,55 @@ export function InstrumentDetail() {
         </Card>
         </motion.div>
       </motion.div>
+
+      {inst.connection.hostQuery && (
+        <motion.div variants={fadeInUp}>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Sent to analyzer</CardTitle>
+              <Badge tone={sentOrders.length ? 'success' : 'muted'}>
+                {sentOrders.length} {sentOrders.length === 1 ? 'sample' : 'samples'}
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              {sentOrders.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No host queries answered yet. When the analyzer scans a barcode, the tests
+                  Synapse orders for it appear here.
+                </p>
+              ) : (
+                <motion.div className="space-y-2" variants={staggerContainer} initial="hidden" animate="show">
+                  {sentOrders.map((o) => (
+                    <motion.div
+                      key={o.id}
+                      variants={listItem}
+                      className="rounded-2xl border border-border/60 bg-secondary/30 px-4 py-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-sm text-primary">{o.sampleId}</span>
+                        <span className="text-xs text-muted-foreground">{formatTime(o.timestamp)}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {o.tests.map((t) => (
+                          <span
+                            key={t}
+                            className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs text-primary"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {o.tests.length} {o.tests.length === 1 ? 'test' : 'tests'} ordered
+                      </p>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div variants={fadeInUp}>
       <Card>

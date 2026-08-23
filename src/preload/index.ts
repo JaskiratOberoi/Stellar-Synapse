@@ -83,6 +83,7 @@ const api: StellarApi = {
     getStatus: () => ipcRenderer.invoke(IPC.updateGetStatus),
     check: () => ipcRenderer.invoke(IPC.updateCheck),
     install: () => ipcRenderer.invoke(IPC.updateInstall),
+    now: () => ipcRenderer.invoke(IPC.updateNow),
     onStatus: (cb) => on<UpdateStatus>(IPC_EVENT.updateStatus, cb)
   },
   cloud: {

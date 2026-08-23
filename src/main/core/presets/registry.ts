@@ -79,7 +79,14 @@ function readMappings(inst: any): PresetMapping[] | undefined {
       analyzerCode: analyzerCode && analyzerCode !== code ? analyzerCode : undefined,
       instrumentName: m.instrumentName ? String(m.instrumentName) : undefined,
       unit: m.unit ? String(m.unit) : undefined,
-      status: m.status === 'manual' ? 'manual' : m.status === 'auto' ? 'auto' : undefined,
+      status:
+        m.status === 'manual'
+          ? 'manual'
+          : m.status === 'auto'
+            ? 'auto'
+            : m.status === 'ignored'
+              ? 'ignored'
+              : undefined,
       lisTestId: typeof m.lisTestId === 'number' ? m.lisTestId : undefined,
       lisTestCode: m.lisTestCode ? String(m.lisTestCode) : undefined,
       lisTestName: m.lisTestName ? String(m.lisTestName) : hasParam ? undefined : name,

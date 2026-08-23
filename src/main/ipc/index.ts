@@ -344,6 +344,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
     return updater.getStatus()
   })
   ipcMain.handle(IPC.updateInstall, () => updater.installNow())
+  ipcMain.handle(IPC.updateNow, () => updater.updateNow())
 
   // Stellar Infinity cloud sync
   ipcMain.handle(IPC.cloudStatus, () => reporter.getStatus())
