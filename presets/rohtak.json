@@ -870,7 +870,7 @@
         "Analyte key (instrumentCode) is the MAGICL numeric item id from OBX-3 (the friendly name rides in OBX-4, so decoding is unambiguous). This 6000i uses the SAME 2-3 digit ids as the Delhi 6000i — TSH=18, T3=19, T4=20, FT3=21, FT4=22 — unlike the Rohtak 6200, which uses those ids + 1000. Do not copy ids between the two Rohtak MAGICLs.",
         "Every Noble target is reused from the Delhi MAGICL 6000i rows, which were verified against this same central Noble DB. The five TORCH IgM/HSV entries are new: Toxo IgM / Rubella IgM / CMV IgM take TORCH PROFILE 10 (t2666) params 5343/5344/5345, resolved from tbl_med_parameter_master; HSV-I/II IgM have no TCH10 member so they target the standalone tests CP3105 (t1797) and CP3106 (t1798).",
         "UNIT TRAPS — three analytes transmit a unit other than the Noble field’s. FT3 (21) pmol/L -> Noble pg/mL: converted x0.651 by units.ts (verified 400/400 rows). Testosterone (34) ug/dL -> Noble ng/dL: converted x1000 by units.ts; this analyzer is configured differently from the Rohtak 6200, which sends ng/dL, so writing raw would read a normal 500 ng/dL male as 0.5. FT4 (22) pmol/L: deliberately NOT converted — Noble’s FT4 field at this site is calibrated to the raw analyzer number (verified on the 6200: wire 12.64 -> Noble 12.64) and the lab’s reference range is set for it. Do not add a pmol/L -> ng/L rule without the lab’s sign-off.",
-        "The analyzer’s Item Param list also carries a SECOND 25-OH-VD entry at id 151 alongside id 42 (both enabled, both ng/mL). Only 42 is mapped — the Rohtak 6200 uses 1151 for vitamin D, so 151 is most likely the newer kit generation. If vitamin D results arrive undecoded, check which id the wire actually carries and move the mapping.",
+        "Vitamin D: the analyzer’s Item Param list carries TWO 25-OH-VD entries (id 42 and id 151, both enabled, both ng/mL). The channel it actually runs and transmits is 151 — verified live on SID 9502834 and consistent with the sister 6200’s 1151. Only 151 is mapped; mapping both would make the host query order two vitamin D channels for one request.",
         "AFP appears as a tile on the analyzer but its Item Param detail was not photographed, so it is NOT mapped. The Delhi 6000i uses id 1 for AFP -> BI024 (t1808); confirm the id on this analyzer before adding it.",
         "Connection: getein analyzers dial the LIS as TCP client. Set the analyzer’s HL7/Ethernet Server IP to this host’s instrument-LAN IP and its port to match; Synapse listens as tcp-server (8081 default). This is a THIRD instrument in this preset, separate from the DxC 700 AU (serial) and the MAGICL 6200."
       ],
@@ -1163,16 +1163,6 @@
           "confidence": 1
         },
         {
-          "instrumentCode": "42",
-          "instrumentName": "25-OH-VD",
-          "lisTestId": 74,
-          "lisTestCode": "BI005",
-          "lisTestName": "VITAMIN D",
-          "unit": "ng/mL",
-          "status": "manual",
-          "confidence": 1
-        },
-        {
           "instrumentCode": "48",
           "instrumentName": "HIV",
           "lisTestId": 2635,
@@ -1357,6 +1347,17 @@
           "unit": "S/CO",
           "status": "manual",
           "confidence": 1
+        },
+        {
+          "instrumentCode": "151",
+          "instrumentName": "25-OH-VD",
+          "lisTestId": 74,
+          "lisTestCode": "BI005",
+          "lisTestName": "VITAMIN D",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Vitamin D is item 151 on the Rohtak MAGICLs, NOT Delhi’s 42 — confirmed live (the analyzer transmitted \"151\" for SID 9502834) and corroborated by the sister 6200, whose id is 1151 = 151+1000 while every other assay is id+1000. Item 42 is also present and enabled on the analyzer but is not the channel it runs; ordering 42 selected nothing, which is why vitamin D was neither picked nor resulted."
         },
         {
           "instrumentCode": "157",
