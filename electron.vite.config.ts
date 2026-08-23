@@ -9,8 +9,8 @@ const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { vers
 export default defineConfig(({ mode }) => {
   // Auto-update feed config is injected at build time (never committed). Values
   // come from the environment or a gitignored .env file (SYNAPSE_UPDATE_*).
-  // The token is baked into the client so unattended lab PCs can pull releases
-  // from the private GitHub repo without any per-machine setup — see
+  // The fleet key is baked into the client so unattended lab PCs can pull
+  // releases from the Infinity-hosted feed without any per-machine setup — see
   // src/main/core/update/config.ts and docs/auto-update.md.
   const env = loadEnv(mode, process.cwd(), '')
 
@@ -25,9 +25,8 @@ export default defineConfig(({ mode }) => {
       },
       define: {
         __APP_VERSION__: JSON.stringify(pkg.version),
-        __UPDATE_OWNER__: JSON.stringify(env.SYNAPSE_UPDATE_OWNER ?? ''),
-        __UPDATE_REPO__: JSON.stringify(env.SYNAPSE_UPDATE_REPO ?? ''),
-        __UPDATE_TOKEN__: JSON.stringify(env.SYNAPSE_UPDATE_TOKEN ?? '')
+        __UPDATE_URL__: JSON.stringify(env.SYNAPSE_UPDATE_URL ?? ''),
+        __UPDATE_KEY__: JSON.stringify(env.SYNAPSE_UPDATE_KEY ?? '')
       },
       build: {
         rollupOptions: {

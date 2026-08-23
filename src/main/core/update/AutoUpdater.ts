@@ -77,7 +77,7 @@ export class AutoUpdater extends EventEmitter {
       return
     }
 
-    logger.info('update', `Auto-update armed (feed: ${updateFeed.owner}/${updateFeed.repo})`)
+    logger.info('update', `Auto-update armed (feed: ${updateFeed.url})`)
     setTimeout(() => this.checkNow(), INITIAL_CHECK_DELAY_MS)
     this.checkTimer = setInterval(() => {
       if (persist.getSettings().autoUpdateEnabled) this.checkNow()
@@ -98,15 +98,14 @@ export class AutoUpdater extends EventEmitter {
       error: (m: unknown) => logger.error('update', String(m)),
       debug: (m: unknown) => logger.debug('update', String(m))
     }
-    // Private GitHub repo: supply the read token at runtime rather than baking it
-    // into app-update.yml. Overrides the (tokenless) publish config in the package.
+    // Infinity-hosted generic feed, gated by the shared fleet key. The header
+    // rides on every request — the latest.yml check, full downloads, and the
+    // Range requests of differential updates alike.
     autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: updateFeed.owner,
-      repo: updateFeed.repo,
-      private: true,
-      token: updateFeed.token
+      provider: 'generic',
+      url: updateFeed.url
     })
+    autoUpdater.requestHeaders = { 'X-Update-Key': updateFeed.key }
 
     autoUpdater.on('checking-for-update', () => this.patch({ state: 'checking' }))
     autoUpdater.on('update-available', (info: UpdateInfo) => {
