@@ -56,6 +56,7 @@ export function InstrumentDetail() {
   const drivers = useAppStore((s) => s.drivers)
   const monitor = useAppStore((s) => s.monitor.filter((m) => m.instrumentId === id))
   const lisLive = useAppStore((s) => s.lisSettings?.live)
+  const mappings = useAppStore((s) => s.mappings)
   const [editing, setEditing] = useState(false)
   const [logView, setLogView] = useState<'parsed' | 'raw'>('parsed')
   const [parsingRaw, setParsingRaw] = useState<string | null>(null)
@@ -198,6 +199,25 @@ export function InstrumentDetail() {
     }
     return out.slice(0, 20)
   }, [monitor])
+
+  /**
+   * Order code -> analyte name for this driver. A host query carries only the
+   * analyzer's own ids ("18", "151"), which say nothing to a reader; the mapping
+   * rules hold the label. Both the instrument code and the analyzer channel are
+   * keyed, since an order sends whichever the rule pins.
+   */
+  const orderCodeNames = useMemo(() => {
+    const byCode = new Map<string, string>()
+    for (const r of mappings) {
+      if (r.driverId !== inst?.driverId) continue
+      const name = r.instrumentName?.trim()
+      if (!name) continue
+      byCode.set(r.instrumentCode.trim().toUpperCase(), name)
+      const ch = r.analyzerCode?.trim()
+      if (ch) byCode.set(ch.toUpperCase(), name)
+    }
+    return byCode
+  }, [mappings, inst?.driverId])
 
   const unparsedCount = useMemo(
     () => resultFrames.filter((f) => f.kind === 'ld560' && f.lisStatus !== 'done').length,
@@ -484,7 +504,12 @@ export function InstrumentDetail() {
                   Synapse orders for it appear here.
                 </p>
               ) : (
-                <motion.div className="space-y-2" variants={staggerContainer} initial="hidden" animate="show">
+                <motion.div
+                  className="max-h-96 space-y-2 overflow-y-auto"
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="show"
+                >
                   {sentOrders.map((o) => (
                     <motion.div
                       key={o.id}
@@ -496,14 +521,21 @@ export function InstrumentDetail() {
                         <span className="text-xs text-muted-foreground">{formatTime(o.timestamp)}</span>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {o.tests.map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-lg bg-primary/10 px-2 py-0.5 font-mono text-xs text-primary"
-                          >
-                            {t}
-                          </span>
-                        ))}
+                        {o.tests.map((t) => {
+                          const name = orderCodeNames.get(t.toUpperCase())
+                          return (
+                            <span
+                              key={t}
+                              className="inline-flex items-baseline gap-1.5 rounded-lg bg-secondary/60 px-2 py-1 text-xs"
+                              title={name ? `${name} — ordered as ${t}` : `${t} (no mapping on this driver)`}
+                            >
+                              <span>{name ?? t}</span>
+                              {name && (
+                                <span className="font-mono text-[11px] text-muted-foreground">{t}</span>
+                              )}
+                            </span>
+                          )
+                        })}
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">
                         {o.tests.length} {o.tests.length === 1 ? 'test' : 'tests'} ordered
