@@ -35,3 +35,11 @@ pkg*/
 dist-*/
 out-pkg/
 Thumbs.db
+
+# Analyzer captures kept ON PURPOSE, overriding the blanket *.log above. The eLab
+# logs a preset was derived from ARE the evidence for every mapping decision in
+# it, and get re-read months later when an analyzer drifts — the Rohtak DxC's
+# frame layout changed mid-investigation and only the original capture proved it.
+# Keep the folders unzipped so they stay greppable.
+!Logs mindray/
+!Logs mindray/*.log

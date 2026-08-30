@@ -1,0 +1,2208 @@
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:04:10
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:12:08
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:12:25
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:36:31
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:38:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:40:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:41:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:41:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:41:56
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:42:22
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:44:13
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:44:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:44:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:47:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:47:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:49:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:50:30
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:52:38
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:54:12
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:54:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:54:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:56:38
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:57:12
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:57:38
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 08:59:37
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:01:20
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:01:54
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:02:37
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:03:11
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:08:02
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:14:44
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:16:27
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:34:08
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:34:42
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:36:25
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:36:59
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:39:24
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:41:24
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:42:33
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:42:50
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:45:33
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:47:50
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:49:49
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:49:58
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:06
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:24
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:32
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:32
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:41
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:50:49
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:07
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:15
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:24
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:32
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:58
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:51:58
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:52:41
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:54:49
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:55:06
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:55:23
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:57:40
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 09:59:57
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:01:14
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:02:14
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:02:32
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:04:40
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:06:48
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:08:14
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:10:31
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:12:14
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:12:48
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:17:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:19:13
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:19:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:21:30
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:22:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:22:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:23:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:23:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:24:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:25:30
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:26:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:28:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:30:21
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:30:47
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:31:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:33:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:34:38
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:34:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:35:12
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:37:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 10:40:02
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 11:15:54
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 11:22:44
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 11:29:00
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 11:38:41
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 12:23:37
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 12:42:52
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 13:01:41
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 13:06:57
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 13:07:31
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:56:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:57:22
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:58:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:58:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:59:13
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:59:30
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 14:59:56
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 15:01:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 15:01:38
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 15:03:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 15:05:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 15:40:23
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:54:04
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:54:29
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:54:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:56:55
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:59:03
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:59:46
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 18:59:54
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:00:03
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:00:11
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:00:20
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:03:45
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:24:36
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 19:34:25
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:14:40
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:15:15
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:22:43
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:23:33
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:23:41
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:23:48
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:23:50
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:25:14
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:25:31
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:25:39
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:27:30
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
+--------------------------------------------------------------------------------------------------------
+08-26-2026 23:27:48
+'.', hexadecimal value 0x00, is an invalid character. Line 69648, position 14.
+   at System.Xml.XmlTextReaderImpl.Throw(Exception e)
+   at System.Xml.XmlTextReaderImpl.Throw(String res, String[] args)
+   at System.Xml.XmlTextReaderImpl.ParseText(Int32& startPos, Int32& endPos, Int32& outOrChars)
+   at System.Xml.XmlTextReaderImpl.ParseText()
+   at System.Xml.XmlTextReaderImpl.ParseElementContent()
+   at System.Xml.XmlTextReaderImpl.Read()
+   at System.Xml.XmlLoader.LoadNode(Boolean skipOverWhitespace)
+   at System.Xml.XmlLoader.LoadDocSequence(XmlDocument parentDoc)
+   at System.Xml.XmlLoader.Load(XmlDocument doc, XmlReader reader, Boolean preserveWhitespace)
+   at System.Xml.XmlDocument.Load(XmlReader reader)
+   at System.Xml.XmlDocument.Load(String filename)
+   at DataAnalyzer.Support.FileManager.WriteInputMessage(InputMessages Message, String FileName) in D:\NEW LIVE PROJECT\Extrnal soures\Extrnal soures\DataAnalyzer\Support\FileManager.cs:line 1102
+
