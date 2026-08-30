@@ -43,3 +43,6 @@ Thumbs.db
 # Keep the folders unzipped so they stay greppable.
 !Logs mindray/
 !Logs mindray/*.log
+!eLabs logs/
+!eLabs logs/**/
+!eLabs logs/**/*.log
