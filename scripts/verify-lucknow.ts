@@ -65,18 +65,27 @@ check('UREA 51.595075 -> 51.6 (trimmed, not padded)', roundResultValue('51.59507
 check('GLU 226.470520 -> 226.47', roundResultValue('226.470520', 2) === '226.47', `got ${roundResultValue('226.470520', 2)}`)
 
 // ---- 3. Panel covers every code the site actually transmits ------------------
-// The 20 codes seen across 7067 results in the captured window.
-const TRANSMITTED = ['GLU','UREA','CREAT','URIC','BIT','BID','SGPT','SGOT','ALP','GGT','TP','ALB','CHOL','TRIG','CAL','CRP','PHOS','LIP','AMY','ADA']
+// The 21 codes the analyzer RETURNS, built by parsing every R record in the
+// capture. "Iron" is mixed case and was missed by a first uppercase-only scan —
+// it is the fifth-busiest channel here (588 results), so this list is asserted
+// rather than trusted.
+const TRANSMITTED = ['GLU','UREA','CREAT','URIC','BIT','BID','SGPT','SGOT','ALP','GGT','TP','ALB','CHOL','TRIG','CAL','CRP','PHOS','LIP','AMY','ADA','Iron']
+// Ordered by eLab but no result in the captured window; real channels, mapped ready.
+const ORDERED_ONLY = ['HDL','LDL','TIBC','UIBC']
 const panel = new Set(MINDRAY_BS_CHEM.map((a) => a.code))
 const missingFromPanel = TRANSMITTED.filter((c) => !panel.has(c))
-check('driver panel covers all 20 transmitted codes', missingFromPanel.length === 0, `missing ${missingFromPanel.join(',')}`)
+check('driver panel covers all 21 transmitted codes', missingFromPanel.length === 0, `missing ${missingFromPanel.join(',')}`)
 
 // ---- 4. Preset maps every transmitted code to a Noble target -----------------
 const inst = lucknow.instruments[0]
 const mapped = new Map(inst.mappings.map((m) => [m.instrumentCode, m]))
 const unmapped = TRANSMITTED.filter((c) => !mapped.has(c))
-check('preset maps all 20 transmitted codes', unmapped.length === 0, `unmapped ${unmapped.join(',')}`)
-check('every mapping carries a Noble test id', inst.mappings.every((m) => typeof m.lisTestId === 'number'))
+check('preset maps all 21 transmitted codes', unmapped.length === 0, `unmapped ${unmapped.join(',')}`)
+check('  including the mixed-case Iron channel', mapped.get('Iron')?.lisTestCode === 'BI137')
+const unorderedMissing = ORDERED_ONLY.filter((c) => !mapped.has(c))
+check('preset maps the ordered-but-unresulted channels', unorderedMissing.length === 0, `unmapped ${unorderedMissing.join(',')}`)
+const live = inst.mappings.filter((m) => m.status !== 'ignored')
+check('every live mapping carries a Noble test id', live.every((m) => typeof m.lisTestId === 'number'))
 const codes = inst.mappings.map((m) => m.instrumentCode)
 check('no duplicate analyte codes', new Set(codes).size === codes.length)
 
@@ -99,9 +108,19 @@ for (const [code, testId, testCode, paramId] of [
 // Glucose must stay test-level so variant retargeting can pick Fasting/PP/Random.
 check('GLU has no pinned paramId (variant retargeting stays live)', mapped.get('GLU')?.lisParamId === undefined)
 
-// The analyzer never sends Na/K/Cl, so nothing may claim those fields.
+// TC/TG duplicate CHOL/TRIG onto one Noble test each. Both must stay retired, or
+// the host query orders two channels for one test — the Rohtak failure mode.
+for (const dup of ['TC', 'TG']) {
+  check(`${dup} stays 'ignored' (duplicate channel)`, mapped.get(dup)?.status === 'ignored')
+}
+const targets = live.map((m) => `${m.lisTestId}/${m.lisParamId ?? '-'}`)
+check('no two live channels claim the same Noble target', new Set(targets).size === targets.length,
+  `repeated: ${targets.filter((t, i) => targets.indexOf(t) !== i).join(',')}`)
+
+// Electrolytes are absent from BOTH directions of the capture — zero results and
+// zero eLab orders — so nothing here may claim them.
 const electrolyteCodes = ['Na', 'K', 'Cl', 'NA', 'CL']
-check('no electrolyte mapping (this analyzer does not transmit them)',
+check('no electrolyte mapping (absent from results AND orders)',
   !inst.mappings.some((m) => electrolyteCodes.includes(m.instrumentCode)))
 
 console.log(fail ? `\n${fail} FAILURE(S)` : '\nALL PASS')

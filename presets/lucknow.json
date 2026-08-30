@@ -10,10 +10,22 @@
       "category": "Clinical Chemistry",
       "protocol": "astm",
       "mode": "bidirectional",
-      "transports": ["serial", "tcp-server"],
-      "serial": { "baudRate": 9600, "dataBits": 8, "parity": "none", "stopBits": 1 },
+      "transports": [
+        "serial",
+        "tcp-server"
+      ],
+      "serial": {
+        "baudRate": 9600,
+        "dataBits": 8,
+        "parity": "none",
+        "stopBits": 1
+      },
       "source": "Lucknow (MEDSKY PATH LAB & DIAGNOSTICS, business_unit_id 15) Mindray BS-series chemistry analyzer. Decoded from the site's eLab Assist logs, 26-30 Aug 2026 (logINMessage/logDetails): 1786 host queries, 2541 order records and 7067 results across 827 samples. The wire format matches the existing mindray ASTM dialect exactly (H field 12 RQ/PR/SA, barcode in the O Specimen ID field 4, analyte code in R component 1), so no protocol work was needed - only five analytes this site runs that the driver panel lacked.",
-      "mappingsSummary": { "total": 20, "mapped": 20, "unmapped": 0 },
+      "mappingsSummary": {
+        "total": 27,
+        "mapped": 25,
+        "ignored": 2
+      },
       "_protocolNotes": [
         "ASTM E1381 framing + E1394 records, sender \"Mindry\", version 1394-97 - identical to the BS-430 the mindray dialect was originally decoded from. The host query arrives as H(RQ) + Q record with the barcode in Q field 3 (\"^SID\"); Synapse answers with the H(SA) + P + O download the dialect already builds. verify:mindray's 52 parity checks still pass unchanged.",
         "TRANSPORT NOT OBSERVABLE from the eLab logs - they record framed messages, not the port. The BS-series speaks either RS-232 (9600 8-N-1, as at the reference site) or TCP. Serial is listed first because that is how the reference BS-430 runs; confirm on the analyzer's LIS screen at onboarding and switch the instrument if it is on Ethernet.",
@@ -22,8 +34,9 @@
       "_mappingNotes": [
         "Every target was taken from what THIS site already registers in Noble, not carried over from another lab: 120 Lucknow samples were read back and each analyte matched to the test/parameter row it actually lands in. Same central Noble DB as the other presets, so the ids are directly comparable.",
         "PRECISION: the analyzer transmits full internal precision (GLU 226.470520, CREAT 1.538779) where eLab writes a rounded figure - Noble holds 1.54, 7.55, 51.6, 109, 4. No change was needed: the mindray driver already rounds to 2 dp on parse (round2), a decision taken when the BS-430 was decoded, and verify:lucknow pins that it reproduces this site's stored values exactly.",
-        "Sodium, Potassium and Chloride are registered on these samples but are NOT in this analyzer's transmitted set - no Na/K/Cl codes appear anywhere in 7067 results. They come from another instrument or an ISE module, so they are deliberately unmapped here.",
-        "SPOT-CHECK CAVEAT: comparing wire values against Noble across 80 analyte/sample pairs, most agree once per-analyte decimals are allowed for, but a few differ by a clean margin (SID 9366422 glucose wire 226.47 vs Noble 126.47; SID 8689560 uric acid 10.78 vs 8.78). Those SIDs show no re-run in the captured window, so they read as post-hoc amendments by the lab rather than an interfacing fault, and no conversion is applied. Worth confirming with the lab before go-live."
+        "ELECTROLYTES ARE NOT ON THIS ANALYZER. Na/K/Cl are registered against these samples in Noble but appear nowhere in the capture — zero results across 7067 R records AND zero orders across 1429 eLab order records, so the reference interface does not ask this analyzer for them either. They come from another instrument or an ISE module elsewhere. Mapping them here would make Synapse order tests eLab never orders on a bidirectional link; if this analyzer does gain an ISE module, add the codes it actually transmits rather than guessing Na/K/Cl.",
+        "SPOT-CHECK CAVEAT: comparing wire values against Noble across 80 analyte/sample pairs, most agree once per-analyte decimals are allowed for, but a few differ by a clean margin (SID 9366422 glucose wire 226.47 vs Noble 126.47; SID 8689560 uric acid 10.78 vs 8.78). Those SIDs show no re-run in the captured window, so they read as post-hoc amendments by the lab rather than an interfacing fault, and no conversion is applied. Worth confirming with the lab before go-live.",
+        "CODE SCAN CAVEAT (worth repeating for the next site): the transmitted-code list must be built by parsing every R record, not by regex over the raw text. A first pass here used an uppercase-only pattern and silently missed \"Iron\" — 588 results, the analyzer’s fifth-busiest channel. HDL, LDL, TIBC, UIBC, TC, TG, RFII and MAG are ordered by eLab but returned no result in the captured window; the first four are mapped ready, TC/TG are retired as duplicates, and RFII (rheumatoid factor, 70 orders) and MAG (magnesium, 1 order) are left unmapped pending a result to confirm their codes and targets."
       ],
       "mappings": [
         {
@@ -241,6 +254,75 @@
           "status": "manual",
           "confidence": 1,
           "_note": "Serum ADA. Noble also has ADA (Adenosine Deaminase) CSF (BI012, t18). Only 3 ADA results appear in the captured window, so confirm with the lab whether CSF ADA is ever run on this analyzer before relying on this target."
+        },
+        {
+          "instrumentCode": "Iron",
+          "instrumentName": "Iron (Serum)",
+          "lisTestId": 135,
+          "lisTestCode": "BI137",
+          "lisTestName": "Iron",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Mixed-case code on the wire (\"Iron\", not \"IRON\") — 588 results and 392 orders in the capture. The R record labels the unit \"g/dL\", which is the analyzer mislabelling micrograms; the magnitude is ug/dL and Noble stores ug/dL, so the value passes through unconverted. Do not add a g/dL conversion for it."
+        },
+        {
+          "instrumentCode": "HDL",
+          "instrumentName": "HDL Cholesterol",
+          "lisTestId": 102,
+          "lisTestCode": "BI077",
+          "lisTestName": "Cholesterol - HDL",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Ordered 697 times in the capture but returned no result in that window; the channel is real and the lab reports HDL, so it is mapped ready for when results arrive."
+        },
+        {
+          "instrumentCode": "LDL",
+          "instrumentName": "LDL Cholesterol",
+          "lisTestId": 103,
+          "lisTestCode": "BI078",
+          "lisTestName": "Cholesterol - LDL DIRECT",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Ordered 697 times, no result in the captured window — same situation as HDL."
+        },
+        {
+          "instrumentCode": "TIBC",
+          "instrumentName": "Total Iron Binding Capacity",
+          "lisTestId": 136,
+          "lisTestCode": "BI138",
+          "lisTestName": "Iron Binding Capacity - Total (TIBC)",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Ordered 547 times, no result in the captured window."
+        },
+        {
+          "instrumentCode": "UIBC",
+          "instrumentName": "Unsaturated Iron Binding Capacity",
+          "lisTestId": 252,
+          "lisTestCode": "BI222",
+          "lisTestName": "Unsaturated Iron Binding Capacity (UIBC)",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Ordered 540 times, no result in the captured window."
+        },
+        {
+          "instrumentCode": "TC",
+          "instrumentName": "Total Cholesterol (duplicate channel)",
+          "unit": "mg/dL",
+          "status": "ignored",
+          "_note": "eLab orders BOTH CHOL and TC on every lipid panel, and both resolve to Noble Cholesterol - Total (BI079). Ordering two channels for one test is the duplicate-channel hazard that broke the Rohtak Getein, so only CHOL — the one that actually returns results (411 vs 0) — is mapped."
+        },
+        {
+          "instrumentCode": "TG",
+          "instrumentName": "Triglycerides (duplicate channel)",
+          "unit": "mg/dL",
+          "status": "ignored",
+          "_note": "Same pairing as TC/CHOL: eLab orders both TRIG and TG, both resolve to Noble Triglycerides (BI218). Only TRIG returns results (403 vs 0), so TG is retired."
         }
       ]
     }
