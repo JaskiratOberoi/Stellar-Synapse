@@ -1,0 +1,248 @@
+{
+  "preset": "lucknow",
+  "location": "Lucknow",
+  "capturedAt": "2026-08-30",
+  "instruments": [
+    {
+      "driverId": "mindray-bs-240",
+      "model": "Mindray BS-240",
+      "vendor": "Mindray",
+      "category": "Clinical Chemistry",
+      "protocol": "astm",
+      "mode": "bidirectional",
+      "transports": ["serial", "tcp-server"],
+      "serial": { "baudRate": 9600, "dataBits": 8, "parity": "none", "stopBits": 1 },
+      "source": "Lucknow (MEDSKY PATH LAB & DIAGNOSTICS, business_unit_id 15) Mindray BS-series chemistry analyzer. Decoded from the site's eLab Assist logs, 26-30 Aug 2026 (logINMessage/logDetails): 1786 host queries, 2541 order records and 7067 results across 827 samples. The wire format matches the existing mindray ASTM dialect exactly (H field 12 RQ/PR/SA, barcode in the O Specimen ID field 4, analyte code in R component 1), so no protocol work was needed - only five analytes this site runs that the driver panel lacked.",
+      "mappingsSummary": { "total": 20, "mapped": 20, "unmapped": 0 },
+      "_protocolNotes": [
+        "ASTM E1381 framing + E1394 records, sender \"Mindry\", version 1394-97 - identical to the BS-430 the mindray dialect was originally decoded from. The host query arrives as H(RQ) + Q record with the barcode in Q field 3 (\"^SID\"); Synapse answers with the H(SA) + P + O download the dialect already builds. verify:mindray's 52 parity checks still pass unchanged.",
+        "TRANSPORT NOT OBSERVABLE from the eLab logs - they record framed messages, not the port. The BS-series speaks either RS-232 (9600 8-N-1, as at the reference site) or TCP. Serial is listed first because that is how the reference BS-430 runs; confirm on the analyzer's LIS screen at onboarding and switch the instrument if it is on Ethernet.",
+        "MODEL NOT IDENTIFIED BY THE WIRE: every BS-series analyzer signs its header \"Mindry\", so the logs cannot tell a BS-240 from a BS-360/430/480. The driverId here is a placeholder - pick the real model when adding the instrument. All BS models share this driver, so only the display name changes."
+      ],
+      "_mappingNotes": [
+        "Every target was taken from what THIS site already registers in Noble, not carried over from another lab: 120 Lucknow samples were read back and each analyte matched to the test/parameter row it actually lands in. Same central Noble DB as the other presets, so the ids are directly comparable.",
+        "PRECISION: the analyzer transmits full internal precision (GLU 226.470520, CREAT 1.538779) where eLab writes a rounded figure - Noble holds 1.54, 7.55, 51.6, 109, 4. No change was needed: the mindray driver already rounds to 2 dp on parse (round2), a decision taken when the BS-430 was decoded, and verify:lucknow pins that it reproduces this site's stored values exactly.",
+        "Sodium, Potassium and Chloride are registered on these samples but are NOT in this analyzer's transmitted set - no Na/K/Cl codes appear anywhere in 7067 results. They come from another instrument or an ISE module, so they are deliberately unmapped here.",
+        "SPOT-CHECK CAVEAT: comparing wire values against Noble across 80 analyte/sample pairs, most agree once per-analyte decimals are allowed for, but a few differ by a clean margin (SID 9366422 glucose wire 226.47 vs Noble 126.47; SID 8689560 uric acid 10.78 vs 8.78). Those SIDs show no re-run in the captured window, so they read as post-hoc amendments by the lab rather than an interfacing fault, and no conversion is applied. Worth confirming with the lab before go-live."
+      ],
+      "mappings": [
+        {
+          "instrumentCode": "GLU",
+          "instrumentName": "Glucose (GOD-POD)",
+          "lisTestId": 284,
+          "lisTestCode": "BI114",
+          "lisTestName": "Glucose - Fasting",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Noble catalogues point glucose as three orderable variants - Fasting (BI114), Post Prandial (BI115) and Random (BI116) - while the analyzer has a single channel. Deliberately left at test level (no lisParamId) so Synapse's variant retargeting fills whichever variant the sample actually ordered; pinning a paramId would defeat it."
+        },
+        {
+          "instrumentCode": "UREA",
+          "instrumentName": "Urea",
+          "lisTestId": 172,
+          "lisTestCode": "BI224",
+          "lisTestName": "Urea",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "The analyzer measures UREA and Noble derives BUN (BI056) itself at /2.14 - verified here on SID 8689560: wire 51.60 -> Noble Urea 51.6, BUN 24.1. Write urea raw and never map this channel to the BUN field."
+        },
+        {
+          "instrumentCode": "CREAT",
+          "instrumentName": "Creatinine",
+          "lisTestId": 114,
+          "lisTestCode": "BI089",
+          "lisTestName": "Creatinine",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "URIC",
+          "instrumentName": "Uric Acid",
+          "lisTestId": 173,
+          "lisTestCode": "BI227",
+          "lisTestName": "Uric acid",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "BIT",
+          "instrumentName": "Total Bilirubin",
+          "lisTestId": 87,
+          "lisTestCode": "BI046",
+          "lisTestName": "Bilirubin (Total Direct & Indirect )",
+          "lisParamId": 431,
+          "lisParamName": "Bilirubin Total",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "BID",
+          "instrumentName": "Direct Bilirubin",
+          "lisTestId": 87,
+          "lisTestCode": "BI046",
+          "lisTestName": "Bilirubin (Total Direct & Indirect )",
+          "lisParamId": 430,
+          "lisParamName": "Bilirubin Conjugated",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "The analyzer runs the DSA method and reports direct bilirubin; Noble files it as the Conjugated parameter. Indirect (p432) is derived by Noble, not transmitted."
+        },
+        {
+          "instrumentCode": "SGPT",
+          "instrumentName": "Alanine Aminotransferase (ALT)",
+          "lisTestId": 79,
+          "lisTestCode": "BI014",
+          "lisTestName": "Alanine amino Transferase - (ALT / SGPT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "SGOT",
+          "instrumentName": "Aspartate Aminotransferase (AST)",
+          "lisTestId": 81,
+          "lisTestCode": "BI040",
+          "lisTestName": "Aspartate Aminotransferase (AST/SGOT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "ALP",
+          "instrumentName": "Alkaline Phosphatase",
+          "lisTestId": 279,
+          "lisTestCode": "BI023",
+          "lisTestName": "Alkaline Phosphatase (ALP)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "GGT",
+          "instrumentName": "Gamma GT",
+          "lisTestId": 130,
+          "lisTestCode": "BI112",
+          "lisTestName": "Gamma Glutamyl Transferase (GGT)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "TP",
+          "instrumentName": "Total Protein",
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 678,
+          "lisParamName": "Protein Total  Serum",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "ALB",
+          "instrumentName": "Albumin",
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 676,
+          "lisParamName": "Albumin - Serum",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Albumin and Total Protein are parameters of the Noble composite BI213 at this site; Globulin and the A/G ratio are derived by Noble from the two, not transmitted."
+        },
+        {
+          "instrumentCode": "CHOL",
+          "instrumentName": "Total Cholesterol",
+          "lisTestId": 104,
+          "lisTestCode": "BI079",
+          "lisTestName": "Cholesterol - Total",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "TRIG",
+          "instrumentName": "Triglycerides",
+          "lisTestId": 168,
+          "lisTestCode": "BI218",
+          "lisTestName": "Triglycerides",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CAL",
+          "instrumentName": "Calcium",
+          "lisTestId": 96,
+          "lisTestCode": "BI064",
+          "lisTestName": "Calcium - Serum",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "CRP",
+          "instrumentName": "C-Reactive Protein",
+          "lisTestId": 113,
+          "lisTestCode": "MS024",
+          "lisTestName": "C-Reactive Protein (CRP)",
+          "lisParamId": 491,
+          "lisParamName": "C-Reactive Protein (CRP)",
+          "unit": "mg/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "PHOS",
+          "instrumentName": "Phosphorus",
+          "lisTestId": 146,
+          "lisTestCode": "BI165",
+          "lisTestName": "Phosphorus Inorganic",
+          "unit": "mg/dL",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "LIP",
+          "instrumentName": "Lipase",
+          "lisTestId": 139,
+          "lisTestCode": "BI146",
+          "lisTestName": "Lipase",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1
+        },
+        {
+          "instrumentCode": "AMY",
+          "instrumentName": "Amylase",
+          "lisTestId": 623,
+          "lisTestCode": "BI031",
+          "lisTestName": "Amylase",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Serum amylase. Noble also carries Amylase-Urine (BI032, t624) and Amylase - Body Fluid (BI028, t686); this analyzer runs serum, so those are intentionally not mapped."
+        },
+        {
+          "instrumentCode": "ADA",
+          "instrumentName": "Adenosine Deaminase",
+          "lisTestId": 1986,
+          "lisTestCode": "BI401",
+          "lisTestName": "ADA (Adenosine Deaminase)",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Serum ADA. Noble also has ADA (Adenosine Deaminase) CSF (BI012, t18). Only 3 ADA results appear in the captured window, so confirm with the lab whether CSF ADA is ever run on this analyzer before relying on this target."
+        }
+      ]
+    }
+  ]
+}

@@ -14,12 +14,13 @@ import jammu from '../../../../presets/jammu.json'
 import delhi from '../../../../presets/delhi.json'
 import karnal from '../../../../presets/karnal.json'
 import rohtak from '../../../../presets/rohtak.json'
+import lucknow from '../../../../presets/lucknow.json'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // The preset JSON files are human-authored and carry documentation keys (_note,
 // _doc, ...) and two different shapes for the AU test table, so we read them
 // loosely and normalize into the strict LocationPreset shape below.
-const RAW_PRESETS: any[] = [haldwani, jammu, delhi, karnal, rohtak]
+const RAW_PRESETS: any[] = [haldwani, jammu, delhi, karnal, rohtak, lucknow]
 
 /** Pull the per-site Online Test No. table from either JSON shape (or none). */
 function readAuTestNos(inst: any): AuOnlineTestNo[] | undefined {

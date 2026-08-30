@@ -80,7 +80,14 @@ export const MINDRAY_BS_CHEM: DriverAnalyte[] = [
   a('CAL', 'Calcium', 'mg/dL', 8.6, 10.2, 1),
   a('Iron', 'Iron (Serum)', 'ug/dL', 60, 170, 0),
   a('TIBC', 'Total Iron Binding Capacity', 'ug/dL', 250, 450, 0),
-  a('UIBC', 'Unsaturated Iron Binding Capacity', 'ug/dL', 110, 370, 0)
+  a('UIBC', 'Unsaturated Iron Binding Capacity', 'ug/dL', 110, 370, 0),
+  // Seen live on the Lucknow BS-series (2026-08 eLab capture) alongside the panel
+  // above; the analyzer transmits these codes verbatim in the R record.
+  a('CRP', 'C-Reactive Protein', 'mg/L', 0, 5, 1),
+  a('PHOS', 'Phosphorus', 'mg/dL', 2.5, 4.5, 1),
+  a('LIP', 'Lipase', 'U/L', 13, 60, 0),
+  a('AMY', 'Amylase', 'U/L', 28, 100, 0),
+  a('ADA', 'Adenosine Deaminase', 'U/L', 0, 30, 1)
 ]
 
 // ---------------------------------------------------------------------------
