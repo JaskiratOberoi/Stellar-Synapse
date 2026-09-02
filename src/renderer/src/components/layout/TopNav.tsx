@@ -155,11 +155,18 @@ export function TopNav() {
           </AnimatePresence>
         </Button>
 
+        {/* The LAN IP is what an analyzer's Server IP field wants, so it has to be
+            readable during onboarding — which is usually a remote session in a
+            window narrower than a full desktop. It was gated behind 2xl and so
+            vanished exactly when it was needed. The version drops away first on a
+            genuinely cramped window; the address stays. */}
         <div
-          className="hidden text-right leading-tight 2xl:block"
-          title="App version · this machine's LAN IPv4 (what analyzers dial)"
+          className="text-right leading-tight"
+          title="This machine's LAN IPv4 — the address analyzers dial. Also in Settings > About."
         >
-          <div className="text-[11px] tabular-nums text-muted-foreground">v{__APP_VERSION__}</div>
+          <div className="hidden text-[11px] tabular-nums text-muted-foreground lg:block">
+            v{__APP_VERSION__}
+          </div>
           {lanIp && <div className="font-mono text-[11px] text-muted-foreground">{lanIp}</div>}
         </div>
       </div>

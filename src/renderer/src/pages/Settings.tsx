@@ -86,6 +86,9 @@ export function Settings() {
   const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus | null>(null)
   const [cloudTesting, setCloudTesting] = useState(false)
   const [cloudTest, setCloudTest] = useState<CloudTestResult | null>(null)
+  // This machine's LAN IPv4 — the value an analyzer's "Server IP" field needs.
+  const [lanIp, setLanIp] = useState<string | null>(null)
+  const [ipCopied, setIpCopied] = useState(false)
 
   useEffect(() => setForm(settings), [settings])
   useEffect(() => setLisForm(lisSettings), [lisSettings])
@@ -96,6 +99,9 @@ export function Settings() {
   useEffect(() => {
     void window.api.cloud.status().then(setCloudStatus)
     return window.api.cloud.onStatus(setCloudStatus)
+  }, [])
+  useEffect(() => {
+    void window.api.system.lanIp().then(setLanIp).catch(() => undefined)
   }, [])
   if (!form || !lisForm) return null
 
@@ -558,6 +564,31 @@ export function Settings() {
                   </div>
                 </div>
     
+                {lanIp && (
+                  <div>
+                    <p className="microlabel mb-2">This machine on the network</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(lanIp)
+                        setIpCopied(true)
+                        window.setTimeout(() => setIpCopied(false), 1600)
+                      }}
+                      className="flex w-full items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3 text-left transition-colors hover:bg-secondary/60"
+                      title="Copy this address"
+                    >
+                      <span className="font-mono text-sm text-foreground">{lanIp}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {ipCopied ? 'Copied' : 'Copy'}
+                      </span>
+                    </button>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Enter this as the Server IP / host address on an analyzer that dials in to
+                      Synapse.
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <p className="microlabel mb-2">Registered drivers</p>
                   <div className="flex flex-wrap gap-2">
