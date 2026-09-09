@@ -54,6 +54,8 @@ interface PersistShape {
   migratedRescoreNameMappings?: boolean
   /** One-time migration: route Delhi 6000i TORCH IgG analytes to the TCH10 profile. */
   migratedDelhiTorchProfile?: boolean
+  /** One-time migration: backfill Delhi 6000i preset rows (AFP 1, PCT 31, ANA 64) missing from older installs. */
+  migratedDelhiMagiclBackfill?: boolean
 }
 
 type MigrationFlagKey =
@@ -61,6 +63,7 @@ type MigrationFlagKey =
   | 'migratedLd560EnableEag'
   | 'migratedRescoreNameMappings'
   | 'migratedDelhiTorchProfile'
+  | 'migratedDelhiMagiclBackfill'
 
 const MAX_MONITOR_HISTORY = 2000
 

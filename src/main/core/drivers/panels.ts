@@ -132,7 +132,11 @@ export const INFLAMMATION: DriverAnalyte[] = [
   a('IL6', 'Interleukin-6', 'pg/mL', 0, 7, 1)
 ]
 
-export const AUTOIMMUNE: DriverAnalyte[] = [a('ACCP', 'Anti-CCP', 'U/mL', 0, 17, 1)]
+export const AUTOIMMUNE: DriverAnalyte[] = [
+  a('ACCP', 'Anti-CCP', 'U/mL', 0, 17, 1),
+  // Quantitative CLIA ANA (Getein MAGICL item 64, AU/mL; Noble ANACL01 ref <40).
+  a('ANA', 'Anti-nuclear Antibody (ANA)', 'AU/mL', 0, 40)
+]
 
 /**
  * Specialty endocrine / allergy immunoassays that don't fit the panels above —

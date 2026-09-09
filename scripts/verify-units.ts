@@ -120,6 +120,32 @@ const CASES: Case[] = [
     expectValue: '14.4',
     expectUnit: 'g/dL'
   },
+  // --- AFP: ng/mL -> IU/mL, WHO IS 72/225, analyte-guarded, MAGICL keys it "1"
+  {
+    name: 'AFP ng/mL -> IU/mL (by mapping name when code is a bare id)',
+    result: res({ analyteCode: '1', analyteName: '1', value: '12.10', unit: 'ng/mL' }),
+    rule: rule({
+      instrumentName: 'Alpha Fetoprotein',
+      lisTestName: 'AFP  Alpha Feto Protein Serum',
+      unit: 'IU/mL'
+    }),
+    expectValue: '10.00',
+    expectUnit: 'IU/mL'
+  },
+  {
+    name: 'NO double-convert: analyzer already sends IU/mL for AFP',
+    result: res({ analyteCode: '1', analyteName: 'AFP', value: '10.00', unit: 'IU/mL' }),
+    rule: rule({ instrumentName: 'Alpha Fetoprotein', unit: 'IU/mL' }),
+    expectValue: '10.00',
+    expectUnit: 'IU/mL'
+  },
+  {
+    name: 'NO convert: ng/mL -> IU/mL for a non-AFP analyte (IgE has its own IU)',
+    result: res({ analyteCode: '25', analyteName: 'IgE', value: '50', unit: 'ng/mL' }),
+    rule: rule({ instrumentName: 'IgE', lisTestName: 'Total IgE', unit: 'IU/mL' }),
+    expectValue: '50',
+    expectUnit: 'ng/mL'
+  },
   {
     name: 'passthrough when units already agree',
     result: res({ analyteCode: '18', analyteName: 'TSH', value: '1.297', unit: 'uIU/mL' }),

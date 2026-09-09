@@ -54,6 +54,22 @@ const FT3_PMOL_L_TO_PG_ML = 0.651
 
 
 /**
+ * Identifies alpha-fetoprotein the same way FT3 is identified: the MAGICL keys
+ * it as the bare item-id "1", so the mapping's names are checked too.
+ */
+const AFP_PATTERN = /\bAFP\b|alpha[\s-]*feto/i
+
+/**
+ * ng/mL -> IU/mL is NOT dimensional: an International Unit is defined per
+ * antigen, so the factor is analyte-specific and the rule must be guarded on
+ * AFP. For AFP it is fixed by the WHO 1st International Standard 72/225:
+ * 1 IU = 1.21 ng. The Delhi MAGICL's AFP LIS Unit is ng/mL (Item Param screen,
+ * 2026-09-07) while Noble's BI024 field holds IU/mL (Delhi: 454 rows in 180
+ * days, all IU/mL); writing ng/mL raw would read every AFP 17% low.
+ */
+const AFP_NG_ML_PER_IU_ML = 1.21
+
+/**
  * ug/dL -> ng/dL is purely dimensional (x1000). The Rohtak MAGICL sends
  * testosterone in ug/dL where Noble's field holds ng/dL; writing it raw reads a
  * normal 500 ng/dL male as 0.5 — profoundly hypogonadal. Dimensional, so no
@@ -100,6 +116,15 @@ export function convertForLis(
     }
   }
 
+  // AFP: ng/mL (Delhi MAGICL LIS Unit) -> IU/mL (Noble BI024). Analyte-guarded
+  // because IU/mL means something different for IgE, TG-Ab, TPO-Ab etc.
+  if (srcUnit === 'ng/ml' && tgtUnit === 'iu/ml' && isAfp(result, rule)) {
+    const n = parseFloat(result.value)
+    if (!Number.isNaN(n)) {
+      return { value: (n / AFP_NG_ML_PER_IU_ML).toFixed(2), unit: 'IU/mL' }
+    }
+  }
+
   // ug/dL -> ng/dL (testosterone on the Rohtak MAGICL). Purely dimensional.
   if ((srcUnit === 'ug/dl' || srcUnit === 'µg/dl') && tgtUnit === 'ng/dl') {
     const n = parseFloat(result.value)
@@ -122,5 +147,12 @@ export function convertForLis(
 function isFreeT3(result: CanonicalResult, rule: MappingRule): boolean {
   return [result.analyteCode, result.analyteName, rule.instrumentName, rule.lisTestName].some(
     (s) => !!s && FT3_PATTERN.test(s)
+  )
+}
+
+/** True when this result/mapping pair is alpha-fetoprotein (see AFP_PATTERN). */
+function isAfp(result: CanonicalResult, rule: MappingRule): boolean {
+  return [result.analyteCode, result.analyteName, rule.instrumentName, rule.lisTestName].some(
+    (s) => !!s && AFP_PATTERN.test(s)
   )
 }

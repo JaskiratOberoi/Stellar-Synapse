@@ -140,6 +140,12 @@ export class Orchestrator extends EventEmitter {
     // matched the ordered TORCH profile rows). Guarded to the exact old mapping.
     this.mapping.migrateDelhiTorchProfile()
 
+    // One-time: give an already-configured Delhi 6000i the preset rows added
+    // after it was set up (AFP item 1, PCT 31, ANA 64). Fills missing codes only;
+    // guarded to a store that carries the Delhi TORCH row. Runs AFTER the TORCH
+    // migration so its guard sees the TCH10 row either way.
+    this.mapping.migrateDelhiMagiclBackfill()
+
     // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
     // AMH II, …). Restrict the host query to exactly those channels so unrelated
     // catalog analytes (ATG, CEA, AFP, …) can never be queried or written, no

@@ -12,6 +12,7 @@ import { maglumiX3Channel } from '../drivers/maglumi'
 import { auVariantGroup } from '../drivers/beckmanAu'
 import { persist } from '../../store'
 import { logger } from '../logger'
+import { listPresets } from '../presets/registry'
 
 /**
  * Minimum auto-map confidence trusted for anything that touches patient data —
@@ -535,6 +536,49 @@ export class MappingEngine {
   remove(id: string): void {
     this.rules = this.rules.filter((r) => r.id !== id)
     this.save()
+  }
+
+  /**
+   * One-time: backfill Delhi 6000i mapping rows that the bundled Delhi preset
+   * gained AFTER the instrument was set up — AFP (item 1), PCT (31) and ANA (64).
+   * A preset is applied at Add Instrument time only, so an install configured in
+   * August never received rows added to the JSON since, and real AFP / ANA
+   * results were arriving from the analyzer and skipping as "No LIS mapping for
+   * analyte" (Delhi monitor history, 2026-09-09).
+   *
+   * GUARD: only for a store carrying the Delhi TORCH row (magicl-6000i code 73
+   * -> TCH10, or the pre-migration CP3103), which only the Delhi preset ever
+   * produced. Fills MISSING codes only — it never overwrites a row the site
+   * already has, so a local edit made in Mapping survives. Flag-protected.
+   */
+  migrateDelhiMagiclBackfill(): number {
+    if (persist.getMigrationFlag('migratedDelhiMagiclBackfill')) return 0
+    persist.setMigrationFlag('migratedDelhiMagiclBackfill', true)
+    const isDelhi = this.rules.some(
+      (r) =>
+        r.driverId === 'magicl-6000i' &&
+        r.instrumentCode === '73' &&
+        (r.lisTestCode === 'TCH10' || r.lisTestCode === 'CP3103')
+    )
+    if (!isDelhi) return 0
+    const inst = listPresets()
+      .find((p) => p.preset === 'delhi')
+      ?.instruments.find((i) => i.driverId === 'magicl-6000i')
+    if (!inst?.mappings?.length) return 0
+    const have = new Set(
+      this.rules
+        .filter((r) => r.driverId === 'magicl-6000i')
+        .map((r) => r.instrumentCode.toUpperCase())
+    )
+    const missing = inst.mappings.filter((m) => !have.has(m.instrumentCode.toUpperCase()))
+    if (missing.length === 0) return 0
+    const applied = this.applyPresetMappings('magicl-6000i', missing)
+    logger.info(
+      'mapping',
+      `Delhi 6000i backfill: added ${applied} preset row(s) missing from this install ` +
+        `(${missing.map((m) => m.instrumentCode).join(', ')})`
+    )
+    return applied
   }
 
   /**
