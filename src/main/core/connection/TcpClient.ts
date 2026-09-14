@@ -68,6 +68,11 @@ export class TcpClient extends EventEmitter implements ITransport {
       // its late error must not be surfaced as the current session failing.
       if (this.socket !== socket) return
       logger.warn('tcp-client', `${host}:${port} error: ${err.message}`)
+      // ECONNREFUSED means the host is up but its comm service is (re)starting —
+      // a Server-TCP analyzer (LD-560) whose operator just toggled comms. Keep
+      // the retry tight so we are the connected client again within ~2s; an
+      // operator pressing Transmit during a 16–30s backoff loses that frame.
+      if ((err as NodeJS.ErrnoException).code === 'ECONNREFUSED') this.backoffMs = 2000
       this.emit('error', err)
     })
     socket.on('close', () => {
@@ -93,6 +98,8 @@ export class TcpClient extends EventEmitter implements ITransport {
     const delay = this.backoffMs
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
+      // Refused connects reset backoffMs to 2s in the error handler, so a
+      // refusing-but-alive host is retried every 2s instead of doubling.
       this.backoffMs = Math.min(this.backoffMs * 2, this.maxBackoffMs)
       this.connect()
     }, delay)
