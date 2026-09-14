@@ -44,7 +44,7 @@ function buildLd560Rows(
       id: `${ld}-eAG-calc`,
       analyteCode: 'eAG (Calculated)',
       value: mgdl.toFixed(1),
-      unit: `mg/dL Â· ${mgDlToMmolL(mgdl).toFixed(1)} mmol/L`
+      unit: `mg/dL · ${mgDlToMmolL(mgdl).toFixed(1)} mmol/L`
     })
   }
   return rows
