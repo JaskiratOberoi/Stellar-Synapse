@@ -1735,7 +1735,7 @@ export class Orchestrator extends EventEmitter {
   private storeFrameImage(id: string, def: InstrumentDefinition, msg: ProtocolMessage): void {
     const img = msg.image
     if (!img) return
-    const file = saveInstrumentImage(id, img.sampleId, img.name, img.base64)
+    const file = saveInstrumentImage(id, img.sampleId, img.name, img.data, img.encoding)
     if (file) {
       this.frameImages.set(msg.raw, file)
       if (this.frameImages.size > 500) {
@@ -1745,7 +1745,7 @@ export class Orchestrator extends EventEmitter {
     }
     logger.info(
       'image',
-      `${def.name}: chromatogram ${img.name} (${img.size} B) for ${img.sampleId} ${file ? `saved to ${file}` : 'NOT saved'}`
+      `${def.name}: chromatogram ${img.name} (${img.size} B, ${img.encoding}) for ${img.sampleId} ${file ? `saved to ${file}` : 'NOT saved'}`
     )
     this.pushMonitor({
       id: randomUUID(),

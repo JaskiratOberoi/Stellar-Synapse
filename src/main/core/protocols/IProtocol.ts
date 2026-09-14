@@ -8,7 +8,7 @@ export interface ProtocolMessage {
   /** The raw textual frame (control chars stripped/escaped) for the raw view. */
   raw: string
   /** Picture embedded in the frame (LD-560 "Base 64" chromatogram), if any. */
-  image?: { sampleId: string; name: string; size: number; base64: string }
+  image?: { sampleId: string; name: string; size: number; data: string; encoding: 'base64' | 'hex' }
 }
 
 /**

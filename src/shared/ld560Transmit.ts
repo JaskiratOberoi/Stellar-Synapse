@@ -43,14 +43,19 @@ export function ld560FrameLisStatus(
   return written.length > 0 ? 'partial' : 'none'
 }
 
-/** Chromatogram picture embedded in a frame when the analyzer is in "Base 64" picture mode. */
+/**
+ * Chromatogram picture embedded in a frame when the analyzer's picture mode is
+ * "Base 64" (base64 body, 76-char lines) or "Bitmap" (same PNG as one ASCII-hex
+ * string). "No picture" omits the IMAGE block entirely.
+ */
 export interface Ld560Image {
   /** File name as reported by the analyzer, e.g. `2026-09-15-01-59_10.png`. */
   name: string
   /** Byte size the analyzer declared in `<SIZE>`. */
   size: number
-  /** Base64 payload with line breaks stripped. */
-  base64: string
+  /** Encoded payload with whitespace stripped; decode with `encoding`. */
+  data: string
+  encoding: 'base64' | 'hex'
 }
 
 export interface Ld560SampleResult {
@@ -83,11 +88,16 @@ export function extractLd560Image(text: string): { image?: Ld560Image; text: str
   const data = (/<DATA>([\s\S]*?)<\/DATA>/i.exec(body)?.[1] ?? '').trim()
   // A stored frame already carries the `[png N bytes]` placeholder — no picture to extract.
   if (!data || data.startsWith('[')) return { text }
-  const base64 = data.replace(/[^A-Za-z0-9+/=]/g, '')
-  if (!base64) return { text }
+  const compact = data.replace(/\s+/g, '')
+  if (!compact) return { text }
+  // Bitmap mode: pure hex, even length, and (for a PNG) the 89 50 4E 47 signature.
+  // Base64 mode starts with "iVBORw0KGgo" and contains non-hex letters.
+  const isHex = /^[0-9A-Fa-f]+$/.test(compact) && compact.length % 2 === 0
+  const encoding: Ld560Image['encoding'] = isHex ? 'hex' : 'base64'
+  const payload = isHex ? compact : compact.replace(/[^A-Za-z0-9+/=]/g, '')
   const placeholder = `<IMAGE><NAME>${name}</NAME><SIZE>${size}</SIZE><DATA>[png ${size} bytes]</DATA></IMAGE>`
   return {
-    image: { name, size, base64 },
+    image: { name, size, data: payload, encoding },
     text: text.slice(0, m.index) + placeholder + text.slice(m.index + m[0].length)
   }
 }

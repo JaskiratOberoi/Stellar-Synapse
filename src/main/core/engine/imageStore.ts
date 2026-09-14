@@ -22,7 +22,8 @@ export function saveInstrumentImage(
   instrumentId: string,
   sampleId: string,
   name: string,
-  base64: string
+  data: string,
+  encoding: 'base64' | 'hex' = 'base64'
 ): string | null {
   try {
     const dir = join(imagesRoot(), safeSegment(instrumentId))
@@ -30,7 +31,7 @@ export function saveInstrumentImage(
     let fileName = safeSegment(name)
     if (!/\.(png|jpe?g|bmp|gif)$/i.test(fileName)) fileName += '.png'
     const file = join(dir, `${safeSegment(sampleId)}__${fileName}`)
-    writeFileSync(file, Buffer.from(base64, 'base64'))
+    writeFileSync(file, Buffer.from(data, encoding))
     return file
   } catch (err) {
     logger.warn('image', `Could not save picture ${name} for ${sampleId}: ${(err as Error).message}`)
