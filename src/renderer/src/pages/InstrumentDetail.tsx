@@ -9,6 +9,7 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { Switch } from '@/components/ui/Switch'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { EditInstrumentModal } from '@/components/EditInstrumentModal'
+import { ChromatogramImage } from '@/components/ChromatogramImage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime, timeAgo } from '@/lib/utils'
 import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
@@ -84,6 +85,8 @@ export function InstrumentDetail() {
         unit?: string
       }[]
       lisStatus: ReturnType<typeof ld560FrameLisStatus> | undefined
+      /** Chromatogram PNG saved for this frame (LD-560 picture mode). */
+      imageFile?: string
     }
     const byKey = new Map<string, Frame>()
 
@@ -91,7 +94,13 @@ export function InstrumentDetail() {
       // 1) LD-560 reconstruction from the raw TRANSMIT frame.
       const ld = normalizeLd560Raw(m.raw)
       if (ld) {
-        if (byKey.has(ld)) continue
+        const existing = byKey.get(ld)
+        if (existing) {
+          // Every monitor row of the frame carries the same picture; pick it up
+          // from whichever row we meet first that has it.
+          if (!existing.imageFile && m.imageFile) existing.imageFile = m.imageFile
+          continue
+        }
         const parsed = parseLd560SampleFromRaw(ld)
         if (parsed) {
           byKey.set(ld, {
@@ -101,7 +110,8 @@ export function InstrumentDetail() {
             raw: ld,
             kind: 'ld560',
             lisStatus: ld560FrameLisStatus(monitor, id ?? '', ld),
-            rows: buildLd560Rows(ld, parsed.analytes)
+            rows: buildLd560Rows(ld, parsed.analytes),
+            imageFile: m.imageFile
           })
           continue
         }
@@ -608,6 +618,11 @@ export function InstrumentDetail() {
                     <span className="text-muted-foreground">{formatTime(frame.timestamp)}</span>
                   </div>
                 </div>
+                <div
+                  className={cn(
+                    frame.imageFile && 'grid gap-4 md:grid-cols-[minmax(0,1fr)_240px] md:items-start'
+                  )}
+                >
                 <div className="divide-y divide-border/30 px-4 py-1">
                   {frame.rows.map((r) => (
                     <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
@@ -633,6 +648,13 @@ export function InstrumentDetail() {
                       </span>
                     </div>
                   ))}
+                </div>
+                {frame.imageFile && (
+                  <div className="px-4 pb-3 pt-2 md:pl-0 md:pr-4">
+                    <p className="microlabel mb-1.5">Chromatogram</p>
+                    <ChromatogramImage file={frame.imageFile} />
+                  </div>
+                )}
                 </div>
               </div>
             ))}

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pause, Play, Code2, List, Image as ImageIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Input'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { ChromatogramImage } from '@/components/ChromatogramImage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime } from '@/lib/utils'
 import { ease, spring } from '@/lib/motion'
@@ -227,7 +228,12 @@ export function Monitor() {
               <Detail label="Stage" value={selected.stage} />
               <Detail label="LIS Target" value={selected.mappedTo ?? '-'} />
               {selected.message && <Detail label="Message" value={selected.message} />}
-              {selected.imageFile && <FrameImage file={selected.imageFile} />}
+              {selected.imageFile && (
+                <div>
+                  <p className="microlabel mb-1.5">Chromatogram</p>
+                  <ChromatogramImage file={selected.imageFile} showPath />
+                </div>
+              )}
               <div>
                 <p className="microlabel mb-1.5">Raw Frame</p>
                 <pre className="max-h-64 overflow-auto rounded-2xl bg-secondary/40 p-3 font-mono text-[11px] leading-relaxed text-foreground/80">
@@ -240,41 +246,6 @@ export function Monitor() {
         )}
         </AnimatePresence>
       </div>
-    </div>
-  )
-}
-
-/** Chromatogram picture saved for the selected frame, loaded lazily from the main process. */
-function FrameImage({ file }: { file: string }) {
-  const [src, setSrc] = useState<string | null | undefined>(undefined)
-  useEffect(() => {
-    let alive = true
-    setSrc(undefined)
-    window.api.monitor
-      .image(file)
-      .then((url) => alive && setSrc(url))
-      .catch(() => alive && setSrc(null))
-    return () => {
-      alive = false
-    }
-  }, [file])
-  return (
-    <div>
-      <p className="microlabel mb-1.5">Chromatogram</p>
-      {src === undefined && <p className="text-xs text-muted-foreground">Loading picture...</p>}
-      {src === null && (
-        <p className="text-xs text-warning">Picture file is missing on disk.</p>
-      )}
-      {src && (
-        <img
-          src={src}
-          alt="Chromatogram"
-          className="w-full rounded-2xl border border-border bg-white"
-        />
-      )}
-      <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground" title={file}>
-        {file}
-      </p>
     </div>
   )
 }
