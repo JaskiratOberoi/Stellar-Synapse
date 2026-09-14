@@ -64,10 +64,20 @@ export class TcpClient extends EventEmitter implements ITransport {
     })
     socket.on('data', (chunk) => this.emit('data', chunk))
     socket.on('error', (err) => {
+      // A socket we already replaced (forceReconnect) is not the live link —
+      // its late error must not be surfaced as the current session failing.
+      if (this.socket !== socket) return
       logger.warn('tcp-client', `${host}:${port} error: ${err.message}`)
       this.emit('error', err)
     })
     socket.on('close', () => {
+      // Only the CURRENT socket closing means the link dropped. A stale socket
+      // (destroyed by forceReconnect after its replacement was dialled) must not
+      // null the new reference or schedule a duplicate connect — that leaked one
+      // extra ESTABLISHED connection per idle reconnect, so a Server-TCP analyzer
+      // like the LD-560 ended up with several clients and pushed each result to
+      // all of them (or to a half-closed one, losing it).
+      if (this.socket !== socket) return
       this.socket = null
       if (this.running) {
         this.emitStatus('connecting')
@@ -116,8 +126,10 @@ export class TcpClient extends EventEmitter implements ITransport {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    this.socket?.destroy()
+    // Detach first so the old socket's close handler sees it is no longer current.
+    const old = this.socket
     this.socket = null
+    old?.destroy()
     this.connect()
   }
 
