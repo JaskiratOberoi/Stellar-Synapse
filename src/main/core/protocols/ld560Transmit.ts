@@ -13,7 +13,8 @@ export function parseLd560TransmitBlock(block: string): ProtocolMessage | null {
   return {
     protocol: 'simple',
     records: ld560SampleToRecords(sample),
-    raw: sample.raw
+    raw: sample.raw,
+    ...(sample.image ? { image: { sampleId: sample.barcode, ...sample.image } } : {})
   }
 }
 

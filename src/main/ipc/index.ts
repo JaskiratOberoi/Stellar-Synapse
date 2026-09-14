@@ -1,4 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
+import { readInstrumentImage } from '../core/engine/imageStore'
 import { IPC, IPC_EVENT } from '../../shared/ipc'
 import type {
   AppSettings,
@@ -162,7 +163,8 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
         return fail(`Serial support unavailable: ${(err as Error).message}`)
       }
 
-      const pattern = Buffer.from(`SYNAPSE-TX-TEST-${Date.now()}`, 'latin1')
+      const pattern = Buffer.from(`SYNAPSE-TX-TEST-${Date.now()}
+`, 'latin1')
       return await new Promise<SerialLoopbackResult>((resolve) => {
         let port: ReturnType<typeof Object> | null = null
         let received = Buffer.alloc(0)
@@ -307,6 +309,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
 
   // Monitor + logs
   ipcMain.handle(IPC.monitorRecent, () => orchestrator.recentMonitor())
+  ipcMain.handle(IPC.monitorImage, (_e, file: string) => readInstrumentImage(file))
   ipcMain.handle(IPC.logsRecent, () => logger.recent())
 
   // Dashboard

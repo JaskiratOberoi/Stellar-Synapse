@@ -37,6 +37,7 @@ import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
 import { convertForLis, roundResultValue } from './units'
+import { saveInstrumentImage } from './imageStore'
 import { persist, MAX_DAILY_STAT_DAYS, type InstrumentDayStats } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
@@ -556,6 +557,7 @@ export class Orchestrator extends EventEmitter {
           logger.debug('engine', `${def.name}: ignoring retransmitted frame (${msg.raw.length}B)`)
           continue
         }
+        if (msg.image) this.storeFrameImage(id, def, msg)
         void this.processMessage(id, msg)
         if (def.driverId === 'landwind-ld-560') ld560Ack = true
       }
@@ -1168,6 +1170,7 @@ export class Orchestrator extends EventEmitter {
       unit: result.unit,
       flag: result.flag,
       raw: raw.length > 600 ? `${raw.slice(0, 600)}...` : raw,
+      imageFile: this.frameImages.get(raw),
       timestamp: new Date().toISOString()
     }
 
@@ -1719,6 +1722,43 @@ export class Orchestrator extends EventEmitter {
       value: `${chunk.length} bytes`,
       raw: printable.length > 600 ? `${printable.slice(0, 600)}...` : printable,
       stage: 'received',
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  /**
+   * Saved picture per frame, keyed by the frame's raw text (which is what
+   * processResult receives), so every monitor row for that frame can link to it.
+   */
+  private readonly frameImages = new Map<string, string>()
+
+  private storeFrameImage(id: string, def: InstrumentDefinition, msg: ProtocolMessage): void {
+    const img = msg.image
+    if (!img) return
+    const file = saveInstrumentImage(id, img.sampleId, img.name, img.base64)
+    if (file) {
+      this.frameImages.set(msg.raw, file)
+      if (this.frameImages.size > 500) {
+        const oldest = this.frameImages.keys().next().value
+        if (oldest !== undefined) this.frameImages.delete(oldest)
+      }
+    }
+    logger.info(
+      'image',
+      `${def.name}: chromatogram ${img.name} (${img.size} B) for ${img.sampleId} ${file ? `saved to ${file}` : 'NOT saved'}`
+    )
+    this.pushMonitor({
+      id: randomUUID(),
+      instrumentId: id,
+      instrumentName: def.name,
+      sampleId: img.sampleId,
+      analyteCode: 'IMAGE',
+      analyteName: 'Chromatogram',
+      value: img.name,
+      stage: file ? 'received' : 'error',
+      message: file ? `Picture saved (${img.size} B)` : 'Picture could not be saved',
+      raw: msg.raw.length > 600 ? `${msg.raw.slice(0, 600)}...` : msg.raw,
+      imageFile: file ?? undefined,
       timestamp: new Date().toISOString()
     })
   }

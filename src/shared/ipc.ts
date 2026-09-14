@@ -72,6 +72,7 @@ export const IPC = {
 
   // Monitor + logs
   monitorRecent: 'monitor:recent',
+  monitorImage: 'monitor:image',
   logsRecent: 'logs:recent',
 
   // Dashboard + settings
@@ -188,6 +189,8 @@ export interface StellarApi {
   }
   monitor: {
     recent(): Promise<MonitorEvent[]>
+    /** Saved chromatogram PNG as a data: URL, or null if missing. */
+    image(file: string): Promise<string | null>
     onEvent(cb: (evt: MonitorEvent) => void): () => void
   }
   logs: {

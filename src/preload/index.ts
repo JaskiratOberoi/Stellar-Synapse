@@ -62,6 +62,7 @@ const api: StellarApi = {
   },
   monitor: {
     recent: () => ipcRenderer.invoke(IPC.monitorRecent),
+    image: (file) => ipcRenderer.invoke(IPC.monitorImage, file),
     onEvent: (cb) => on<MonitorEvent>(IPC_EVENT.monitorEvent, cb)
   },
   logs: {

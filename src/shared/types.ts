@@ -515,6 +515,8 @@ export interface MonitorEvent {
   message?: string
   /** Raw protocol frame (truncated) for the raw view. */
   raw?: string
+  /** Absolute path of a chromatogram PNG saved for this frame (LD-560 picture mode). */
+  imageFile?: string
   timestamp: string
 }
 

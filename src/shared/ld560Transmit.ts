@@ -43,22 +43,65 @@ export function ld560FrameLisStatus(
   return written.length > 0 ? 'partial' : 'none'
 }
 
+/** Chromatogram picture embedded in a frame when the analyzer is in "Base 64" picture mode. */
+export interface Ld560Image {
+  /** File name as reported by the analyzer, e.g. `2026-09-15-01-59_10.png`. */
+  name: string
+  /** Byte size the analyzer declared in `<SIZE>`. */
+  size: number
+  /** Base64 payload with line breaks stripped. */
+  base64: string
+}
+
 export interface Ld560SampleResult {
   /** Barcode / accession for LIS lookup (vailid). */
   barcode: string
   /** Analyzer internal run number (e.g. 134). */
   internalSeq?: string
   analytes: { code: string; value: string; unit: string }[]
+  /**
+   * Frame text for the raw view / dedup. When the frame carried a picture, the
+   * base64 body is replaced by a short placeholder so the stored raw stays small
+   * and byte-identical across re-parses; the picture itself is in `image`.
+   */
   raw: string
+  image?: Ld560Image
+}
+
+const IMAGE_BLOCK_RE = /<IMAGE>([\s\S]*?)<\/IMAGE>/i
+
+/**
+ * Pull the `<IMAGE>` block out of a frame. Returns the picture (if any) and the
+ * frame text with the base64 body collapsed to `<DATA>[png N bytes]</DATA>`.
+ */
+export function extractLd560Image(text: string): { image?: Ld560Image; text: string } {
+  const m = IMAGE_BLOCK_RE.exec(text)
+  if (!m) return { text }
+  const body = m[1] ?? ''
+  const name = /<NAME>([^<]*)<\/NAME>/i.exec(body)?.[1]?.trim() || 'chromatogram.png'
+  const size = Number(/<SIZE>(\d+)<\/SIZE>/i.exec(body)?.[1] ?? 0)
+  const data = (/<DATA>([\s\S]*?)<\/DATA>/i.exec(body)?.[1] ?? '').trim()
+  // A stored frame already carries the `[png N bytes]` placeholder — no picture to extract.
+  if (!data || data.startsWith('[')) return { text }
+  const base64 = data.replace(/[^A-Za-z0-9+/=]/g, '')
+  if (!base64) return { text }
+  const placeholder = `<IMAGE><NAME>${name}</NAME><SIZE>${size}</SIZE><DATA>[png ${size} bytes]</DATA></IMAGE>`
+  return {
+    image: { name, size, base64 },
+    text: text.slice(0, m.index) + placeholder + text.slice(m.index + m[0].length)
+  }
 }
 
 /**
- * Labnovation LD-560 wire format (no-picture mode):
- *   <TRANSMIT><M>…<I>sample|datetime|seq|barcode|pos|flags</I><R>HbA1a|0.3HbA1b|…</R></M></TRANSMIT>
+ * Labnovation LD-560 wire format:
+ *   <TRANSMIT><M>…<I>sample|datetime|seq|barcode|pos|flags</I><R>HbA1a|0.3HbA1b|…</R>
+ *   [<IMAGE><NAME>file.png</NAME><SIZE>N</SIZE><DATA>base64…</DATA></IMAGE>]</M></TRANSMIT>
+ * The IMAGE block is only present when the analyzer's picture mode is "Base 64".
  */
 export function parseLd560SampleFromRaw(block: string): Ld560SampleResult | null {
-  const text = block.replace(/\x02/g, '<').replace(/\x03/g, '>').trim()
-  if (!/<TRANSMIT>/i.test(text)) return null
+  const decoded = block.replace(/\x02/g, '<').replace(/\x03/g, '>').trim()
+  if (!/<TRANSMIT>/i.test(decoded)) return null
+  const { image, text } = extractLd560Image(decoded)
 
   const iMatch = text.match(/<I>([^<]*)/i)
   const rMatch = text.match(/<R>([^<]*)/i)
@@ -80,7 +123,8 @@ export function parseLd560SampleFromRaw(block: string): Ld560SampleResult | null
       value,
       unit: unitForAnalyte(code)
     })),
-    raw: block.trim()
+    raw: text,
+    ...(image ? { image } : {})
   }
 }
 
