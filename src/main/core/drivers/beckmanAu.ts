@@ -289,6 +289,12 @@ const auMarks = (flag: string, width: number): string =>
 
 const padField = (s: string, n: number): string => s.padEnd(n, ' ').slice(0, n)
 
+/** Keep printable 7-bit ASCII only (space..tilde); everything else becomes a space. */
+const auPrintable = (s: string): string =>
+  Array.from(s)
+    .map((c) => (c >= ' ' && c <= '~' ? c : ' '))
+    .join('')
+
 /** Build the fixed per-sample header (shared by S… and D… outbound frames). */
 function auHeader(
   distinction: string,
@@ -345,16 +351,24 @@ export function buildAuOrderResponse(
   requestBlock: string,
   testNos: number[],
   fmt: AuFormat = DEFAULT_AU_FORMAT,
-  opts: { patientName?: string; demographics?: boolean } = {}
+  opts: { patientName?: string; demographics?: boolean; patientInfo?: number } = {}
 ): string {
   // The demographics block is 4 spaces + block flag "E" + "M00000" + name(20) on
   // the AU480. Some analyzers (e.g. the Rohtak DxC 700 AU) expect no demographics
   // at all — just "…barcode␠␠␠␠E<testNos>". `demographics` defaults to true so the
   // AU480 behaviour is unchanged; a preset sets it false to match the DxC.
   const withDemographics = opts.demographics !== false
+  // Without the AU480 sex/age block, an analyzer may still have "Patient
+  // Information" rows enabled in its Sample Program Format; each is a fixed-
+  // width character field between "E" and the first Online Test No. (Rohtak DxC
+  // 700 AU: one 20-char row). Fill it with the LIS patient name, printable
+  // ASCII only — the analyzer shows it, and anything else risks a rejected
+  // order — padded/truncated to exactly the configured width.
+  const infoWidth = Math.max(0, Math.floor(opts.patientInfo ?? 0))
+  const info = infoWidth > 0 ? padField(auPrintable(opts.patientName ?? ''), infoWidth) : ''
   const marker = withDemographics
     ? ' '.repeat(4) + 'E' + 'M00000' + padField(opts.patientName ?? '', 20)
-    : ' '.repeat(4) + 'E'
+    : ' '.repeat(4) + 'E' + info
 
   // ECHO the request's identity region VERBATIM (rack/cup/sampleNo/sampleId as
   // the analyzer sent them), blanking only the sample-type flag (at rack + cup

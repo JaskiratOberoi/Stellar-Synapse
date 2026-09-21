@@ -56,6 +56,8 @@ interface PersistShape {
   migratedDelhiTorchProfile?: boolean
   /** One-time migration: backfill Delhi 6000i preset rows (AFP 1, PCT 31, ANA 64) missing from older installs. */
   migratedDelhiMagiclBackfill?: boolean
+  /** One-time migration: add the 20-char Patient Information field to a stored Rohtak DxC 700 AU order response. */
+  migratedRohtakAuPatientInfo?: boolean
 }
 
 type MigrationFlagKey =
@@ -64,6 +66,7 @@ type MigrationFlagKey =
   | 'migratedRescoreNameMappings'
   | 'migratedDelhiTorchProfile'
   | 'migratedDelhiMagiclBackfill'
+  | 'migratedRohtakAuPatientInfo'
 
 const MAX_MONITOR_HISTORY = 2000
 

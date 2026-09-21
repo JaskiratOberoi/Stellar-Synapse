@@ -147,6 +147,12 @@ export class Orchestrator extends EventEmitter {
     // migration so its guard sees the TCH10 row either way.
     this.mapping.migrateDelhiMagiclBackfill()
 
+    // One-time: an already-onboarded Rohtak DxC 700 AU carries a copy of the
+    // preset's wire format from before the analyzer's 20-char Patient
+    // Information row was known. Add it in place so the site does not have to
+    // delete and re-add the instrument (which would also drop its counters).
+    this.migrateRohtakAuPatientInfo()
+
     // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
     // AMH II, …). Restrict the host query to exactly those channels so unrelated
     // catalog analytes (ATG, CEA, AFP, …) can never be queried or written, no
@@ -609,6 +615,34 @@ export class Orchestrator extends EventEmitter {
     this.patchRuntime(id, { status: 'offline', peer: undefined })
     this.emitInstruments()
     return this.runtimes.get(id)!
+  }
+
+  /**
+   * One-time: stamp responsePatientInfo=20 onto a stored Rohtak DxC 700 AU
+   * definition. Guarded to the exact Rohtak preset shape (20/46 widths, no
+   * demographics block, no patient-info width yet) so no other AU is touched,
+   * and never overrides a width an operator has since set.
+   */
+  private migrateRohtakAuPatientInfo(): void {
+    if (persist.getMigrationFlag('migratedRohtakAuPatientInfo')) return
+    const all = persist.getInstruments()
+    let changed = 0
+    for (const inst of all) {
+      const f = inst.auOnline?.format
+      if (inst.protocol !== 'beckman-au' || !f) continue
+      if (f.sampleId !== 20 || f.dummy !== 46 || f.responseDemographics !== false) continue
+      if (f.responsePatientInfo != null) continue
+      f.responsePatientInfo = 20
+      changed++
+    }
+    persist.setMigrationFlag('migratedRohtakAuPatientInfo', true)
+    if (changed > 0) {
+      persist.setInstruments(all)
+      logger.info(
+        'engine',
+        `Rohtak DxC 700 AU: added the 20-char Patient Information field to the order response (${changed} instrument)`
+      )
+    }
   }
 
   /** Reset the per-instrument error counter (operator clears it from the UI). */
@@ -1114,7 +1148,10 @@ export class Orchestrator extends EventEmitter {
         patientName: order?.patientName,
         // Analyzers whose S response carries no demographics block (Rohtak DxC 700
         // AU) set this false in their preset; the AU480 default stays true.
-        demographics: def.auOnline?.format?.responseDemographics
+        demographics: def.auOnline?.format?.responseDemographics,
+        // Fixed-width "Patient Information" field(s) between "E" and the test
+        // numbers (Rohtak DxC 700 AU: one 20-char row). See AuWireFormat.
+        patientInfo: def.auOnline?.format?.responsePatientInfo
       }
     )
     try {

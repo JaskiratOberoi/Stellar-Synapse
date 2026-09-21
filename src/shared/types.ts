@@ -207,6 +207,16 @@ export interface AuWireFormat {
    * demographics (e.g. the Rohtak DxC 700 AU).
    */
   responseDemographics?: boolean
+  /**
+   * Width of the analyzer's "Patient Information" field(s) that sit between the
+   * "E" marker and the first Online Test No. in the S response, when
+   * responseDemographics is false. Read off [Configuration] > Format > Sample
+   * Program Format > Patient Information (sum of the enabled rows' digits; 0 or
+   * unset when none is enabled). The Rohtak DxC 700 AU has one 20-char
+   * "Information-1" row; omitting it lands the test numbers 20 bytes early and
+   * the analyzer rejects the order (6043 ONLINE TEST ITEM ERROR).
+   */
+  responsePatientInfo?: number
 }
 
 export interface InstrumentDefinition {

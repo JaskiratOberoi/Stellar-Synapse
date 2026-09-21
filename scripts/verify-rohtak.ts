@@ -171,6 +171,36 @@ check('  still decodes 014 -> GLU = 78.8',
   realRes26.length === 1 && realRes26[0]?.analyteCode === 'GLU' && parseFloat(realRes26[0]?.value ?? '') === 78.8,
   `got ${realRes26.map((r) => r.analyteCode + '=' + r.value).join(',') || '(none)'}`)
 
+// ---- 6. Patient Information field (2026-09-21, v0.6.4) ----------------------
+// The analyzer's Sample Program Format has one 20-char "Information-1" row on.
+// It sits between "E" and the first test number; the July eLab frames predate it
+// (row was off), which is why sections 3/4 above pass patientInfo=0 implicitly.
+// Live request + the 21-test order Synapse built at 22:20:17, which the analyzer
+// rejected with 6043 ONLINE TEST ITEM ERROR "200": read 3 digits from the 21st
+// char of our list and you get 200 — i.e. it expected 20 more chars first.
+const rSvc = 'R 001001N0002                   8874835'
+const svcNos = [28, 29, 25, 1, 7, 26, 2, 3, 5, 13, 17, 27, 97, 98, 99, 6, 9, 12, 24, 15, 19]
+const infoWidth = (inst.auFormat as { responsePatientInfo?: number }).responsePatientInfo ?? 0
+check('preset carries responsePatientInfo=20', infoWidth === 20, `got ${infoWidth}`)
+const builtSvc = buildAuOrderResponse(rSvc, svcNos, fmt, {
+  demographics: false, patientInfo: infoWidth, patientName: 'RAM KUMAR'
+})
+const expectedSvc =
+  'S 001001 0002                   8874835    E' + 'RAM KUMAR'.padEnd(20, ' ') +
+  '028029025001007026002003005013017027097098099006009012024015019'
+check('S carries the 20-char patient field before the test list', builtSvc === expectedSvc,
+  builtSvc === expectedSvc ? `(${builtSvc.length} chars)` : `\n      built:    "${builtSvc}"\n      expected: "${expectedSvc}"`)
+check('  first Online Test No. sits 25 chars after the barcode',
+  builtSvc.indexOf('028029') === builtSvc.indexOf('8874835') + 7 + 4 + 1 + 20)
+const builtLong = buildAuOrderResponse(rSvc, [14], fmt, {
+  demographics: false, patientInfo: infoWidth, patientName: 'A VERY LONG PATIENT NAME THAT OVERFLOWS \u00e9'
+})
+check('  name is truncated to exactly 20 printable chars',
+  builtLong.length === expectedSvc.length - 60 && builtLong.endsWith('014') && !builtLong.includes('OVERFLOWS'))
+const builtBlank = buildAuOrderResponse(rSvc, [14], fmt, { demographics: false, patientInfo: infoWidth })
+check('  no name -> 20 blanks',
+  builtBlank === 'S 001001 0002                   8874835    E' + ' '.repeat(20) + '014')
+
 console.log('')
 if (failed > 0) { console.log(`${failed} FAILURE(S)`); process.exit(1) }
 console.log('ALL PASS')
