@@ -115,6 +115,62 @@ check('S mirrors the request width (20-char id field)', builtLive === expectedLi
   builtLive === expectedLive ? '' : `\n      built:    "${builtLive}" (${builtLive.length}B)\n      expected: "${expectedLive}" (${expectedLive.length}B)`)
 check('  and never pads to the stale 26-char width', !builtLive.includes('                   9501268'))
 
+// ---- 5. Post-service regression (2026-09-21): the width moved AGAIN ---------
+// After a Beckman service visit the analyzer's request came back with the July
+// 26-char sample-ID field while the preset still says 20:
+//     RX <STX>R 000801N0001                   9671140<ETX>     (13 + 26)
+// The old fixed slice read 19 spaces + "9" and ordered tests for barcode "9".
+// The parser must recover the whole barcode whichever way the width is wrong,
+// and the S echo must still mirror the request byte-exact.
+const rWide = 'R 000801N0001                   9671140'
+const rWideH = parseAuHeader(rWide, fmt)
+check('R with a WIDER id field than configured -> SID 9671140', rWideH.sampleId === '9671140',
+  `got "${rWideH.sampleId}"`)
+const expectedWideS = 'S 000801 0001                   9671140    E014'
+const builtWideS = buildAuOrderResponse(rWide, [14], fmt, { demographics: false })
+check('  S echo mirrors the 26-char request', builtWideS === expectedWideS,
+  builtWideS === expectedWideS ? '' : `
+      built:    "${builtWideS}"
+      expected: "${expectedWideS}"`)
+
+// If the request width reverted, the result layout has most likely reverted to
+// July's too (26-char id, "␠␠␠␠E" + 14-digit Run Date/Time, then groups). This
+// is eLab's real 2026-07-23 D frame; it must decode under the CURRENT preset
+// widths because the body is anchored on the Run Date/Time stamp.
+const dJuly =
+  'D 000101 0195                   8806436    E20260723000909' +
+  '001  4.52  009 1.072  026  50.5  025  7.75  028 21.39  012 0.095  005  29.7  013  21.3  029   4.3  006  9.31  007 195.8  024 0.619  '
+const dJulyH = parseAuHeader(dJuly, fmt)
+check('July-layout D under the August widths -> SID 8806436', dJulyH.sampleId === '8806436',
+  `got "${dJulyH.sampleId}"`)
+const julyRes = parseBeckmanAu(
+  { protocol: 'beckman-au', raw: dJuly, records: [['D', dJulyH.sampleId]] } as ProtocolMessage,
+  'inst-rohtak', fmt, override)
+const julyGot = new Map(julyRes.map((r) => [r.analyteCode, r.value]))
+const JULY_EXPECT: Array<[string, string]> = [
+  ['ALB', '4.52'], ['CRE', '1.072'], ['TRIG', '50.5'], ['TP', '7.75'], ['UREA', '21.39'],
+  ['DBIL', '0.095'], ['AST', '29.7'], ['GGT', '21.3'], ['UA', '4.3'], ['CA', '9.31'],
+  ['CHOL', '195.8'], ['TBIL', '0.619']
+]
+check(`  decodes ${JULY_EXPECT.length} analytes`, julyRes.length === JULY_EXPECT.length, `got ${julyRes.length}`)
+for (const [code, val] of JULY_EXPECT) {
+  const g = julyGot.get(code)
+  check(`  ${code} = ${val}`, g != null && parseFloat(g) === parseFloat(val), `got ${g ?? '(missing)'}`)
+}
+
+// And the mirror case: a preset that says 26 while the analyzer sends 20 (the
+// August live frame). The first token is the barcode; the stamp anchors the body.
+const fmt26 = mergeAuFormat({ ...(inst.auFormat as Record<string, number | boolean>), sampleId: 26, dummy: 40 })
+const dRealH26 = parseAuHeader(dReal, fmt26)
+check('August D under a 26-char preset -> SID 9281305', dRealH26.sampleId === '9281305',
+  `got "${dRealH26.sampleId}"`)
+const realRes26 = parseBeckmanAu(
+  { protocol: 'beckman-au', raw: dReal, records: [['D', dRealH26.sampleId]] } as ProtocolMessage,
+  'inst-rohtak', fmt26, override)
+check('  still decodes 014 -> GLU = 78.8',
+  realRes26.length === 1 && realRes26[0]?.analyteCode === 'GLU' && parseFloat(realRes26[0]?.value ?? '') === 78.8,
+  `got ${realRes26.map((r) => r.analyteCode + '=' + r.value).join(',') || '(none)'}`)
+
 console.log('')
 if (failed > 0) { console.log(`${failed} FAILURE(S)`); process.exit(1) }
 console.log('ALL PASS')

@@ -167,11 +167,36 @@ export function parseAuHeader(block: string, fmt: AuFormat = DEFAULT_AU_FORMAT):
   const cup = take(fmt.cup).trim()
   const sampleNo = take(fmt.sampleNo).trim()
   const sampleType = take(fmt.sampleType)
-  const sampleId = take(fmt.sampleId).trim()
-  take(fmt.dummy)
-  take(fmt.dataClass)
-  take(fmt.sex)
-  return { distinction, rack, cup, sampleNo, sampleId, sampleType, bodyOffset: i }
+  // The Sample ID width is a site-configurable Online setting that CHANGES
+  // without notice (the Rohtak DxC 700 AU ran 26 chars in July, 20 in August and
+  // 26 again after a September service visit). A barcode never contains spaces,
+  // so recover it whichever way the configured width is wrong:
+  //  - analyzer field WIDER than ours: the right-justified barcode straddles the
+  //    boundary ("…␠␠␠9|671140") — extend to the end of the contiguous token
+  //    instead of returning its first digit;
+  //  - analyzer field NARROWER than ours: the slice runs into the filler
+  //    ("9281305␠␠␠␠E0") — keep only the first token.
+  let idField = take(fmt.sampleId)
+  if (idField.length > 0 && !/\s$/.test(idField)) {
+    while (i < block.length && !/\s/.test(block[i])) idField += block[i++]
+  }
+  const sampleId = idField.trim().split(/\s+/)[0] ?? ''
+  const afterId = i
+  // Fixed fallback: the configured widths, independent of any token extension
+  // above (an over-long barcode must not shift the result groups).
+  let bodyOffset = auHeaderWidth(fmt)
+  // Result blocks: when the analyzer transmits Run Date/Time, the 14-digit
+  // stamp is the last thing before the first result group, whatever the site's
+  // filler looks like ("␠␠␠␠E20260723000909…" in July's layout, "␠␠␠␠E0" + 26
+  // blanks + stamp in August's). Anchor the body there so a filler-width change
+  // cannot silently shift every test number. Frames without the stamp (AU480
+  // default "E0" + blanks) keep the configured fixed offset.
+  if (isResult(distinction)) {
+    const stamp = /\s*E(?:\d\s+)?(20\d{12})/y
+    stamp.lastIndex = afterId
+    if (stamp.exec(block)) bodyOffset = stamp.lastIndex + fmt.dataClass + fmt.sex
+  }
+  return { distinction, rack, cup, sampleNo, sampleId, sampleType, bodyOffset }
 }
 
 /** Position key used to correlate a D result with an S response by rack/cup. */

@@ -5,7 +5,6 @@ import {
   type AuFormat,
   DEFAULT_AU_FORMAT,
   auGroupWidth,
-  auHeaderWidth,
   parseAuHeader
 } from '../protocols/beckmanAu'
 import type { DriverAnalyte } from './IInstrumentDriver'
@@ -242,7 +241,11 @@ export function parseBeckmanAu(
 
   // Iterate the repeating result groups. A truncated final group (the analyzer's
   // zero-suppress can drop trailing pad spaces) is padded back to full width.
-  for (let off = auHeaderWidth(fmt); off + fmt.testNo <= block.length; off += groupWidth) {
+  // Start where the header parser says the groups begin — it anchors on the
+  // Run Date/Time stamp when present, so a site filler/ID-width change moves the
+  // body offset with it instead of shifting every test number.
+  const bodyOffset = parseAuHeader(block, fmt).bodyOffset
+  for (let off = bodyOffset; off + fmt.testNo <= block.length; off += groupWidth) {
     const group = block.slice(off, off + groupWidth).padEnd(groupWidth, ' ')
     let i = 0
     const take = (n: number): string => {
