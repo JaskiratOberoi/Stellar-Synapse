@@ -78,7 +78,8 @@ const api: StellarApi = {
   },
   system: {
     lanIp: () => ipcRenderer.invoke(IPC.systemLanIp),
-    reportError: (message) => ipcRenderer.send(IPC.rendererError, message)
+    reportError: (message) => ipcRenderer.send(IPC.rendererError, message),
+    setVisible: (visible) => ipcRenderer.send(IPC.uiVisibility, !!visible)
   },
   update: {
     getStatus: () => ipcRenderer.invoke(IPC.updateGetStatus),

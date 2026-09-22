@@ -73,12 +73,41 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   const { orchestrator, simulator, lis, updater, reporter } = services
 
   // Forward backend events to the renderer.
-  orchestrator.on('instruments', (list) => win.webContents.send(IPC_EVENT.instrumentsChanged, list))
-  orchestrator.on('monitor', (evt) => win.webContents.send(IPC_EVENT.monitorEvent, evt))
+  //
+  // The high-rate streams (a monitor event per analyte per stage, a log line per
+  // inbound chunk, an instrument-list push per message) are withheld while the
+  // UI document is hidden — closed to the tray, minimised, or fully covered. A
+  // hidden Chromium page stops requestAnimationFrame, so the renderer's
+  // animated lists could never finish retiring rows and grew without bound
+  // (4.5 GB / ~2 cores after two days in the tray). The renderer reports its
+  // visibility over IPC.uiVisibility and pulls fresh snapshots when it becomes
+  // visible again, so nothing is lost; the low-rate pushes (mappings, update
+  // and cloud status) keep flowing regardless.
+  let uiVisible = true
+  const pushWhenVisible = (channel: string, payload: unknown): void => {
+    if (!uiVisible || win.isDestroyed()) return
+    win.webContents.send(channel, payload)
+  }
+  orchestrator.on('instruments', (list) => pushWhenVisible(IPC_EVENT.instrumentsChanged, list))
+  orchestrator.on('monitor', (evt) => pushWhenVisible(IPC_EVENT.monitorEvent, evt))
   orchestrator.on('mappings', (rules) => win.webContents.send(IPC_EVENT.mappingsChanged, rules))
-  logger.on('log', (entry) => win.webContents.send(IPC_EVENT.log, entry))
+  logger.on('log', (entry) => pushWhenVisible(IPC_EVENT.log, entry))
   updater.on('status', (status) => win.webContents.send(IPC_EVENT.updateStatus, status))
   reporter.on('status', (status) => win.webContents.send(IPC_EVENT.cloudStatus, status))
+  ipcMain.on(IPC.uiVisibility, (_e, visible: boolean) => {
+    uiVisible = visible !== false
+  })
+  // Belt and braces: hiding the window from the main side stops the stream at
+  // once even if the renderer's visibilitychange handler is slow to report.
+  // Resumption is always renderer-driven (it must re-sync first).
+  win.on('hide', () => {
+    uiVisible = false
+  })
+  // A reloaded renderer (crash recovery) starts with a fresh document that
+  // reports its own visibility on init; until it does, stream as before.
+  win.webContents.on('did-start-loading', () => {
+    uiVisible = true
+  })
 
   // Drivers
   ipcMain.handle(IPC.driversList, () => listDriverInfos())

@@ -138,17 +138,16 @@ export function Monitor() {
                   </tr>
                 </thead>
                 <tbody>
-                  <AnimatePresence initial={false}>
+                  {/* Plain rows with a CSS entrance flash. Up to 2000 rows churn
+                      here around the clock, so no framer-motion exit animation:
+                      a hidden window never finishes one and every retired row
+                      would stay mounted (see .row-enter-flash in globals.css). */}
                   {filtered.map((m) => (
-                    <motion.tr
+                    <tr
                       key={m.id}
-                      initial={{ opacity: 0, backgroundColor: 'hsl(var(--primary) / 0.12)' }}
-                      animate={{ opacity: 1, backgroundColor: 'hsl(var(--primary) / 0)' }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.4, ease: 'easeOut' }}
                       onClick={() => setSelected(m)}
                       className={cn(
-                        'cursor-pointer border-b border-border transition-colors hover:bg-secondary/60',
+                        'row-enter-flash cursor-pointer border-b border-border transition-colors hover:bg-secondary/60',
                         selected?.id === m.id && 'bg-secondary/50'
                       )}
                     >
@@ -187,9 +186,8 @@ export function Monitor() {
                           {m.mappedTo ?? m.message ?? '-'}
                         </td>
                       )}
-                    </motion.tr>
+                    </tr>
                   ))}
-                  </AnimatePresence>
                   {filtered.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">

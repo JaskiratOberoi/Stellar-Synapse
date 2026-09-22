@@ -211,6 +211,37 @@
   }
 }
 
+/* Streaming list rows (monitor, logs, activity): entrance only, in CSS.
+   These lists churn continuously for days, so they must not use framer-motion
+   exit animations — a hidden window stops requestAnimationFrame and every
+   retiring row would stay mounted forever (see useAppStore / registerIpc). */
+.row-enter {
+  animation: rowEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.row-enter-flash {
+  animation: rowFlash 0.4s ease-out;
+}
+@keyframes rowFlash {
+  from {
+    opacity: 0;
+    background-color: hsl(var(--primary) / 0.12);
+  }
+  to {
+    opacity: 1;
+    background-color: transparent;
+  }
+}
+
 /* Accessibility: honor the OS reduced-motion preference everywhere. */
 @media (prefers-reduced-motion: reduce) {
   *,

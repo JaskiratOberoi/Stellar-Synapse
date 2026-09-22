@@ -84,6 +84,12 @@ export const IPC = {
   systemLanIp: 'system:lan-ip',
   /** One-way: renderer reports a fatal UI error so it's persisted to the log file. */
   rendererError: 'renderer:error',
+  /**
+   * One-way: renderer reports whether its document is visible. While hidden
+   * (tray, minimised, fully occluded) the main process stops streaming the
+   * high-rate monitor / log / instrument pushes — see registerIpc.
+   */
+  uiVisibility: 'ui:visibility',
 
   // Over-the-air updates
   updateGetStatus: 'update:get-status',
@@ -213,6 +219,13 @@ export interface StellarApi {
      * Fire-and-forget — never awaits, so it's safe to call from an error path.
      */
     reportError(message: string): void
+    /**
+     * Tell the main process whether the UI document is currently visible.
+     * While hidden, the main process withholds the high-rate monitor / log /
+     * instrument pushes (the renderer re-syncs from snapshots when it is shown
+     * again), so a window parked in the tray for days does no per-event work.
+     */
+    setVisible(visible: boolean): void
   }
   update: {
     /** Current over-the-air update status (version + lifecycle state). */

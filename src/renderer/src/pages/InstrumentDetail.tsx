@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { ArrowLeft, Play, Square, Cpu, Beaker, List, Code2, FileInput, Eraser, Pencil } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -16,9 +16,10 @@ import { fadeInUp, listItem, spring, staggerContainer } from '@/lib/motion'
 import {
   normalizeLd560Raw,
   parseLd560SampleFromRaw,
-  ld560FrameLisStatus,
+  LD560_LIS_ANALYTES,
   eagMgDlFromHba1c,
-  mgDlToMmolL
+  mgDlToMmolL,
+  type Ld560LisWriteStatus
 } from '@shared/ld560Transmit'
 
 /**
@@ -55,7 +56,15 @@ export function InstrumentDetail() {
   const navigate = useNavigate()
   const inst = useAppStore((s) => s.instruments.find((i) => i.id === id))
   const drivers = useAppStore((s) => s.drivers)
-  const monitor = useAppStore((s) => s.monitor.filter((m) => m.instrumentId === id))
+  // Select the raw buffer and filter in a memo. A selector that filters returns
+  // a fresh array on EVERY store update (stats poll, log line, status change),
+  // which re-rendered this page and re-ran every memo below even when no
+  // monitor event had arrived.
+  const allMonitor = useAppStore((s) => s.monitor)
+  const monitor = useMemo(
+    () => allMonitor.filter((m) => m.instrumentId === id),
+    [allMonitor, id]
+  )
   const lisLive = useAppStore((s) => s.lisSettings?.live)
   const mappings = useAppStore((s) => s.mappings)
   const [editing, setEditing] = useState(false)
@@ -84,15 +93,35 @@ export function InstrumentDetail() {
         originalValue?: string
         unit?: string
       }[]
-      lisStatus: ReturnType<typeof ld560FrameLisStatus> | undefined
+      lisStatus: Ld560LisWriteStatus | undefined
       /** Chromatogram PNG saved for this frame (LD-560 picture mode). */
       imageFile?: string
     }
     const byKey = new Map<string, Frame>()
 
+    // 'written' events indexed in the same pass, so a frame's LIS status is a
+    // map lookup afterwards instead of a scan of the whole buffer per frame
+    // (that was O(frames × events) and re-ran on every store update).
+    //  - LD-560: by normalised frame, LIS-scoped analytes only (HbA1c decides
+    //    'done', anything else is 'partial') — same rule as ld560FrameLisStatus.
+    //  - generic: by sample id, every analyte written.
+    const ld560Written = new Map<string, Set<string>>()
+    const writtenBySample = new Map<string, Set<string>>()
+    const lisAnalytes = LD560_LIS_ANALYTES as readonly string[]
+
     for (const m of monitor) {
       // 1) LD-560 reconstruction from the raw TRANSMIT frame.
       const ld = normalizeLd560Raw(m.raw)
+      if (m.stage === 'written') {
+        if (ld && lisAnalytes.includes(m.analyteCode)) {
+          let set = ld560Written.get(ld)
+          if (!set) ld560Written.set(ld, (set = new Set()))
+          set.add(m.analyteCode)
+        }
+        let bySample = writtenBySample.get(m.sampleId)
+        if (!bySample) writtenBySample.set(m.sampleId, (bySample = new Set()))
+        bySample.add(m.analyteCode)
+      }
       if (ld) {
         const existing = byKey.get(ld)
         if (existing) {
@@ -109,7 +138,7 @@ export function InstrumentDetail() {
             timestamp: m.timestamp,
             raw: ld,
             kind: 'ld560',
-            lisStatus: ld560FrameLisStatus(monitor, id ?? '', ld),
+            lisStatus: undefined, // resolved below once every 'written' row is indexed
             rows: buildLd560Rows(ld, parsed.analytes),
             imageFile: m.imageFile
           })
@@ -158,19 +187,21 @@ export function InstrumentDetail() {
       }
     }
 
-    // Derive LIS status for generic frames from their analytes' 'written' events.
+    // Resolve LIS status from the indexes built above.
     for (const f of byKey.values()) {
-      if (f.kind !== 'generic') continue
-      const written = new Set(
-        monitor.filter((m) => m.stage === 'written' && m.sampleId === f.sampleId).map((m) => m.analyteCode)
-      )
-      if (written.size > 0) {
+      if (f.kind === 'ld560') {
+        const written = ld560Written.get(f.raw)
+        f.lisStatus = !written ? 'none' : written.has('HbA1c') ? 'done' : 'partial'
+        continue
+      }
+      const written = writtenBySample.get(f.sampleId)
+      if (written && written.size > 0) {
         f.lisStatus = f.rows.every((r) => written.has(r.analyteCode)) ? 'done' : 'partial'
       }
     }
 
     return [...byKey.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-  }, [monitor, id])
+  }, [monitor])
 
   /**
    * Host-query answers: what Synapse told the analyzer to run, by barcode.
@@ -706,21 +737,17 @@ export function InstrumentDetail() {
         <CardContent>
           {logView === 'parsed' ? (
             <div className="max-h-80 space-y-1 overflow-y-auto font-mono text-xs tabular-nums">
-              <AnimatePresence initial={false}>
+              {/* Plain rows with a CSS entrance: this list streams for days, so no
+                  framer-motion exit/layout animation (see .row-enter in globals.css). */}
               {activityLog.map((m) => (
-                <motion.div
+                <div
                   key={m.id}
-                  layout
-                  variants={listItem}
-                  initial="hidden"
-                  animate="show"
-                  exit="exit"
                   // The reason (skip/error message) shows as a native tooltip on
                   // hover — an operator can see exactly WHY a value wasn't written
                   // without opening the Logs page.
                   title={m.message || undefined}
                   className={cn(
-                    'flex gap-3 rounded-2xl px-2.5 py-1 transition-colors hover:bg-secondary/60',
+                    'row-enter flex gap-3 rounded-2xl px-2.5 py-1 transition-colors hover:bg-secondary/60',
                     m.message && (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed')
                       ? 'cursor-help'
                       : undefined
@@ -748,9 +775,8 @@ export function InstrumentDetail() {
                         <span className="ml-1.5 text-muted-foreground">ⓘ</span>
                       )}
                   </span>
-                </motion.div>
+                </div>
               ))}
-              </AnimatePresence>
               {activityLog.length === 0 && (
                 <p className="py-10 text-center font-sans text-sm text-muted-foreground">No activity yet.</p>
               )}

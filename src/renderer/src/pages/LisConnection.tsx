@@ -22,8 +22,15 @@ export function LisConnection() {
 
   useEffect(() => setForm(stored), [stored])
   useEffect(() => {
-    window.api.lis.recentWrites().then(setRecent)
-    const t = setInterval(() => window.api.lis.recentWrites().then(setRecent), 3000)
+    const load = (): void => {
+      void window.api.lis.recentWrites().then(setRecent).catch(() => undefined)
+    }
+    load()
+    // Idle while the window is hidden; the effect re-runs on the next monitor
+    // event once the stream resumes, which reloads immediately.
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') load()
+    }, 3000)
     return () => clearInterval(t)
   }, [writes])
 

@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAppStore } from '@/store/useAppStore'
 import { cn, formatTime } from '@/lib/utils'
-import { fadeInUp, listItem, staggerContainer } from '@/lib/motion'
+import { fadeInUp, staggerContainer } from '@/lib/motion'
 
 export function Logs() {
   const logs = useAppStore((s) => s.logs)
@@ -48,15 +48,12 @@ export function Logs() {
       <Card>
         <CardContent className="p-3">
           <div className="max-h-[calc(100vh-220px)] overflow-y-auto font-mono text-xs">
-            <AnimatePresence initial={false}>
+            {/* Plain rows with a CSS entrance — a log line arrives per inbound
+                chunk, so no framer-motion exit animation (see .row-enter). */}
             {filtered.map((l) => (
-              <motion.div
+              <div
                 key={l.id}
-                variants={listItem}
-                initial="hidden"
-                animate="show"
-                exit="exit"
-                className="flex items-start gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-secondary/60"
+                className="row-enter flex items-start gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-secondary/60"
               >
                 <span className="shrink-0 tabular-nums text-muted-foreground">
                   {formatTime(l.timestamp)}
@@ -77,9 +74,8 @@ export function Logs() {
                 </span>
                 <span className="w-28 shrink-0 text-muted-foreground">[{l.source}]</span>
                 <span className="flex-1 text-foreground">{l.message}</span>
-              </motion.div>
+              </div>
             ))}
-            </AnimatePresence>
             {filtered.length === 0 && (
               <p className="py-10 text-center font-sans text-sm text-muted-foreground">
                 No log entries.
