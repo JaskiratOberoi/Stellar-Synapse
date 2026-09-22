@@ -116,7 +116,7 @@ export function InstrumentDetail() {
           continue
         }
       }
-      // 2) Generic decoded analyte result (ASTM/HL7/Simple) â€” group by frame.
+      // 2) Generic decoded analyte result (ASTM/HL7/Simple) — group by frame.
       if (
         m.stage === 'decoded' &&
         m.analyteCode &&
@@ -383,7 +383,7 @@ export function InstrumentDetail() {
             {driver?.name} - {driver?.vendor}
             {inst.serialNumber ? (
               <>
-                {' Â· '}
+                {' · '}
                 <span className="font-mono">S/N {inst.serialNumber}</span>
               </>
             ) : null}
@@ -456,7 +456,7 @@ export function InstrumentDetail() {
                 <div>
                   <p className="text-sm font-medium">Auto-calculate eAG</p>
                   <p className="text-xs text-muted-foreground">
-                    Estimated Average Glucose from HbA1c â†’ LIS
+                    Estimated Average Glucose from HbA1c → LIS
                   </p>
                 </div>
                 <Switch checked={inst.connection.autoEag !== false} onChange={setAutoEag} />
@@ -576,7 +576,7 @@ export function InstrumentDetail() {
                 onClick={parseAllToLis}
               >
                 <FileInput className="h-3 w-3" strokeWidth={1.75} />
-                {parsingAll ? 'Parsingâ€¦' : `LIS parse all (${unparsedCount})`}
+                {parsingAll ? 'Parsing…' : `LIS parse all (${unparsedCount})`}
               </Button>
             )}
             <Badge tone="muted">{resultFrames.length} sample{resultFrames.length === 1 ? '' : 's'}</Badge>
@@ -612,7 +612,7 @@ export function InstrumentDetail() {
                         onClick={() => parseFrameToLis(frame.raw, frame.sampleId)}
                       >
                         <FileInput className="h-3 w-3" strokeWidth={1.75} />
-                        {parsingRaw === frame.raw ? 'Parsingâ€¦' : 'LIS parse'}
+                        {parsingRaw === frame.raw ? 'Parsing…' : 'LIS parse'}
                       </Button>
                     )}
                     <span className="text-muted-foreground">{formatTime(frame.timestamp)}</span>
@@ -716,7 +716,7 @@ export function InstrumentDetail() {
                   animate="show"
                   exit="exit"
                   // The reason (skip/error message) shows as a native tooltip on
-                  // hover â€” an operator can see exactly WHY a value wasn't written
+                  // hover — an operator can see exactly WHY a value wasn't written
                   // without opening the Logs page.
                   title={m.message || undefined}
                   className={cn(
@@ -745,7 +745,7 @@ export function InstrumentDetail() {
                     {/* Inline hint that a hover reason exists for skips/errors. */}
                     {m.message &&
                       (m.stage === 'skipped' || m.stage === 'error' || m.stage === 'suppressed') && (
-                        <span className="ml-1.5 text-muted-foreground">â“˜</span>
+                        <span className="ml-1.5 text-muted-foreground">ⓘ</span>
                       )}
                   </span>
                 </motion.div>

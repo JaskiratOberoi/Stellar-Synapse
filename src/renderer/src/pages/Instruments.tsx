@@ -90,7 +90,7 @@ export function Instruments() {
                       <p className="font-medium leading-tight">{inst.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {driverName(inst.driverId)}
-                        {inst.serialNumber ? ` Â· S/N ${inst.serialNumber}` : ''}
+                        {inst.serialNumber ? ` · S/N ${inst.serialNumber}` : ''}
                       </p>
                     </div>
                   </div>

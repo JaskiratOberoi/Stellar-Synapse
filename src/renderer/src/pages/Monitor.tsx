@@ -12,7 +12,7 @@ import { cn, formatTime } from '@/lib/utils'
 import { ease, spring } from '@/lib/motion'
 import type { MonitorEvent, MonitorStage } from '@shared/types'
 
-/* Stage accents live in the text only â€” no tinted rows or borders. */
+/* Stage accents live in the text only — no tinted rows or borders. */
 const stageTone: Record<MonitorStage, string> = {
   ordered: 'text-primary',
   received: 'text-muted-foreground',
@@ -56,7 +56,7 @@ export function Monitor() {
     <div className="space-y-4">
       <PageHeader title="Live monitor" subtitle="Real-time decoded result stream">
         <Badge tone={paused ? 'warning' : 'success'}>
-          {paused ? 'Paused' : 'Live'} â€” {filtered.length} shown ({monitor.length} retained)
+          {paused ? 'Paused' : 'Live'} — {filtered.length} shown ({monitor.length} retained)
         </Badge>
         <Select value={inst} onChange={(e) => setInst(e.target.value)} className="w-48">
           <option value="all">All instruments</option>

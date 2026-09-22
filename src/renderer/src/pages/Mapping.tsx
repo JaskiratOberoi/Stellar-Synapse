@@ -177,7 +177,7 @@ export function Mapping() {
                       <div className="font-mono font-medium text-accent">{m.instrumentCode}</div>
                       <div className="text-xs text-muted-foreground">{m.instrumentName}</div>
                       {m.analyzerCode && m.analyzerCode !== m.instrumentCode && (
-                        <div className="font-mono text-xs text-foreground/70">â†’ {m.analyzerCode}</div>
+                        <div className="font-mono text-xs text-foreground/70">→ {m.analyzerCode}</div>
                       )}
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">{driverName(m.driverId)}</td>

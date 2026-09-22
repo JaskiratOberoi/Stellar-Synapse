@@ -46,7 +46,7 @@ export function Discovery() {
 
   const candidates = useMemo(() => hosts.filter((h) => h.guessedDriverId), [hosts])
 
-  // Free IPs = the scanned /24 (.1â€“.254) minus every host that responded or was
+  // Free IPs = the scanned /24 (.1–.254) minus every host that responded or was
   // in the ARP cache. Heuristic ("no device answered"), handy for picking a
   // static address when adding an instrument.
   const freeIps = useMemo(() => {
@@ -246,7 +246,7 @@ export function Discovery() {
                 <p className="text-sm font-medium">Available IPs</p>
                 <Badge tone="success">{freeIps.length}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  No device responded on this subnet â€” likely free to assign (click to copy)
+                  No device responded on this subnet — likely free to assign (click to copy)
                 </span>
               </div>
               <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
