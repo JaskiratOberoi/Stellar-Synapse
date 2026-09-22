@@ -54,6 +54,16 @@ updated manually once — rotate only if the key is believed leaked.
   operator turned auto-update off in Settings.
 - Install window: downloaded updates install at the configured nightly hour
   (Settings), quitting and relaunching the tray app silently.
+- Before quitting into the installer (0.6.5+), the app terminates every other
+  `Stellar Synapse.exe` process, own children included. The NSIS installer
+  swaps the install folder by renaming it, so a single leftover process — a
+  renderer stuck in a JS loop outlives `app.quit()` and its dead parent — makes
+  the uninstall step abort with "Failed to uninstall old application files: 2"
+  and leaves the app down. electron-builder's own kill-the-running-app check
+  did not clear such a process on a lab machine, hence the in-app sweep
+  (`src/main/core/update/processSweep.ts`). The same sweep runs at startup for
+  orphans of a previous instance, and a detached watchdog relaunches the app
+  if the silent install fails instead of relaunching it.
 - Clients on 0.2.x (built against the never-configured GitHub feed) cannot
   self-update; each lab needs one manual install of 0.3.0+, after which OTA is
   automatic.

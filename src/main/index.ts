@@ -7,6 +7,7 @@ import { registerIpc } from './ipc'
 import { persist } from './store'
 import { logger } from './core/logger'
 import { AutoUpdater } from './core/update/AutoUpdater'
+import { killStrayProcesses } from './core/update/processSweep'
 import { InfinityReporter } from './core/infinity/InfinityReporter'
 import { applyDataDir } from './dataDir'
 import { applyLoginItem, startedHidden } from './autostart'
@@ -272,6 +273,11 @@ app.whenReady().then(() => {
   // dying second instance pops a blank, half-loaded window (and the close-to-tray
   // close handler then snags its teardown), which is exactly the blank-screen bug.
   if (!gotSingleInstanceLock) return
+
+  // Reclaim leftovers of a previous instance (a renderer stuck in a JS loop
+  // outlives its main process, burns a core + gigabytes for days, and blocks
+  // the next update by holding the install folder open). Fire-and-forget.
+  void killStrayProcesses('orphans')
 
   ensureLd560()
 

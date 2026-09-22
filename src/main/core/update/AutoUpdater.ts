@@ -6,6 +6,7 @@ import { logger } from '../logger'
 import { persist } from '../../store'
 import type { UpdateStatus, UpdateState } from '../../../shared/types'
 import { isUpdateFeedConfigured, updateFeed } from './config'
+import { armRelaunchWatchdog, killStrayProcesses } from './processSweep'
 
 // electron-updater is CommonJS; in the packaged ESM build a named import
 // (`import { autoUpdater }`) fails to resolve. Default-import then destructure —
@@ -42,6 +43,8 @@ export class AutoUpdater extends EventEmitter {
   /** Set true before quitAndInstall so the window's close-to-tray handler yields. */
   private readonly beforeInstall: () => void
   private started = false
+  /** Guards against a second install trigger while the pre-install sweep runs. */
+  private installing = false
 
   constructor(beforeInstall: () => void) {
     super()
@@ -201,8 +204,14 @@ export class AutoUpdater extends EventEmitter {
    * Quit and install the downloaded update, then relaunch. Sets the quitting
    * flag first so the main window's close-to-tray handler doesn't cancel the
    * quit. Only valid once an update has been downloaded.
+   *
+   * Before handing over to the installer, every other `Stellar Synapse.exe`
+   * process is terminated (a renderer stuck in a JS loop outlives app.quit()
+   * and keeps the install folder locked — the uninstall step then aborts with
+   * error 2 and the app is left down), and a detached watchdog is armed to
+   * relaunch the app should the silent install fail anyway.
    */
-  installNow(): void {
+  async installNow(): Promise<void> {
     if (this.status.state !== 'downloaded') {
       logger.warn('update', 'installNow called with no update downloaded — ignored')
       return
@@ -211,12 +220,19 @@ export class AutoUpdater extends EventEmitter {
       clearTimeout(this.installTimer)
       this.installTimer = null
     }
+    if (this.installing) return
+    this.installing = true
     logger.info('update', 'Installing update and relaunching')
     try {
+      // Flip the quitting flag first: the sweep below takes our own renderer
+      // with it, and the renderer-recovery hook must not reload it.
       this.beforeInstall()
+      await killStrayProcesses('all-others')
+      armRelaunchWatchdog()
       // isSilent=true (no NSIS UI), isForceRunAfter=true (relaunch after install).
       autoUpdater.quitAndInstall(true, true)
     } catch (err) {
+      this.installing = false
       logger.error('update', `quitAndInstall failed: ${(err as Error).message}`)
       this.patch({ state: 'error', error: (err as Error).message })
     }
