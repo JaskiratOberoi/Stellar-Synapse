@@ -9,6 +9,7 @@ import { buildEdanHl7Sample, parseEdanHl7 } from './edan'
 import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
 import { buildHoribaHl7Sample, parseHoribaHl7 } from './horiba'
 import { buildMindrayAstmSample, parseMindrayAstm } from './mindray'
+import { buildAgappeCx4AstmSample, parseAgappeCx4Astm } from './agappeCx4'
 import { parseAstm, parseHl7, parseSimple } from './parsing'
 import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
 
@@ -38,7 +39,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     return this.def.lisValueOnly
   }
 
-  get astmDialect(): 'mindray' | 'beckman-dxi' | undefined {
+  get astmDialect(): ModelDefinition['astmDialect'] {
     return this.def.astmDialect
   }
 
@@ -85,6 +86,10 @@ export class DefinitionDriver implements IInstrumentDriver {
     // Mindray BS-series ASTM uses a non-standard field layout (barcode in the O
     // Specimen ID field 4, analyte code/value in component 1).
     if (this.def.astmDialect === 'mindray') return parseMindrayAstm(message, instrumentId)
+    // Agappe Mispa CX4 (Dirui CS-400): standard "^^^CODE" test ids, but the
+    // barcode is component 1 of a 5-part O Specimen ID and the range field is
+    // "low^high\crit" — normalized by its own parser.
+    if (this.def.astmDialect === 'agappe-cx4') return parseAgappeCx4Astm(message, instrumentId)
     return parseAstm(message, instrumentId)
   }
 
@@ -99,6 +104,7 @@ export class DefinitionDriver implements IInstrumentDriver {
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)
     if (this.def.protocol === 'beckman-au') return buildBeckmanAuSample(sampleId, analytes)
     if (this.def.astmDialect === 'mindray') return buildMindrayAstmSample(sampleId, this.def.name, analytes)
+    if (this.def.astmDialect === 'agappe-cx4') return buildAgappeCx4AstmSample(sampleId, analytes)
     return buildAstmSample(sampleId, this.def.name, analytes)
   }
 }

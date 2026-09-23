@@ -56,6 +56,12 @@ Paste the result into the preset's `mappings` array.
     code defaults; `mappings` still needs to be filled from the Haldwani install.
   - **MAGLUMI X3** (`maglumi-x3`, immunoassay) — captured from the live store: 57
     rules (17 mapped, 40 still unmapped).
+- **`delhi.json`** / **`lucknow.json`** — both carry an **Agappe Mispa CX4**
+  (`agappe-mispa-cx4`, clinical chemistry, RS-232 19200 8-N-1) added 2026-09-23
+  ahead of installation: 49 rows (43 mapped, 6 retired duplicate-reagent
+  channels), targets read from each site's filled Noble rows and identical at
+  both sites; `verify:agappe-cx4` section 8 guards them. Not yet verified
+  against a live unit.
 - **`jammu.json`** — instruments:
   - **Beckman Coulter AU480** (`beckman-au480`, clinical chemistry) — captured from
     the on-analyzer Online screens (2026-07-07). Carries a Jammu-specific

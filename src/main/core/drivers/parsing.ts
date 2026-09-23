@@ -31,11 +31,12 @@ function astmTestId(field?: string): { code: string; name?: string } {
  * Maglumi sends `Q|1|^SID||ALL|...` when a sample is loaded and "Auto Download
  * Test Assay" (host query) is on. The SID rides in field 3 (index 2) as the
  * starting-range id, typically `^SID` or `patientId^SID^...`; we take the first
- * non-empty caret component.
+ * non-empty caret component. `specimen` is that field verbatim, for dialects
+ * that must echo the analyzer's full specimen id (disk/position) in the order.
  */
 export function extractAstmQuery(
   message: ProtocolMessage
-): { sid: string; analyzerName?: string; hostName?: string } | null {
+): { sid: string; specimen: string; analyzerName?: string; hostName?: string } | null {
   if (message.protocol !== 'astm') return null
   // Capture how the analyzer identifies itself in its own H record so the order
   // reply can mirror it exactly — the Maglumi validates the order header against
@@ -55,7 +56,7 @@ export function extractAstmQuery(
       .split('^')
       .map((p) => p.trim())
       .find((p) => p.length > 0)
-    if (sid) return { sid, analyzerName, hostName }
+    if (sid) return { sid, specimen: field.trim(), analyzerName, hostName }
   }
   return null
 }

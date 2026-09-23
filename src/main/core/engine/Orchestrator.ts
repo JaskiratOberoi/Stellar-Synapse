@@ -17,6 +17,7 @@ import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { buildMindrayOrderRecords, frameMindrayMessage } from '../drivers/mindray'
 import { buildBeckmanDxiOrderFrames } from '../drivers/beckmanDxi'
+import { buildAgappeCx4OrderFrames, cx4SampleId } from '../drivers/agappeCx4'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT, mergeAuFormat } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
@@ -740,9 +741,14 @@ export class Orchestrator extends EventEmitter {
     if (def.connection.hostQuery && def.protocol === 'astm') {
       const query = extractAstmQuery(message)
       if (query) {
-        await this.handleHostQuery(def, driver.info.id, query.sid, message.raw, {
+        // Mispa CX4: the barcode is strictly component 1 of the specimen id. In
+        // the analyzer's "Sample No." mode that component is empty and the
+        // running sample number follows — never look THAT up as a barcode.
+        const sid = driver.astmDialect === 'agappe-cx4' ? cx4SampleId(query.specimen) : query.sid
+        await this.handleHostQuery(def, driver.info.id, sid, message.raw, {
           analyzerName: query.analyzerName,
-          hostName: query.hostName
+          hostName: query.hostName,
+          specimen: query.specimen
         })
         return
       }
@@ -909,9 +915,10 @@ export class Orchestrator extends EventEmitter {
     driverId: string,
     sid: string,
     raw: string,
-    header?: { analyzerName?: string; hostName?: string }
+    header?: { analyzerName?: string; hostName?: string; specimen?: string }
   ): Promise<void> {
     const sender = this.connections.get(def.id)?.sender
+    const dialect = getDriver(driverId)?.astmDialect
     const baseEvent = {
       instrumentId: def.id,
       instrumentName: def.name,
@@ -926,7 +933,7 @@ export class Orchestrator extends EventEmitter {
 
     let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
     try {
-      order = await this.lis.getOrder(sid)
+      if (sid) order = await this.lis.getOrder(sid)
     } catch (err) {
       logger.warn('host-query', `${def.name}: order lookup failed for ${sid}: ${(err as Error).message}`)
     }
@@ -941,15 +948,25 @@ export class Orchestrator extends EventEmitter {
       // ordered/mappable for the sample, send NOTHING back (no ENQ, no empty
       // H/P/L). The working interface stays silent ("Order Not Received") and the
       // X3 simply runs nothing for that barcode.
-      logger.info('host-query', `${def.name}: no mappable orders for ${sid} — sending nothing (matches eLab)`)
+      if (dialect === 'agappe-cx4' && sender) {
+        // The Mispa CX4 manual (Appendix E) requires the host to answer a
+        // barcode it cannot find with a bare <ENQ> … <EOT> — no records — so the
+        // analyzer stops waiting for the order instead of retrying until timeout.
+        logger.info('host-query', `${def.name}: no mappable orders for ${sid || '(no barcode)'} — sending ENQ/EOT (CX4 "not found")`)
+        await sender.sendFrames([])
+      } else {
+        logger.info('host-query', `${def.name}: no mappable orders for ${sid} — sending nothing (matches eLab)`)
+      }
       this.pushMonitor({
         ...baseEvent,
         id: randomUUID(),
         stage: 'skipped',
-        value: order ? `${order.testCodes.length} ordered, 0 on X3` : 'not registered',
+        value: order ? `${order.testCodes.length} ordered, 0 on ${def.name}` : 'not registered',
         message: order
-          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this X3 (no order sent)`
-          : `Barcode ${sid} not registered in LIS — nothing to order`
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this ${def.name} (no order sent)`
+          : sid
+            ? `Barcode ${sid} not registered in LIS — nothing to order`
+            : `Analyzer is in "Sample No." mode (no barcode in query) — nothing to order`
       })
       return
     }
@@ -959,10 +976,13 @@ export class Orchestrator extends EventEmitter {
     // sender + fixed date "20180319" (handled inside buildAstmOrderRecords). The
     // analyzer's own query header is intentionally NOT echoed — the working
     // interface ignores it and the X3 accepts the order anyway.
-    void header
-    const dialect = getDriver(driverId)?.astmDialect
     try {
-      if (dialect === 'mindray') {
+      if (dialect === 'agappe-cx4') {
+        // Mispa CX4 (Dirui CS-400): H, P, ONE O record per test echoing the
+        // analyzer's full specimen id (SID^S.No^Disk^Pos^Dil), L — each in its
+        // own numbered, checksummed E1381 frame (manual Appendix E).
+        await sender.sendFrames(buildAgappeCx4OrderFrames(header?.specimen || sid, codes))
+      } else if (dialect === 'mindray') {
         // Mindray BS-series: answer with the "SA" order download in a single
         // standard E1381 frame (frame no. 1 + checksum, CR before ETX), all tests
         // in one O record as CODE^^2^1 — verified against the eLABS BS430 capture.

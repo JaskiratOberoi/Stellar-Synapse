@@ -1,6 +1,7 @@
 import type { InstrumentDriverInfo, InterfaceMode, ProtocolKind, TransportKind } from '../../../shared/types'
 import { BECKMAN_AU } from './beckmanAu'
 import { MINDRAY_BS_CHEM } from './mindray'
+import { AGAPPE_CX4_CHEM } from './agappeCx4'
 import type { DriverAnalyte } from './IInstrumentDriver'
 import {
   BOULE_CBC,
@@ -37,8 +38,10 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * (default standard). 'mindray' selects the Mindray BS-series layout and "SA"
    * order-download. 'beckman-dxi' selects the Beckman Access/DxI order-download
    * (standard E1381 H/P/O/L frames, tests joined by "\" in O-5, report type Q).
+   * 'agappe-cx4' selects the Mispa CX4 / Dirui CS-400 layout (barcode in O-3
+   * component 1, one O record per ordered test, specimen id echoed from the Q).
    */
-  astmDialect?: 'mindray' | 'beckman-dxi'
+  astmDialect?: 'mindray' | 'beckman-dxi' | 'agappe-cx4'
   /**
    * When true, LIS writes for this model send only the result value (never the
    * abnormal flag), leaving Noble to apply its own reference range. Used by the
@@ -485,9 +488,42 @@ const landwind = [
 ]
 
 // ---------------------------------------------------------------------------
-// Agappe - Mispa Maestro HPLC HbA1c + Mispa HX 58 hematology (HL7 v2.4)
+// Agappe - Mispa CX4 clinical chemistry (ASTM E1394, "agappe-cx4" dialect),
+// Mispa Maestro HPLC HbA1c (ASTM) + Mispa HX 58 hematology (HL7 v2.4)
 // ---------------------------------------------------------------------------
 const agappe = [
+  mk(
+    'agappe-mispa-cx4',
+    'Agappe Mispa CX4',
+    'Agappe Diagnostics',
+    'Clinical Chemistry',
+    'Mispa CX4 fully automated random-access chemistry analyzer (400 T/h, 800 with ISE; ' +
+      'Dirui CS-400 platform). ASTM E1381/E1394 over RS-232 ONLY — the analyzer PC has no ' +
+      'network host link, so use a COM port (or a serial-to-Ethernet device server and TCP). ' +
+      'Analyzer default 19200 8-N-1 (System Setup > Host Communication: tick "Open ' +
+      'Communication", choose the COM port, and "Bidirectional" + Gather sample mode ' +
+      '"Sample ID (Barcode)" for host query). Result upload: one E1381 frame per record ' +
+      '(H "CX4"->"Host", P, O, R…, L) — the barcode is component 1 of the O Specimen ID ' +
+      '(SID^S.No^Disk^Pos^Dil), each R carries the item abbreviation as "^^^CODE", value, ' +
+      'unit, "low^high\\crit" range, L/H/N/A flag and the completion time in field 13. ' +
+      'Host query: the analyzer sends Q|1|SID^^Disk^Pos^N||ALL and Synapse answers with ' +
+      'H|\\^&, P|1, ONE O record PER ordered test (specimen id echoed, ^^^CODE, R, serum) ' +
+      'and L|1|N as numbered, checksummed frames; a barcode with no LIS order is answered ' +
+      'with a bare ENQ/EOT as the manual requires. QC uploads (control name^lot in O field 4) ' +
+      'are recognised and skipped. The H-record sender is the "Analyzer ID" typed on the ' +
+      'analyzer — set it to "CX4" so auto-discovery identifies the unit. Decoded from the ' +
+      'Mispa CX4 user manual (REV.09-2017, §5.9 + Appendix E) and the Dirui interface ' +
+      'protocol v1.1 — not yet verified against a live unit.',
+    AGAPPE_CX4_CHEM,
+    {
+      port: 9107,
+      protocol: 'astm',
+      mode: 'bidirectional',
+      transports: ['serial', 'tcp-server', 'tcp-client'],
+      astmDialect: 'agappe-cx4',
+      maturity: 'beta'
+    }
+  ),
   mk(
     'agappe-mispa-hx58',
     'Agappe Mispa HX 58',

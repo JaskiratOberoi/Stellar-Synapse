@@ -77,6 +77,9 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /SWELAB\s*LUMI/i, id: 'swelab-lumi', strong: true },
   { re: /MEDONIC\s*M\s*51/i, id: 'medonic-m51', strong: true },
   { re: /SWELAB|BM500|BOULE|MEDONIC/i, id: 'swelab-lumi', strong: false },
+  // Agappe - Mispa CX4 chemistry (Dirui CS-400 platform; the ASTM H record
+  // sender is "CX4", or "CS-400" on units still carrying the Dirui firmware id)
+  { re: /MISPA\s*CX\s*4|\bCX4\b|\bCS[\s-]*400\b/i, id: 'agappe-mispa-cx4', strong: true },
   // Agappe - Mispa HX 58 hematology (Dymind OEM; ASTM H record self-identifies)
   { re: /MISPA\s*HX\s*58/i, id: 'agappe-mispa-hx58', strong: true },
   { re: /MISPA\s*HX|DYMIND/i, id: 'agappe-mispa-hx58', strong: false },
