@@ -41,6 +41,25 @@
 4. Watch the fleet converge on the new version in Infinity's Interfacing tab
    (each site reports `agentVersion` with every heartbeat).
 
+## Permanent download link (first installs)
+
+The current installer is always at
+
+```
+https://infinity.genomicslab.in/api/downloads/synapse/latest
+```
+
+The browser asks for a password (any user name; the password is
+`Updates__DownloadPassword` in Infinity's gitignored `api/.env`, shared by the
+live and staging stacks — ask the admin, it is not written down here). Infinity
+reads `path:` out of the published `latest.yml` on every request and streams
+that exe under its real name (`Stellar-Synapse-Setup-<version>.exe`), so the
+link never changes and follows every `publish-release.mjs` run with no further
+step. Only the installer is reachable this way; `latest.yml` and the blockmaps
+stay behind the fleet key, so the updater's own path is untouched. Served by
+`UpdateEndpoints.cs` in Stellar-Infinity (added 2026-09-23; the staging
+hostname serves the same link).
+
 ## Rotating the key
 
 Change `Updates__SynapseKey` in Infinity's `api/.env`, redeploy the api
