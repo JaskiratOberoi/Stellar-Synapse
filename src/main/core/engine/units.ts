@@ -140,6 +140,15 @@ export function convertForLis(
     if (!Number.isNaN(n)) return { value: (n * 10).toFixed(2), unit: 'ng/L' }
   }
 
+  // ng/dL -> ng/mL is purely dimensional (/100). The MAGLUMI X6 keeps the
+  // superseded "T3" generation (ng/dL) in its menu beside "TT3 II" (ng/mL); an
+  // upload under the old label resolves to the same T3 row, whose Noble field
+  // holds ng/mL, so it must be scaled down or read 100x high.
+  if (srcUnit === 'ng/dl' && tgtUnit === 'ng/ml') {
+    const n = parseFloat(result.value)
+    if (!Number.isNaN(n)) return { value: String(parseFloat((n / 100).toFixed(4))), unit: 'ng/mL' }
+  }
+
   return { value: result.value, unit: result.unit ?? rule.unit }
 }
 

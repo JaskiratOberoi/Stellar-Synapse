@@ -1,0 +1,929 @@
+{
+  "preset": "srinagar",
+  "location": "Srinagar",
+  "capturedAt": "2026-09-25",
+  "_businessUnit": "Noble business_unit_id 5 (460 of the 477 barcodes the X6 queried between 21 and 24 Sep 2026 register there).",
+  "instruments": [
+    {
+      "driverId": "maglumi-x6",
+      "model": "MAGLUMI X6",
+      "vendor": "SNIBE Diagnostics",
+      "category": "Immunoassay (CLIA)",
+      "protocol": "astm",
+      "mode": "bidirectional",
+      "defaultPort": 9100,
+      "transports": [
+        "serial",
+        "tcp-server"
+      ],
+      "maturity": "beta",
+      "analytePanel": "Srinagar MAGLUMI X6 (unit X6-01, software V1) assay menu captured from Parameter Definition > Assay Parameters on 2026-09-25 (49 assays incl. superseded generations and hidden _Mc/_Nt confirmatory channels). analyzerCode is the on-analyzer LIS Channel No.",
+      "source": "Wire protocol from the eLab Assist capture logINMessage 21-24 Sep 2026 (COM6): the X6 speaks the same ASTM dialect as the MAGLUMI X3 — Q|1|^SID||ALL query, results as H/P/O/R/L with no frame numbers or checksums, header sender \"X6 User\", and it accepts the X3-style simple-framed order whose header still says \" MAGLUMI X3 \". Noble targets chosen from an aggregate read of this site's filled result rows over the last 180 days and of the rows behind the captured barcodes.",
+      "_protocolNotes": [
+        "The X6 matches an ORDERED channel to whichever reagent generation is on board and labels the UPLOAD with that generation's LIS Channel No.: eLab ordered \"CEA\" and got \"CEA II\" back, ordered \"PROG\" and got \"PROG II\", ordered \"tPSA II\" and got \"PSA\". Synapse orders the channel captured from the screen (analyzerCode) and resolves uploads by either instrumentCode or analyzerCode, so either label files.",
+        "Superseded generations still in the menu (TSH, T3 [ng/dL], TEST [ng/mL], E2, ANA, CCP, FT3, FT4, Vit B12 II [a=1.5]) are not separate Synapse channels. An upload labelled \"TSH\"/\"E2\"/\"ANA\"/\"FT3\"/\"FT4\" resolves to the same row by instrumentCode and files; \"T3\" (ng/dL) is converted x1/100 to the ng/mL field; \"TEST\", \"CCP\", \"Vit B12 II\" match nothing and are dropped.",
+        "Rubella IgM_Mc / TOXO IgM_Mc (index) and HBsAg Quant_Nt are hidden confirmatory channels (\"Do not show in Other Interfaces\") and are not mapped.",
+        "Out-of-range uploads carry \"<\" / \">\" in the abnormal-flag field (e.g. 25-OH VD II 150 ng/mL \">\", TT3 II 0.6 ng/ml \"<\"); the value is the measuring-range limit and the flag is dropped on write.",
+        "Serial: eLab listened on COM6; the port speed was not in the capture — confirm on the analyzer's LIS setup screen (SNIBE default 9600 8-N-1). Tick Host Query in Synapse so the Q|1|^SID query is answered.",
+        "Manually diluted re-runs are queried and uploaded with a suffixed SID (\"9457510 dil\") which is not a registered barcode; they are not filed."
+      ],
+      "mappingsSummary": {
+        "total": 44,
+        "mapped": 44,
+        "unmapped": 0
+      },
+      "_mappingNotes": [
+        "LIS targets are REAL Noble catalog rows (tbl_med_test_master / tbl_med_parameter_master) read on 2026-09-25; lisTestName/lisParamName are copied verbatim from the catalog.",
+        "_evidence.source: \"log\" = channel and unit seen on the wire in the eLab capture; \"screen\" = read from the analyzer Assay Parameters screen; \"menu\" = only the assay name was visible in the menu list (unit taken from the SNIBE reagent insert / X3 defaults) — confirm on first live result.",
+        "_evidence.nobleRows180d / nobleUnits: how many rows this site filed against that target in the last 180 days and under which unit labels.",
+        "unit is the Noble field's unit (the mapping target); _evidence.x6Unit is what the analyzer transmits. Where they differ (HCV/HIV/HAV AU/mL vs S/CO, TOXO/Rubella IgG IU/mL vs AU/mL, tTG IgA AU/mL vs U/ml) no numeric conversion is applied."
+      ],
+      "mappings": [
+        {
+          "instrumentCode": "TSH",
+          "instrumentName": "Thyroid Stimulating Hormone",
+          "analyzerCode": "TSH II",
+          "unit": "uIU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 170,
+          "lisTestCode": "BI221",
+          "lisTestName": "TSH : Thyroid Stimulating Hormone",
+          "_evidence": {
+            "x6AssayNo": 587,
+            "x6Unit": "uIU/mL",
+            "source": "log+screen",
+            "nobleRows180d": 58880,
+            "nobleUnits": [
+              "uIU/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "T3",
+          "instrumentName": "Total Triiodothyronine",
+          "analyzerCode": "TT3 II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 164,
+          "lisTestCode": "BI214",
+          "lisTestName": "T3 (Tri Iodothyronine )",
+          "_evidence": {
+            "x6AssayNo": 162,
+            "x6Unit": "ng/ml",
+            "source": "log+screen",
+            "nobleRows180d": 26079,
+            "nobleUnits": [
+              "ng/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "T4",
+          "instrumentName": "Total Thyroxine",
+          "analyzerCode": "TT4 II",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 165,
+          "lisTestCode": "BI215",
+          "lisTestName": "T4 (Thyroxine )",
+          "_evidence": {
+            "x6AssayNo": 313,
+            "x6Unit": "ug/dL",
+            "source": "log+screen",
+            "nobleRows180d": 26221,
+            "nobleUnits": [
+              "ug/dl"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "FT3",
+          "instrumentName": "Free Triiodothyronine",
+          "analyzerCode": "FT3 II",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 128,
+          "lisTestCode": "BI109",
+          "lisTestName": "Free T3 (FT3)",
+          "_evidence": {
+            "x6Unit": "pg/mL",
+            "source": "log",
+            "nobleRows180d": 3690,
+            "nobleUnits": [
+              "pg/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "FT4",
+          "instrumentName": "Free Thyroxine",
+          "analyzerCode": "FT4 II",
+          "unit": "ng/L",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 129,
+          "lisTestCode": "BI110",
+          "lisTestName": "Free T4 (FT4)",
+          "_evidence": {
+            "x6Unit": "ng/L",
+            "source": "log",
+            "nobleRows180d": 3993,
+            "nobleUnits": [
+              "ng/L"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "FSH",
+          "instrumentName": "Follicle Stimulating Hormone",
+          "analyzerCode": "FSH II",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 125,
+          "lisTestCode": "BI106",
+          "lisTestName": "FSH Follicle Stimulating Hormone",
+          "_evidence": {
+            "x6Unit": "mIU/mL",
+            "source": "log",
+            "nobleRows180d": 1588,
+            "nobleUnits": [
+              "mIU/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "LH",
+          "instrumentName": "Luteinizing Hormone",
+          "analyzerCode": "LH II",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 138,
+          "lisTestCode": "BI145",
+          "lisTestName": "LH (Luteinizing Hormone) - Serum",
+          "_evidence": {
+            "x6Unit": "mIU/mL",
+            "source": "log",
+            "nobleRows180d": 1377,
+            "nobleUnits": [
+              "mIU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "PRL",
+          "instrumentName": "Prolactin",
+          "analyzerCode": "PRL II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 150,
+          "lisTestCode": "BI180",
+          "lisTestName": "Prolactin- Serum",
+          "_evidence": {
+            "x6Unit": "ng/mL",
+            "source": "log",
+            "nobleRows180d": 2046,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "E2",
+          "instrumentName": "Estradiol",
+          "analyzerCode": "E2 II",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 121,
+          "lisTestCode": "BI102",
+          "lisTestName": "Estradiol (E2)",
+          "_evidence": {
+            "x6AssayNo": 326,
+            "x6Unit": "pg/mL",
+            "source": "screen",
+            "nobleRows180d": 112,
+            "nobleUnits": [
+              "pg/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "PROG",
+          "instrumentName": "Progesterone",
+          "analyzerCode": "PROG II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 149,
+          "lisTestCode": "BI179",
+          "lisTestName": "Progesterone",
+          "_evidence": {
+            "x6Unit": "ng/mL",
+            "source": "log",
+            "nobleRows180d": 84,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "TESTO",
+          "instrumentName": "Testosterone",
+          "analyzerCode": "TEST II",
+          "unit": "ng/dL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 158,
+          "lisTestCode": "BI209",
+          "lisTestName": "Testosterone  - Total",
+          "_evidence": {
+            "x6AssayNo": 325,
+            "x6Unit": "ng/dL",
+            "source": "log+screen",
+            "nobleRows180d": 911,
+            "nobleUnits": [
+              "ng/dL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "BHCG",
+          "instrumentName": "Beta hCG",
+          "analyzerCode": "T-B HCG II",
+          "unit": "mIU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 85,
+          "lisTestCode": "BI044",
+          "lisTestName": "Beta-hCG (Quantitative) Serum",
+          "_evidence": {
+            "x6AssayNo": 605,
+            "x6Unit": "mIU/mL",
+            "source": "screen",
+            "nobleRows180d": 1238,
+            "nobleUnits": [
+              "mIU/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "AMH",
+          "instrumentName": "Anti-Mullerian Hormone",
+          "analyzerCode": "AMH II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 626,
+          "lisTestCode": "BI034",
+          "lisTestName": "Anti - Mullerian Hormone (AMH)",
+          "_evidence": {
+            "x6AssayNo": 300,
+            "x6Unit": "ng/mL",
+            "source": "screen",
+            "nobleRows180d": 1841,
+            "nobleUnits": [
+              "ng/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CEA",
+          "instrumentName": "Carcinoembryonic Antigen",
+          "analyzerCode": "CEA II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 99,
+          "lisTestCode": "BI068",
+          "lisTestName": "CEA - Carcino embryonic antigen (Serum)",
+          "_evidence": {
+            "x6AssayNo": 592,
+            "x6Unit": "ng/mL",
+            "source": "log+screen",
+            "nobleRows180d": 395,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "AFP",
+          "instrumentName": "Alpha Fetoprotein",
+          "analyzerCode": "AFP II",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 1808,
+          "lisTestCode": "BI024",
+          "lisTestName": "AFP  Alpha Feto Protein Serum",
+          "_evidence": {
+            "x6AssayNo": 593,
+            "x6Unit": "IU/mL",
+            "source": "log+screen",
+            "nobleRows180d": 142,
+            "nobleUnits": [
+              "IU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CA125",
+          "instrumentName": "Cancer Antigen 125",
+          "analyzerCode": "CA125 II",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 92,
+          "lisTestCode": "BI058",
+          "lisTestName": "CA 125 (Cancer Antigen)",
+          "_evidence": {
+            "x6AssayNo": 591,
+            "x6Unit": "U/mL",
+            "source": "screen",
+            "nobleRows180d": 594,
+            "nobleUnits": [
+              "U/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CA199",
+          "instrumentName": "Cancer Antigen 19-9",
+          "analyzerCode": "CA19-9 II",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 94,
+          "lisTestCode": "BI060",
+          "lisTestName": "CA 19.9 (Cancer Antigen)",
+          "_evidence": {
+            "x6AssayNo": 597,
+            "x6Unit": "U/mL",
+            "source": "screen",
+            "nobleRows180d": 216,
+            "nobleUnits": [
+              "U/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "PSA",
+          "instrumentName": "Total PSA",
+          "analyzerCode": "tPSA II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 151,
+          "lisTestCode": "BI181",
+          "lisTestName": "PSA (Prostate Specific Antigen) Total",
+          "_evidence": {
+            "x6AssayNo": 594,
+            "x6Unit": "ng/mL",
+            "source": "log+screen",
+            "nobleRows180d": 1499,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          },
+          "_note": "eLab ordered \"tPSA II\" (20 barcodes) and the X6 uploaded every result labelled \"PSA\" — the analyzer resolves an ordered channel to the reagent generation on board. Results match this row by instrumentCode (PSA) or channel (tPSA II)."
+        },
+        {
+          "instrumentCode": "VITD",
+          "instrumentName": "25-OH Vitamin D",
+          "analyzerCode": "25-OH VD II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 74,
+          "lisTestCode": "BI005",
+          "lisTestName": "VITAMIN D",
+          "_evidence": {
+            "x6AssayNo": 606,
+            "x6Unit": "ng/mL",
+            "source": "log+screen",
+            "nobleRows180d": 13333,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "VITB12",
+          "instrumentName": "Vitamin B12",
+          "analyzerCode": "Vit B12 III",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 175,
+          "lisTestCode": "BI235",
+          "lisTestName": "Vitamin B12  -Serum",
+          "_evidence": {
+            "x6AssayNo": 166,
+            "x6Unit": "pg/mL",
+            "source": "log+screen",
+            "nobleRows180d": 4764,
+            "nobleUnits": [
+              "pg/ml"
+            ]
+          },
+          "_note": "Vit B12 II (assay 150) also sits in the menu with calculation factor a=1.5; the site runs III (12/12 uploads). A \"Vit B12 II\" upload does not match this row and is not filed."
+        },
+        {
+          "instrumentCode": "FOLATE",
+          "instrumentName": "Folate",
+          "analyzerCode": "FA II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 124,
+          "lisTestCode": "BI105",
+          "lisTestName": "Folate Serum (Folic Acid)",
+          "_evidence": {
+            "x6AssayNo": 161,
+            "x6Unit": "ng/mL",
+            "source": "screen",
+            "nobleRows180d": 21,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "FERR",
+          "instrumentName": "Ferritin",
+          "analyzerCode": "Ferritin II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 123,
+          "lisTestCode": "BI104",
+          "lisTestName": "Ferritin",
+          "_evidence": {
+            "x6AssayNo": 333,
+            "x6Unit": "ng/mL",
+            "source": "log+screen",
+            "nobleRows180d": 930,
+            "nobleUnits": [
+              "ng/mL",
+              "ng/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "PTH",
+          "instrumentName": "Parathyroid Hormone",
+          "analyzerCode": "PTH II",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 143,
+          "lisTestCode": "BI161",
+          "lisTestName": "Intact Parathyroid Hormone(PTH)",
+          "lisParamId": 608,
+          "lisParamName": "Intact Parathyroid Hormone(PTH)",
+          "_evidence": {
+            "x6AssayNo": 532,
+            "x6Unit": "pg/mL",
+            "source": "screen",
+            "nobleRows180d": 926,
+            "nobleUnits": [
+              "pg/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CORT",
+          "instrumentName": "Cortisol",
+          "analyzerCode": "Cortisol II",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 111,
+          "lisTestCode": "BI085",
+          "lisTestName": "Cortisol- Serum",
+          "_evidence": {
+            "x6AssayNo": 528,
+            "x6Unit": "ug/dL",
+            "source": "screen",
+            "nobleRows180d": 552,
+            "nobleUnits": [
+              "ug/dL"
+            ]
+          },
+          "_note": "Assay unit ng/mL x 0.1 = ug/dL on the Basic Parms screen, i.e. the X6 transmits ug/dL; no cortisol upload in the capture to confirm."
+        },
+        {
+          "instrumentCode": "IGE",
+          "instrumentName": "Immunoglobulin E (IgE)",
+          "analyzerCode": "IgE II",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 133,
+          "lisTestCode": "BI133",
+          "lisTestName": "Total IgE",
+          "lisParamId": 568,
+          "lisParamName": "IgE Total",
+          "_evidence": {
+            "x6Unit": "IU/mL",
+            "source": "log",
+            "nobleRows180d": 1812,
+            "nobleUnits": [
+              "IU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "INS",
+          "instrumentName": "Insulin",
+          "analyzerCode": "INS II",
+          "unit": "uIU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 134,
+          "lisTestCode": "BI136",
+          "lisTestName": "Insulin Fasting",
+          "_evidence": {
+            "x6Unit": "uIU/mL",
+            "source": "menu",
+            "nobleRows180d": 5,
+            "nobleUnits": [
+              "uU/mL"
+            ]
+          },
+          "_note": "Insulin Fasting (BI136) — Noble also has PP/Random; only 5 rows at this site in 180 d."
+        },
+        {
+          "instrumentCode": "NTBNP",
+          "instrumentName": "NT-proBNP",
+          "analyzerCode": "NT-proBNP II",
+          "unit": "pg/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 147,
+          "lisTestCode": "BI177",
+          "lisTestName": "NT-PRO BNP",
+          "_evidence": {
+            "x6Unit": "pg/mL",
+            "source": "menu",
+            "nobleRows180d": 198,
+            "nobleUnits": [
+              "pg/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "PCT",
+          "instrumentName": "Procalcitonin",
+          "analyzerCode": "PCT II",
+          "unit": "ng/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 148,
+          "lisTestCode": "BI178",
+          "lisTestName": "Procalcitonin -PCT",
+          "_evidence": {
+            "x6Unit": "ng/mL",
+            "source": "menu",
+            "nobleRows180d": 130,
+            "nobleUnits": [
+              "ng/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "ACCP",
+          "instrumentName": "Anti-CCP",
+          "analyzerCode": "CCP II",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2419,
+          "lisTestCode": "ACPCL1",
+          "lisTestName": "Anti CCP, CLIA FOR KASHMIR",
+          "_evidence": {
+            "x6AssayNo": 702,
+            "x6Unit": "U/mL",
+            "source": "screen",
+            "nobleRows180d": 1019,
+            "nobleUnits": [
+              "U/mL"
+            ]
+          },
+          "_note": "Srinagar files anti-CCP under the Kashmir CLIA row ACPCL1 (1019 rows / 180 d), not BI036 (5 rows)."
+        },
+        {
+          "instrumentCode": "ANA",
+          "instrumentName": "Anti-nuclear Antibody (ANA)",
+          "analyzerCode": "ANA II",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2708,
+          "lisTestCode": "ANACL01",
+          "lisTestName": "Anti Nuclear Antibody (ANA) - Clia",
+          "lisParamId": 5424,
+          "lisParamName": "Anti Nuclear Antibody (ANA)",
+          "_evidence": {
+            "x6AssayNo": 456,
+            "x6Unit": "AU/mL",
+            "source": "log+screen",
+            "nobleRows180d": 248,
+            "nobleUnits": [
+              "AU/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "ATPO",
+          "instrumentName": "Anti-TPO Antibody",
+          "analyzerCode": "Anti-TPO II",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 758,
+          "lisTestCode": "BC170",
+          "lisTestName": "Anti Thyroid Peroxidase (Anti TPO) Anti body",
+          "_evidence": {
+            "x6AssayNo": 320,
+            "x6Unit": "IU/mL",
+            "source": "screen",
+            "nobleRows180d": 517,
+            "nobleUnits": [
+              "IU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "TTGA",
+          "instrumentName": "tTG IgA",
+          "analyzerCode": "tTG IgA",
+          "unit": "U/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 1870,
+          "lisTestCode": "CP3202",
+          "lisTestName": "tTG IgA Tissue Transglutaminase Antibody IgA",
+          "lisParamId": 2909,
+          "lisParamName": "Tissue Transglutaminase Iga Antibody",
+          "_evidence": {
+            "x6AssayNo": 512,
+            "x6Unit": "AU/mL",
+            "source": "screen",
+            "nobleRows180d": 6,
+            "nobleUnits": [
+              "U/ml"
+            ]
+          },
+          "_note": "Only 6 tTG-IgA rows (1 filled) at this site in 180 d; Noble labels the field U/ml where the X6 transmits AU/mL. Verify the first live result."
+        },
+        {
+          "instrumentCode": "HBSAG",
+          "instrumentName": "Hepatitis B Surface Antigen",
+          "analyzerCode": "HBsAg Quant",
+          "unit": "IU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2636,
+          "lisTestCode": "HBSCL",
+          "lisTestName": "HbsAg CLIA",
+          "_evidence": {
+            "x6Unit": "IU/mL",
+            "source": "log",
+            "nobleRows180d": 250,
+            "nobleUnits": [
+              "IU/ml"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "HCV",
+          "instrumentName": "Anti-HCV",
+          "analyzerCode": "Anti-HCV II",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2634,
+          "lisTestCode": "hcvcl",
+          "lisTestName": "Anti HCV CLIA",
+          "_evidence": {
+            "x6AssayNo": 607,
+            "x6Unit": "AU/mL",
+            "source": "log+screen",
+            "nobleRows180d": 245,
+            "nobleUnits": [
+              "S/CO"
+            ]
+          },
+          "_note": "SNIBE AU/mL on the qualitative infectious assays is a cut-off index (cut-off 1.0), which is what the Noble S/CO field holds."
+        },
+        {
+          "instrumentCode": "HIV",
+          "instrumentName": "HIV Ag/Ab Combo",
+          "analyzerCode": "HIV Combi",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2635,
+          "lisTestCode": "HIVCL",
+          "lisTestName": "HIV 1&2 Screening",
+          "_evidence": {
+            "x6Unit": "AU/mL",
+            "source": "log",
+            "nobleRows180d": 131,
+            "nobleUnits": [
+              "S/CO"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "HAVM",
+          "instrumentName": "HAV IgM",
+          "analyzerCode": "HAV IgM",
+          "unit": "S/CO",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 2655,
+          "lisTestCode": "HAVCL01",
+          "lisTestName": "HAV IGM CLIA",
+          "_evidence": {
+            "x6Unit": "AU/mL",
+            "source": "log",
+            "nobleRows180d": 88,
+            "nobleUnits": [
+              "S/CO"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "TOXO",
+          "instrumentName": "Toxoplasma IgG",
+          "analyzerCode": "TOXO IgG",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 221,
+          "lisTestCode": "MS092",
+          "lisTestName": "Toxoplasma gondii  - IgG Anti body",
+          "_evidence": {
+            "x6AssayNo": 86,
+            "x6Unit": "IU/mL",
+            "source": "screen",
+            "nobleRows180d": 2,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          },
+          "_note": "Noble row is labelled AU/mL, the X6 transmits IU/mL; 2 rows in 180 d, none filled. Verify the first live result."
+        },
+        {
+          "instrumentCode": "TOXOM",
+          "instrumentName": "Toxoplasma IgM",
+          "analyzerCode": "TOXO IgM",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 215,
+          "lisTestCode": "MS093",
+          "lisTestName": "Toxoplasma gondii - IgM Anti body",
+          "_evidence": {
+            "x6AssayNo": 87,
+            "x6Unit": "AU/mL",
+            "source": "screen",
+            "nobleRows180d": 622,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "RUBELLA",
+          "instrumentName": "Rubella IgG",
+          "analyzerCode": "Rubella IgG",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 211,
+          "lisTestCode": "MS087",
+          "lisTestName": "Rubella Virus - IgG Anti body",
+          "_evidence": {
+            "x6AssayNo": 88,
+            "x6Unit": "IU/mL",
+            "source": "screen",
+            "nobleRows180d": 2,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          },
+          "_note": "Noble row is labelled AU/mL, the X6 transmits IU/mL; 2 rows in 180 d, none filled. Verify the first live result."
+        },
+        {
+          "instrumentCode": "RUBM",
+          "instrumentName": "Rubella IgM",
+          "analyzerCode": "Rubella IgM",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 212,
+          "lisTestCode": "MS088",
+          "lisTestName": "Rubella virus - IgM Antibody",
+          "_evidence": {
+            "x6AssayNo": 89,
+            "x6Unit": "AU/mL",
+            "source": "screen",
+            "nobleRows180d": 622,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CMV",
+          "instrumentName": "Cytomegalovirus IgG",
+          "analyzerCode": "CMV IgG",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 183,
+          "lisTestCode": "MS029",
+          "lisTestName": "CMV - IgG Antibody",
+          "_evidence": {
+            "x6AssayNo": 90,
+            "x6Unit": "AU/mL",
+            "source": "screen",
+            "nobleRows180d": 2,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "CMVM",
+          "instrumentName": "Cytomegalovirus IgM",
+          "analyzerCode": "CMV IgM",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 184,
+          "lisTestCode": "MS030",
+          "lisTestName": "CMV IgM Antibody",
+          "_evidence": {
+            "x6AssayNo": 91,
+            "x6Unit": "AU/mL",
+            "source": "screen",
+            "nobleRows180d": 622,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "HSV12G",
+          "instrumentName": "HSV-1/2 IgG",
+          "analyzerCode": "HSV-1/2 IgG II",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 769,
+          "lisTestCode": "MS061",
+          "lisTestName": "HSV 1 & 2 - IgG",
+          "_evidence": {
+            "x6Unit": "AU/mL",
+            "source": "menu",
+            "nobleRows180d": 2,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          }
+        },
+        {
+          "instrumentCode": "HSV12M",
+          "instrumentName": "HSV-1/2 IgM",
+          "analyzerCode": "HSV-1/2 IgM",
+          "unit": "AU/mL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 770,
+          "lisTestCode": "MS063",
+          "lisTestName": "HSV 1 & 2 - IgM",
+          "_evidence": {
+            "x6Unit": "AU/mL",
+            "source": "menu",
+            "nobleRows180d": 622,
+            "nobleUnits": [
+              "AU/mL"
+            ]
+          },
+          "_note": "Menu lists both \"HSV-1/2 IgM\" and \"HSV-1/2 IgM II\"; eLab ordered the former (5 barcodes) and no HSV result was uploaded in the capture, so the live generation is unconfirmed."
+        }
+      ]
+    }
+  ]
+}

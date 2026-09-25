@@ -20,7 +20,7 @@ import { buildBeckmanDxiOrderFrames } from '../drivers/beckmanDxi'
 import { buildAgappeCx4OrderFrames, cx4SampleId } from '../drivers/agappeCx4'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT, mergeAuFormat } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
-import { MAGLUMI_X3_CHANNELS } from '../drivers/maglumi'
+import { MAGLUMI_CHANNELS_BY_DRIVER } from '../drivers/maglumi'
 import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
 import {
   parseGeteinQuery,
@@ -154,13 +154,16 @@ export class Orchestrator extends EventEmitter {
     // delete and re-add the instrument (which would also drop its counters).
     this.migrateRohtakAuPatientInfo()
 
-    // The Maglumi X3 physically runs only the assays on its panel (TSH II, FT3 II,
-    // AMH II, …). Restrict the host query to exactly those channels so unrelated
-    // catalog analytes (ATG, CEA, AFP, …) can never be queried or written, no
-    // matter what a fuzzy auto-map landed on. Must run BEFORE resolveUnmapped so
-    // those non-panel analytes are 'ignored' rather than freshly resolved.
-    if (persist.getInstruments().some((i) => i.driverId === 'maglumi-x3')) {
-      this.mapping.restrictLisScope('maglumi-x3', Object.keys(MAGLUMI_X3_CHANNELS))
+    // A MAGLUMI X3 / X6 physically runs only the assays in its Channel No. table
+    // (TSH II, FT3 II, AMH II, …). Restrict the host query to exactly those
+    // channels so unrelated catalog analytes (ATG, CTNI, CA724, …) can never be
+    // queried or written, no matter what a fuzzy auto-map landed on. Must run
+    // BEFORE resolveUnmapped so those non-panel analytes are 'ignored' rather
+    // than freshly resolved.
+    for (const [driverId, channels] of Object.entries(MAGLUMI_CHANNELS_BY_DRIVER)) {
+      if (persist.getInstruments().some((i) => i.driverId === driverId)) {
+        this.mapping.restrictLisScope(driverId, Object.keys(channels))
+      }
     }
 
     // Fill any still-unmapped analytes (e.g. immunoassay channels whose LIS names

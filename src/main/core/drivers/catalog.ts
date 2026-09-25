@@ -19,6 +19,7 @@ import {
   IMMUNOASSAY_FULL,
   INTEGRATED,
   URINALYSIS,
+  SNIBE_X6_EXTRA,
   combine
 } from './panels'
 
@@ -147,7 +148,8 @@ const maglumi = [
     { port: 9100, protocol: 'astm' },
     ['maglumi-2000']
   ),
-  // X-series (X3 kept as ASTM for parity with the original driver; others HL7).
+  // X-series. X3 and X6 speak the same ASTM dialect (verified on live units:
+  // Haldwani/Delhi X3 2026-06/07, Srinagar X6 2026-09); X8/X10 still HL7 defaults.
   mk(
     'maglumi-x3',
     'MAGLUMI X3',
@@ -157,9 +159,20 @@ const maglumi = [
     IMMUNOASSAY_FULL,
     { port: 9100, protocol: 'astm', maturity: 'beta' }
   ),
+  mk(
+    'maglumi-x6',
+    'MAGLUMI X6',
+    'SNIBE Diagnostics',
+    'Immunoassay (CLIA)',
+    'MAGLUMI X-series (X-TECH) chemiluminescence immunoassay analyzer, up to 300 T/H. ' +
+      'ASTM E1394 over serial or TCP/IP, identical to the X3 on the wire (Q|1|^SID host query, ' +
+      'simple-framed order download with no frame numbers or checksums, results labelled by LIS Channel No.). ' +
+      'Verified against the Srinagar eLab capture of 21-24 Sep 2026.',
+    combine(IMMUNOASSAY_FULL, SNIBE_X6_EXTRA),
+    { port: 9100, protocol: 'astm', maturity: 'beta' }
+  ),
   ...family(
     [
-      ['maglumi-x6', 'MAGLUMI X6'],
       ['maglumi-x8', 'MAGLUMI X8'],
       ['maglumi-x10', 'MAGLUMI X10']
     ],

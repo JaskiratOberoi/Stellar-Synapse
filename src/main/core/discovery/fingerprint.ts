@@ -24,6 +24,9 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /MAGLUMI\s*X\s*8/i, id: 'maglumi-x8', strong: true },
   { re: /MAGLUMI\s*X\s*6/i, id: 'maglumi-x6', strong: true },
   { re: /MAGLUMI\s*X\s*3/i, id: 'maglumi-x3', strong: true },
+  // The X6 does not say "MAGLUMI" in its ASTM header at all — its sender field is
+  // the login name "X6 User" (Srinagar capture, 2026-09).
+  { re: /\bX6\s*User\b/i, id: 'maglumi-x6', strong: true },
   { re: /MAGLUMI\s*4000\s*PLUS/i, id: 'maglumi-4000-plus', strong: true },
   { re: /MAGLUMI\s*4000/i, id: 'maglumi-4000', strong: true },
   { re: /MAGLUMI\s*2000\s*PLUS/i, id: 'maglumi-2000-plus', strong: true },

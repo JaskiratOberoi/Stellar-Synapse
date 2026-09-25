@@ -62,6 +62,15 @@ Paste the result into the preset's `mappings` array.
   channels), targets read from each site's filled Noble rows and identical at
   both sites; `verify:agappe-cx4` section 8 guards them. Not yet verified
   against a live unit.
+- **`srinagar.json`** — **SNIBE MAGLUMI X6** (`maglumi-x6`, immunoassay, Noble
+  business unit 5) added 2026-09-25: 44 rows, all mapped, channel names read from
+  the analyzer's Assay Parameters screens and cross-checked against the eLab
+  Assist wire capture of 21-24 Sep 2026 (the X6 speaks the X3's ASTM dialect and
+  identifies itself as "X6 User"). Noble targets come from the site's filled rows
+  over 180 days (Anti-CCP files under the Kashmir CLIA row ACPCL1; HBsAg / HCV /
+  HIV / HAV under the CLIA rows, not the rapid cards). `verify:srinagar-x6`
+  replays the captured frames and guards the preset. Serial speed still to be
+  confirmed on the analyzer.
 - **`jammu.json`** — instruments:
   - **Beckman Coulter AU480** (`beckman-au480`, clinical chemistry) — captured from
     the on-analyzer Online screens (2026-07-07). Carries a Jammu-specific

@@ -151,6 +151,23 @@ export const SPECIALTY_ENDO: DriverAnalyte[] = [
   a('IGE', 'Immunoglobulin E (IgE)', 'IU/mL', 0, 100, 0)
 ]
 
+/**
+ * Assays on the SNIBE MAGLUMI X6 menu (Srinagar, 2026-09) that the shared
+ * immunoassay panel lacks: the IgM half of the TORCH panel, HSV-1/2, HAV IgM and
+ * tTG IgA. SNIBE reports the qualitative infectious assays in AU/mL as a cut-off
+ * index (cut-off 1.0). Not folded into IMMUNOASSAY_FULL so other immunoassay
+ * drivers do not grow unmapped rows; the X6 catalog entry combines the two.
+ */
+export const SNIBE_X6_EXTRA: DriverAnalyte[] = [
+  a('HAVM', 'HAV IgM', 'AU/mL', 0, 2, 2),
+  a('CMVM', 'Cytomegalovirus IgM', 'AU/mL', 0, 4.2, 2),
+  a('TOXOM', 'Toxoplasma IgM', 'AU/mL', 0, 2.6, 2),
+  a('RUBM', 'Rubella IgM', 'AU/mL', 0, 3, 2),
+  a('HSV12G', 'HSV-1/2 IgG', 'AU/mL', 0, 2, 2),
+  a('HSV12M', 'HSV-1/2 IgM', 'AU/mL', 0, 2, 2),
+  a('TTGA', 'tTG IgA', 'AU/mL', 0, 20, 1)
+]
+
 export const CHEMISTRY: DriverAnalyte[] = [
   a('GLU', 'Glucose', 'mg/dL', 70, 100, 0),
   a('UREA', 'Urea', 'mg/dL', 15, 40, 0),

@@ -8,7 +8,7 @@ import type {
 } from '../../../shared/types'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { getDriver } from '../drivers/registry'
-import { maglumiX3Channel } from '../drivers/maglumi'
+import { maglumiChannel } from '../drivers/maglumi'
 import { auVariantGroup } from '../drivers/beckmanAu'
 import { persist } from '../../store'
 import { logger } from '../logger'
@@ -78,8 +78,8 @@ export class MappingEngine {
       const driver = getDriver(driverId)
       if (!driver) continue
       for (const analyte of driver.analytes()) {
-        // Default analyzer channel name (e.g. MAGLUMI X3 "Channel No.").
-        const channel = driverId === 'maglumi-x3' ? maglumiX3Channel(analyte.code) : undefined
+        // Default analyzer channel name (MAGLUMI X3 / X6 "LIS Channel No.").
+        const channel = maglumiChannel(driverId, analyte.code)
         const exists = this.rules.find(
           (r) => r.driverId === driverId && r.instrumentCode === analyte.code
         )
