@@ -57,6 +57,9 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /GETEIN\s*1100/i, id: 'getein-1100', strong: true },
   { re: /FIA\s*8600/i, id: 'getein-fia-8600', strong: true },
   { re: /FIA\s*8000/i, id: 'getein-fia-8000', strong: true },
+  // Getein - CM-series clinical chemistry (MSH-4 = instrument model, may be blank)
+  { re: /\bCM[-\s]?430\b/i, id: 'getein-cm-430', strong: true },
+  { re: /\bCM[-\s]?400\b/i, id: 'getein-cm-400', strong: true },
   { re: /GETEIN/i, id: 'magicl-6000', strong: false },
   // Beckman Coulter
   { re: /DXH\s*900/i, id: 'beckman-dxh-900', strong: true },

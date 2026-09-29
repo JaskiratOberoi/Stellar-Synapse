@@ -30,9 +30,14 @@ export class DefinitionDriver implements IInstrumentDriver {
       lisValueOnly: _lisValueOnly,
       astmFlushOnTerminator: _astmFlushOnTerminator,
       transientConnection: _transientConnection,
+      geteinAck: _geteinAck,
       ...info
     } = this.def
     return info
+  }
+
+  get geteinAck(): ModelDefinition['geteinAck'] {
+    return this.def.geteinAck
   }
 
   get lisValueOnly(): boolean | undefined {

@@ -1390,6 +1390,35 @@
           "_note": "Seeded from the driver analyte panel, not a real MAGICL order id — the analyzer orders by numeric item id, so sending the name \"VITD\" is an unknown assay to it. Ignored so it can never enter a host query."
         }
       ]
+    },
+    {
+      "driverId": "getein-cm-430",
+      "model": "Getein CM-430",
+      "vendor": "Getein Biotech",
+      "category": "Clinical Chemistry",
+      "protocol": "hl7",
+      "mode": "bidirectional",
+      "defaultPort": 9108,
+      "transports": [
+        "tcp-server",
+        "tcp-client"
+      ],
+      "maturity": "beta",
+      "source": "Added 2026-09-29 ahead of installation at Rohtak (Noble business unit 17). Protocol from Getein's \"HL7 Communication Protocol - CM series\" (HL7 v2.3.1 over MLLP, the MAGICL/Metis dialect); every worked example in that document is replayed by verify:getein-cm430. NOT yet verified against a live unit — no capture exists.",
+      "mappingsSummary": {
+        "total": 0,
+        "mapped": 0,
+        "unmapped": 0
+      },
+      "_setupNotes": [
+        "On the analyzer: LIS interface = HL7 over Ethernet, Server IP = the Synapse PC's instrument-LAN IP, port 9108 (or change both sides together). Whether the CM-430 dials out or listens is not stated in the protocol document: Synapse defaults to TCP server; switch the instrument to TCP client in Synapse if the analyzer listens.",
+        "Sample query mode must be \"by barcode\" (real-time scanning). The sample-number-range and time-range batch query modes carry no barcode in QRD-8 and are not answered.",
+        "In Synapse tick Host Query. Every ORU^R01 is acknowledged with the document's ACK^R01 (MSH + MSA as separate segments, MSH-16 echoed); QC (MSH-16 = 2) and calibration (1) uploads are acknowledged but not posted."
+      ],
+      "_mappingNotes": [
+        "NO MAPPINGS YET. OBX-3 carries the analyzer's numeric project channel No., which is configured per analyzer; the host query sends the same numbers in DSP-29+. Capture the CM-430's item / channel-number setup screens (or an eLab log) and add one row per channel keyed by that number (instrumentCode = channel No.).",
+        "Rohtak's chemistry Noble targets are already curated in this file's beckman-dxc-700-au mappings (unit 17). Reuse those lisTestId / lisParamId per analyte for the CM-430 rows, but confirm units against the CM-430's configured result units before going live."
+      ]
     }
   ]
 }

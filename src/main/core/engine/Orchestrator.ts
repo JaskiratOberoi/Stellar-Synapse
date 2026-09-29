@@ -28,6 +28,8 @@ import {
   buildGeteinQck,
   buildGeteinDsr,
   buildGeteinAck,
+  buildGeteinSpecAck,
+  geteinResultClass,
   frameGeteinHl7,
   type GeteinQuery
 } from '../drivers/geteinHostQuery'
@@ -799,7 +801,15 @@ export class Orchestrator extends EventEmitter {
       // Acknowledge each result upload so the analyzer marks it delivered, then
       // fall through to decode the ORU below.
       const oruId = geteinResultControlId(message)
-      if (oruId) this.writeHl7Response(def, frameGeteinHl7(buildGeteinAck(oruId)))
+      // CM-series analyzers get the ACK exactly as Getein's protocol document
+      // prints it; the MAGICL keeps the run-on ACK it has accepted in production.
+      if (oruId) {
+        const ack =
+          driver.geteinAck === 'spec'
+            ? buildGeteinSpecAck(oruId, geteinResultClass(message))
+            : buildGeteinAck(oruId)
+        this.writeHl7Response(def, frameGeteinHl7(ack))
+      }
     }
 
     // HORIBA Yumizen H550E: ACK^R22 after each OUL^R22 upload. The analyzer holds

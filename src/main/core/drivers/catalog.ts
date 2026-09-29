@@ -61,6 +61,13 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * 'listening' on each inter-batch disconnect (Agappe Mispa Maestro / BH60).
    */
   transientConnection?: boolean
+  /**
+   * Result-ACK shape for hl7Dialect 'getein'. 'spec' sends the ACK^R01 exactly as
+   * Getein's "HL7 Communication Protocol" (CM series) prints it: MSH and MSA as
+   * separate CR-terminated segments with MSH-16 echoed. Undefined keeps the
+   * run-on ACK the MAGICL has accepted in production.
+   */
+  geteinAck?: 'spec'
 }
 
 interface MkOpts {
@@ -75,6 +82,7 @@ interface MkOpts {
   derivesEag?: boolean
   astmFlushOnTerminator?: boolean
   transientConnection?: boolean
+  geteinAck?: ModelDefinition['geteinAck']
   commTypes?: InstrumentDriverInfo['commTypes']
 }
 
@@ -105,6 +113,7 @@ function mk(
     ...(opts.lisValueOnly ? { lisValueOnly: true } : {}),
     ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
     ...(opts.transientConnection ? { transientConnection: true } : {}),
+    ...(opts.geteinAck ? { geteinAck: opts.geteinAck } : {}),
     ...(opts.commTypes ? { commTypes: opts.commTypes } : {})
   }
 }
@@ -309,6 +318,39 @@ const geteinMetis = [
     { port: 9105, protocol: 'hl7', hl7Dialect: 'getein', transports: ['tcp-server'], maturity: 'beta' }
   )
 ]
+
+// ---------------------------------------------------------------------------
+// Getein - CM series (clinical chemistry, HL7 v2.3.1 over MLLP)
+// ---------------------------------------------------------------------------
+const geteinCm = family(
+  [
+    ['getein-cm-430', 'Getein CM-430'],
+    ['getein-cm-400', 'Getein CM-400']
+  ],
+  'Getein Biotech',
+  'Clinical Chemistry',
+  'Getein CM-series fully automated clinical chemistry analyzer (CM-400: 400 T/h). HL7 v2.3.1 ' +
+    'over MLLP (TCP/IP) per Getein\'s "HL7 Communication Protocol - CM series": results upload as ' +
+    'ORU^R01 (MSH-16 0=patient, 1=calibration, 2=QC; only patient results are posted) with the ' +
+    'accession barcode in OBR-2 and each assay keyed by its numeric project channel No. in OBX-3 ' +
+    '(name in OBX-4) — the MAGICL/Metis layout, decoded via hl7Dialect getein. Every upload is ' +
+    'acknowledged with the spec-exact ACK^R01. Host query: in barcode mode the analyzer sends ' +
+    'QRY^Q02 with the barcode in QRD-8 and Synapse answers QCK^Q02 + DSR^Q03 (one channel No. per ' +
+    'DSP from DSP-29) as two MLLP frames. The sample-number and time-range batch query modes carry ' +
+    'no barcode and are not answered, so set the analyzer to query by barcode. Channel numbers are ' +
+    'configured per analyzer and must match the mapping. Decoded from the protocol document only — ' +
+    'not yet verified against a live unit.',
+  combine(CHEMISTRY, ELECTROLYTES),
+  {
+    port: 9108,
+    protocol: 'hl7',
+    hl7Dialect: 'getein',
+    geteinAck: 'spec',
+    mode: 'bidirectional',
+    transports: ['tcp-server', 'tcp-client']
+  },
+  ['getein-cm-430']
+)
 
 // ---------------------------------------------------------------------------
 // EDAN - H60 / H60 Vet hematology (HL7 over MLLP, analyzer = TCP client)
@@ -726,6 +768,7 @@ export const CATALOG: ModelDefinition[] = [
   ...snibeOther,
   ...getein,
   ...geteinMetis,
+  ...geteinCm,
   ...edan,
   ...boule,
   ...beckman,

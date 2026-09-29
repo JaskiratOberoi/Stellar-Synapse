@@ -71,6 +71,12 @@ Paste the result into the preset's `mappings` array.
   HIV / HAV under the CLIA rows, not the rapid cards). `verify:srinagar-x6`
   replays the captured frames and guards the preset. Serial speed still to be
   confirmed on the analyzer.
+- **`rohtak.json`** — also carries a **Getein CM-430** (`getein-cm-430`, clinical
+  chemistry, HL7 v2.3.1 over MLLP, port 9108) added 2026-09-29 ahead of
+  installation. Transport and setup notes only: no mappings until the
+  analyzer's numeric channel list is captured (reuse the DxC 700 AU rows' Noble
+  targets). `verify:getein-cm430` replays the CM-series protocol document and
+  guards the entry. Not yet verified against a live unit.
 - **`jammu.json`** — instruments:
   - **Beckman Coulter AU480** (`beckman-au480`, clinical chemistry) — captured from
     the on-analyzer Online screens (2026-07-07). Carries a Jammu-specific

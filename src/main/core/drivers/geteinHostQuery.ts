@@ -137,6 +137,37 @@ export function buildGeteinAck(oruControlId: string): string {
   )
 }
 
+/**
+ * MSH-16 result class of an `ORU^R01` (0 = patient, 1 = calibration, 2 = QC).
+ * The spec table puts it at MSH-16; some Getein examples print it one field
+ * later, so both positions are accepted (as in parseGeteinHl7). Default '0'.
+ */
+export function geteinResultClass(message: ProtocolMessage): string {
+  const cls = [mshField(message, 16), mshField(message, 17)].find((s) => s === '1' || s === '2')
+  return cls ?? '0'
+}
+
+/**
+ * Spec-exact result acknowledgment for analyzers built on Getein's "HL7
+ * Communication Protocol" (CM series, §2.4.1): MSH and MSA as separate
+ * CR-terminated segments, MSH-16 echoing the upload's result class, MSA-3
+ * "Message accepted" and the trailing "|0|" status field —
+ *
+ *   MSH|^~\&|||||<ts>||ACK^R01|<id>|P|2.3.1||||0||UTF8|||<CR>
+ *   MSA|AA|<id>|Message accepted|||0|<CR>
+ *
+ * The MAGICL keeps buildGeteinAck (MSH and MSA run together on one line), which
+ * it has accepted in production since v0.2.x; do not switch it without a capture.
+ */
+export function buildGeteinSpecAck(oruControlId: string, resultClass = '0'): string {
+  return (
+    [
+      `MSH|^~\\&|||||${stamp()}||ACK^R01|${oruControlId}|P|2.3.1||||${resultClass}||UTF8|||`,
+      `MSA|AA|${oruControlId}|Message accepted|||0|`
+    ].join(CR) + CR
+  )
+}
+
 /** Wrap an HL7 message body in MLLP framing for transmission to the analyzer. */
 export function frameGeteinHl7(body: string): Buffer {
   return Hl7Protocol.frame(body)
