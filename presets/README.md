@@ -73,10 +73,12 @@ Paste the result into the preset's `mappings` array.
   confirmed on the analyzer.
 - **`rohtak.json`** — also carries a **Getein CM-430** (`getein-cm-430`, clinical
   chemistry, HL7 v2.3.1 over MLLP, port 9108) added 2026-09-29 ahead of
-  installation. Transport and setup notes only: no mappings until the
-  analyzer's numeric channel list is captured (reuse the DxC 700 AU rows' Noble
-  targets). `verify:getein-cm430` replays the CM-series protocol document and
-  guards the entry. Not yet verified against a live unit.
+  installation. Six assays mapped from the analyzer's Biochemistry Item screens
+  (ALT, AST, ALP, GGT, TP, ALB), Noble targets copied from the DxC 700 AU rows.
+  Results file by item name; orders go out by the "Item No." field, whose
+  numbering (0-based vs the screen's 1-based list No.) is still to be confirmed
+  on the first host-queried sample. `verify:getein-cm430` replays the CM-series
+  protocol document and guards the entry. Not yet verified against a live unit.
 - **`jammu.json`** — instruments:
   - **Beckman Coulter AU480** (`beckman-au480`, clinical chemistry) — captured from
     the on-analyzer Online screens (2026-07-07). Carries a Jammu-specific

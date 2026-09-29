@@ -68,6 +68,12 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * run-on ACK the MAGICL has accepted in production.
    */
   geteinAck?: 'spec'
+  /**
+   * Result key for hl7Dialect 'getein'. 'name' files each result by its OBX-4
+   * item name (falling back to the OBX-3 number); undefined keys by OBX-3, as the
+   * MAGICL / Metis item-ids have always been matched.
+   */
+  geteinResultKey?: 'name'
 }
 
 interface MkOpts {
@@ -83,6 +89,7 @@ interface MkOpts {
   astmFlushOnTerminator?: boolean
   transientConnection?: boolean
   geteinAck?: ModelDefinition['geteinAck']
+  geteinResultKey?: ModelDefinition['geteinResultKey']
   commTypes?: InstrumentDriverInfo['commTypes']
 }
 
@@ -114,6 +121,7 @@ function mk(
     ...(opts.astmFlushOnTerminator ? { astmFlushOnTerminator: true } : {}),
     ...(opts.transientConnection ? { transientConnection: true } : {}),
     ...(opts.geteinAck ? { geteinAck: opts.geteinAck } : {}),
+    ...(opts.geteinResultKey ? { geteinResultKey: opts.geteinResultKey } : {}),
     ...(opts.commTypes ? { commTypes: opts.commTypes } : {})
   }
 }
@@ -333,7 +341,9 @@ const geteinCm = family(
     'over MLLP (TCP/IP) per Getein\'s "HL7 Communication Protocol - CM series": results upload as ' +
     'ORU^R01 (MSH-16 0=patient, 1=calibration, 2=QC; only patient results are posted) with the ' +
     'accession barcode in OBR-2 and each assay keyed by its numeric project channel No. in OBX-3 ' +
-    '(name in OBX-4) — the MAGICL/Metis layout, decoded via hl7Dialect getein. Every upload is ' +
+    '(name in OBX-4) — the MAGICL/Metis layout, decoded via hl7Dialect getein. Results are filed ' +
+    'by the OBX-4 item name (ALT, AST, …) rather than the number, because the setup screen shows ' +
+    'both a list No. and an Item No. per item; the host query orders by Item No. Every upload is ' +
     'acknowledged with the spec-exact ACK^R01. Host query: in barcode mode the analyzer sends ' +
     'QRY^Q02 with the barcode in QRD-8 and Synapse answers QCK^Q02 + DSR^Q03 (one channel No. per ' +
     'DSP from DSP-29) as two MLLP frames. The sample-number and time-range batch query modes carry ' +
@@ -346,6 +356,7 @@ const geteinCm = family(
     protocol: 'hl7',
     hl7Dialect: 'getein',
     geteinAck: 'spec',
+    geteinResultKey: 'name',
     mode: 'bidirectional',
     transports: ['tcp-server', 'tcp-client']
   },

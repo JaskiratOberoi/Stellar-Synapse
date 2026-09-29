@@ -31,6 +31,7 @@ export class DefinitionDriver implements IInstrumentDriver {
       astmFlushOnTerminator: _astmFlushOnTerminator,
       transientConnection: _transientConnection,
       geteinAck: _geteinAck,
+      geteinResultKey: _geteinResultKey,
       ...info
     } = this.def
     return info
@@ -68,7 +69,10 @@ export class DefinitionDriver implements IInstrumentDriver {
     if (message.protocol === 'hl7') {
       // Getein Metis uses OBR-2 (barcode) / OBX-3 (item id) instead of the
       // generic OBR-3 / OBX-3-component layout — route to its own parser.
-      if (this.def.hl7Dialect === 'getein') return parseGeteinHl7(message, instrumentId)
+      if (this.def.hl7Dialect === 'getein')
+        return parseGeteinHl7(message, instrumentId, {
+          keyByName: this.def.geteinResultKey === 'name'
+        })
       if (this.def.hl7Dialect === 'edan') return parseEdanHl7(message, instrumentId)
       // Boule BM500 (Swelab Lumi / Medonic M51): barcode in OBR-3, analyte keyed
       // by the OBX-3 component-2 mnemonic, QC (MSH-11=Q) frames skipped.

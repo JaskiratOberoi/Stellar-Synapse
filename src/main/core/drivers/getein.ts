@@ -39,7 +39,20 @@ function normFlag(raw?: string): ResultFlag | undefined {
  * `MSH-16` selects the payload: 0 = patient sample, 1 = calibration, 2 = QC.
  * Only patient results are surfaced; calibration/QC frames are ignored.
  */
-export function parseGeteinHl7(message: ProtocolMessage, instrumentId: string): CanonicalResult[] {
+export function parseGeteinHl7(
+  message: ProtocolMessage,
+  instrumentId: string,
+  opts?: {
+    /**
+     * Key each result by its OBX-4 item name ("ALT") instead of the OBX-3
+     * number, falling back to the number when the name is blank. Used by the CM
+     * series, whose setup screens show two candidate numbers per item (list No.
+     * and Item No.); filing by name means a wrong guess at the numbering can
+     * never file one analyte's value under another.
+     */
+    keyByName?: boolean
+  }
+): CanonicalResult[] {
   const results: CanonicalResult[] = []
   const now = new Date().toISOString()
   let currentSample = ''
@@ -61,9 +74,10 @@ export function parseGeteinHl7(message: ProtocolMessage, instrumentId: string): 
       currentSample = (seg[2] || seg[3] || '').split('^')[0].trim()
     } else if (type === 'OBX') {
       if (resultClass === '1' || resultClass === '2') continue // cal/QC, not a patient result
-      const code = (seg[3] || '').split('^')[0].trim()
-      if (!code) continue
+      const itemNo = (seg[3] || '').split('^')[0].trim()
       const name = (seg[4] || '').split('^')[0].trim() || undefined
+      const code = opts?.keyByName ? name || itemNo : itemNo
+      if (!code) continue
       const ref = (seg[7] || '').trim()
       results.push({
         id: randomUUID(),

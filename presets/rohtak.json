@@ -1404,10 +1404,10 @@
         "tcp-client"
       ],
       "maturity": "beta",
-      "source": "Added 2026-09-29 ahead of installation at Rohtak (Noble business unit 17). Protocol from Getein's \"HL7 Communication Protocol - CM series\" (HL7 v2.3.1 over MLLP, the MAGICL/Metis dialect); every worked example in that document is replayed by verify:getein-cm430. NOT yet verified against a live unit — no capture exists.",
+      "source": "Added 2026-09-29 ahead of installation at Rohtak (Noble business unit 17). Protocol from Getein's \"HL7 Communication Protocol - CM series\" (HL7 v2.3.1 over MLLP, the MAGICL/Metis dialect); every worked example in that document is replayed by verify:getein-cm430. Item numbers, units and ranges for six assays read off the analyzer's Biochemistry Item screens on 2026-09-29. NOT yet verified against a live unit — no capture exists.",
       "mappingsSummary": {
-        "total": 0,
-        "mapped": 0,
+        "total": 6,
+        "mapped": 6,
         "unmapped": 0
       },
       "_setupNotes": [
@@ -1416,8 +1416,132 @@
         "In Synapse tick Host Query. Every ORU^R01 is acknowledged with the document's ACK^R01 (MSH + MSA as separate segments, MSH-16 echoed); QC (MSH-16 = 2) and calibration (1) uploads are acknowledged but not posted."
       ],
       "_mappingNotes": [
-        "NO MAPPINGS YET. OBX-3 carries the analyzer's numeric project channel No., which is configured per analyzer; the host query sends the same numbers in DSP-29+. Capture the CM-430's item / channel-number setup screens (or an eLab log) and add one row per channel keyed by that number (instrumentCode = channel No.).",
-        "Rohtak's chemistry Noble targets are already curated in this file's beckman-dxc-700-au mappings (unit 17). Reuse those lisTestId / lisParamId per analyte for the CM-430 rows, but confirm units against the CM-430's configured result units before going live."
+        "instrumentCode is the CM-430 Item Name (ALT, AST, ALP, GGT, TP, ALB), which the analyzer sends in OBX-4; the driver files results by that name. analyzerCode is the \"Item No.\" field from the Biochemistry Item screen (ALT 0, AST 1, ALP 2, GGT 3, TP 5, ALB 6) and is what the host query sends in DSP-29+.",
+        "UNVERIFIED NUMBERING: the same screen also lists each item with a 1-based \"No.\" (ALT 1, AST 2, …). If the first host-queried sample runs the wrong test or the analyzer rejects the order, the analyzer wants the list No.: add 1 to every analyzerCode here. Results cannot be mis-filed either way, because they are keyed by name.",
+        "Noble targets copied verbatim from this file's beckman-dxc-700-au rows (Rohtak, unit 17). TP and ALB are set up in g/L on the CM-430 while Noble holds g/dL; the existing g/L -> g/dL rule (/10) converts them.",
+        "Captured 2026-09-29 from six Item screens. Not yet mapped: TBA (Item No. 4) and the rest of the menu (TBIL, DBIL, PA, CHE, ADA, 5-NT, MAO, GPDA, GLDH, a-AMY, LAP, TCH, TCH-S, TG, TG-S, …) — send their screens to add them."
+      ],
+      "mappings": [
+        {
+          "instrumentCode": "ALT",
+          "instrumentName": "Alanine aminotransferase (Alanine substrate method)",
+          "analyzerCode": "0",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 79,
+          "lisTestCode": "BI014",
+          "lisTestName": "Alanine amino Transferase - (ALT / SGPT)",
+          "lisParamId": 395,
+          "lisParamName": "Alanine aminotransferase - (ALT / SGPT)",
+          "_evidence": {
+            "itemNo": 0,
+            "listNo": 1,
+            "cmUnit": "U/L",
+            "cmRefRange": "0.0-40.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        },
+        {
+          "instrumentCode": "AST",
+          "instrumentName": "Aspartate aminotransferase (Aspartic acid substrate method)",
+          "analyzerCode": "1",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 81,
+          "lisTestCode": "BI040",
+          "lisTestName": "Aspartate Aminotransferase (AST/SGOT)",
+          "lisParamId": 423,
+          "lisParamName": "Aspartate Aminotransferase (AST/SGOT)",
+          "_evidence": {
+            "itemNo": 1,
+            "listNo": 2,
+            "cmUnit": "U/L",
+            "cmRefRange": "0.0-40.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        },
+        {
+          "instrumentCode": "ALP",
+          "instrumentName": "Alkaline Phosphatase",
+          "analyzerCode": "2",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 279,
+          "lisTestCode": "BI023",
+          "lisTestName": "Alkaline Phosphatase (ALP)",
+          "lisParamId": 405,
+          "lisParamName": "Alkaline Phosphatase - ALP",
+          "_evidence": {
+            "itemNo": 2,
+            "listNo": 3,
+            "cmUnit": "U/L",
+            "cmRefRange": "15.0-150.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        },
+        {
+          "instrumentCode": "GGT",
+          "instrumentName": "y-glutamyl transferase (GCANA substrate method)",
+          "analyzerCode": "3",
+          "unit": "U/L",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 130,
+          "lisTestCode": "BI112",
+          "lisTestName": "Gamma Glutamyl Transferase (GGT)",
+          "lisParamId": 528,
+          "lisParamName": "Gamma Glutamyl Transferase (GGT)",
+          "_evidence": {
+            "itemNo": 3,
+            "listNo": 4,
+            "cmUnit": "U/L",
+            "cmRefRange": "M 11.0-50.0 / F 7.0-32.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        },
+        {
+          "instrumentCode": "TP",
+          "instrumentName": "Total protein (Biuret method)",
+          "analyzerCode": "5",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 678,
+          "lisParamName": "Protein Total Serum",
+          "_evidence": {
+            "itemNo": 5,
+            "listNo": 6,
+            "cmUnit": "g/L",
+            "cmRefRange": "60.0-80.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        },
+        {
+          "instrumentCode": "ALB",
+          "instrumentName": "Albumin",
+          "analyzerCode": "6",
+          "unit": "g/dL",
+          "status": "manual",
+          "confidence": 1,
+          "lisTestId": 163,
+          "lisTestCode": "BI213",
+          "lisTestName": "Total protein (with albumin and globulin)",
+          "lisParamId": 676,
+          "lisParamName": "Albumin - Serum",
+          "_evidence": {
+            "itemNo": 6,
+            "listNo": 7,
+            "cmUnit": "g/L",
+            "cmRefRange": "40.0-53.0",
+            "targetFrom": "beckman-dxc-700-au row"
+          }
+        }
       ]
     }
   ]

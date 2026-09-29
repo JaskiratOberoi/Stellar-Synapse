@@ -24,6 +24,8 @@ import {
 import { getDriver } from '../src/main/core/drivers/registry'
 import { fingerprintInstrument } from '../src/main/core/discovery/fingerprint'
 import { listPresets } from '../src/main/core/presets/registry'
+import { convertForLis } from '../src/main/core/engine/units'
+import type { MappingRule } from '../src/shared/types'
 
 let passed = 0
 let failed = 0
@@ -125,6 +127,12 @@ console.log('\n[2] §2.4.1.1 result upload decodes: barcode OBR-2, channel No. O
   eq('  result 3 = AST 26.4 on channel 6', `${res[2]?.analyteCode}:${res[2]?.analyteName}:${res[2]?.value}`, '6:AST:26.4')
   eq('  result 3 has no OBX-14', res[2]?.measuredAt, undefined)
   eq('driver.parse gives the same three', getDriver('getein-cm-430')?.parse(msg, 'cm').length, 3)
+  // The CM-430 driver itself files by OBX-4 name; the bare MAGICL parser keeps OBX-3.
+  const byName = getDriver('getein-cm-430')?.parse(msg, 'cm') ?? []
+  eq('CM-430 keys results by item name', byName.map((r) => r.analyteCode).join(','), 'TBil,ALT,AST')
+  eq('MAGICL still keys by OBX-3 item-id', getDriver('magicl-6000i')?.parse(msg, 'm').map((r) => r.analyteCode).join(','), '2,5,6')
+  const noName = decode([ORU[0], ORU[2], 'OBX|1|NM|7||41.0|g/L|-|N|||F||41.0|||||'])
+  eq('blank OBX-4 falls back to the item number', getDriver('getein-cm-430')?.parse(noName, 'cm')[0]?.analyteCode, '7')
   eq('ORU control id for the ACK', geteinResultControlId(msg), '1')
   eq('ORU result class', geteinResultClass(msg), '0')
 }
@@ -205,7 +213,35 @@ console.log('\n[8] Rohtak preset offers the CM-430 without disturbing its other 
   ok('Rohtak carries a getein-cm-430 entry', !!cm)
   eq('  transport tcp-server', cm?.transport, 'tcp-server')
   eq('  port 9108', cm?.port, 9108)
-  eq('  no mappings until the channel list is captured', cm?.mappings, undefined)
+  const rows = cm?.mappings ?? []
+  eq(
+    '  six screen-captured rows, keyed by item name',
+    rows.map((r) => r.instrumentCode).join(','),
+    'ALT,AST,ALP,GGT,TP,ALB'
+  )
+  eq(
+    '  orders go out by the "Item No." field',
+    rows.map((r) => r.analyzerCode).join(','),
+    '0,1,2,3,5,6'
+  )
+  const dxc = rohtak?.instruments.find((i) => i.driverId === 'beckman-dxc-700-au')
+  const sameTarget = rows.every((r) => {
+    const d = dxc?.mappings?.find((x) => x.instrumentCode === r.instrumentCode)
+    return !!d && d.lisTestId === r.lisTestId && d.lisParamId === r.lisParamId && d.lisParamName === r.lisParamName
+  })
+  ok('  every Noble target equals the DxC row for the same analyte', sameTarget)
+  ok('  every row manual with a param name', rows.every((r) => r.status === 'manual' && !!r.lisParamName))
+  const tp = rows.find((r) => r.instrumentCode === 'TP')
+  const tpOut = convertForLis(
+    { id: 'r', instrumentId: 'cm', sampleId: '1', analyteCode: 'TP', analyteName: 'TP', value: '72', unit: 'g/L', receivedAt: '' },
+    { id: 'tp', driverId: 'getein-cm-430', instrumentCode: 'TP', status: 'manual', confidence: 1, unit: tp?.unit, updatedAt: '' } as MappingRule
+  )
+  eq('  TP 72 g/L -> 7.2 g/dL for Noble', `${tpOut.value} ${tpOut.unit}`, '7.2 g/dL')
+  const alt = convertForLis(
+    { id: 'r', instrumentId: 'cm', sampleId: '1', analyteCode: 'ALT', analyteName: 'ALT', value: '98.2', unit: 'U/L', receivedAt: '' },
+    { id: 'alt', driverId: 'getein-cm-430', instrumentCode: 'ALT', status: 'manual', confidence: 1, unit: 'U/L', updatedAt: '' } as MappingRule
+  )
+  eq('  ALT U/L passes through', alt.value, '98.2')
   eq(
     'Rohtak still carries the DxC 700 AU and both MAGICLs',
     rohtak?.instruments
