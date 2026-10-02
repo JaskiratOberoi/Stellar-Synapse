@@ -25,6 +25,7 @@
     "verify:mapgrade": "esbuild scripts/verify-mapgrade.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mapgrade.mjs && node scripts/.verify-mapgrade.mjs",
     "verify:units": "esbuild scripts/verify-units.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-units.mjs && node scripts/.verify-units.mjs",
     "verify:rohtak": "esbuild scripts/verify-rohtak.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak.mjs && node scripts/.verify-rohtak.mjs",
+    "verify:haldwani": "esbuild scripts/verify-haldwani.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-haldwani.mjs && node scripts/.verify-haldwani.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "verify:rohtak-magicl": "esbuild scripts/verify-rohtak-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak-magicl.mjs && node scripts/.verify-rohtak-magicl.mjs",
