@@ -127,6 +127,33 @@ check(
 )
 check('BI213 total-protein panel orders ALB + TP', order(['BI213'], []) === 'ALB,TP', order(['BI213'], []))
 check('standalone BI019 "Albumin" orders ALB', order(['BI019'], ['Albumin']) === 'ALB', order(['BI019'], ['Albumin']))
+// The six channels the v0.6.10 graded matcher dropped from Haldwani's orders
+// (auto name-matches re-scored below 0.9): they must come back as manual rules.
+const dropped: Array<[string, string]> = [
+  ['BI224', 'UREA'], ['BI218', 'TRIG'], ['BI023', 'ALP'], ['BI014', 'ALT'], ['BI040', 'AST'], ['BI137', 'IRON']
+]
+for (const [lis, code] of dropped) check(`${lis} orders ${code}`, order([lis], []) === code, order([lis], []))
+const au480Nos = (codes: string[]): number[] =>
+  engine.instrumentCodesForLisTests('beckman-au480', codes, []).map((c) => byCode.get(c.toUpperCase()) ?? -1)
+check('lipid profile tests reach TRIG = Online Test No. 013', au480Nos(['BI218']).includes(13), String(au480Nos(['BI218'])))
+
+// ---- 9. The live Haldwani store, 2026-10-03: TRIG rule with channel "013" ----
+// Host query sends a rule's analyzer channel in place of its instrument code.
+// The TRIG rule on the Haldwani PC carried "013" in that field, so the order
+// looked up an analyte *named* 013, found none, and dropped TRIG from every
+// lipid order without a log line. A numeric channel must resolve as the number.
+import { auOnlineTestNo } from '../src/main/core/drivers/beckmanAu'
+check('channel "013" resolves to Online Test No. 13', auOnlineTestNo('013', au.auOnlineTestNos) === 13)
+check('channel "13" resolves too', auOnlineTestNo('13', au.auOnlineTestNos) === 13)
+check('an unknown number resolves to nothing', auOnlineTestNo('045', au.auOnlineTestNos) === null)
+check('names still resolve (TRIG -> 13)', auOnlineTestNo('TRIG', au.auOnlineTestNos) === 13)
+const storeLike = new MappingEngine({} as never)
+storeLike.applyPresetMappings('beckman-au480', [
+  { ...(rule.get('TRIG') as NonNullable<typeof au.mappings>[number]), analyzerCode: '013' }
+])
+const trigOrder = storeLike.instrumentCodesForLisTests('beckman-au480', ['BI218'], [])
+check('a TRIG rule with channel "013" orders channel 013', trigOrder.join() === '013', trigOrder.join())
+check('  …which the AU table turns into test 13', trigOrder.map((c) => auOnlineTestNo(c, au.auOnlineTestNos)).join() === '13')
 
 console.log(failed ? `\n${failed} check(s) FAILED` : '\nAll Haldwani AU480 checks passed')
 process.exit(failed ? 1 : 0)

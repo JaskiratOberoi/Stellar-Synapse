@@ -1142,13 +1142,28 @@ export class Orchestrator extends EventEmitter {
     const codes = order
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
       : []
+    // A code with no Online Test No. on this analyzer's table is dropped from the
+    // order. Say so: Haldwani lost TRIG from every lipid order for a day with no
+    // line in the log to show where it went.
+    const unresolved: string[] = []
     const testNos = [
       ...new Set(
         codes
-          .map((c) => auOnlineTestNo(c, def.auOnline?.testNos))
+          .map((c) => {
+            const no = auOnlineTestNo(c, def.auOnline?.testNos)
+            if (no == null) unresolved.push(c)
+            return no
+          })
           .filter((n): n is number => n != null)
       )
     ]
+    if (unresolved.length > 0) {
+      logger.warn(
+        'host-query',
+        `${def.name}: ${req.sid} — ${unresolved.length} mapped code(s) have no Online Test No. on this analyzer's table and were not ordered: [${unresolved.join(', ')}]` +
+          (def.auOnline?.testNos?.length ? ` (site table has ${def.auOnline.testNos.length} entries)` : ' (no site table — default numbering)')
+      )
+    }
 
     if (testNos.length === 0) {
       // Replicate the live ElabAssistLite behaviour exactly: when nothing is

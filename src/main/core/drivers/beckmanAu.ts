@@ -109,6 +109,16 @@ function buildAuByNo(override: AuOnlineOverride): Map<number, AuDecoded> {
  */
 export function auOnlineTestNo(code: string, override?: AuOnlineOverride): number | null {
   const c = code.trim().toUpperCase()
+  // A purely numeric code IS the Online Test No. — the AU wire has no other
+  // channel name, so that is what an operator types into a rule's "analyzer
+  // channel" field (Haldwani's TRIG rule carried "013" and host query dropped
+  // the test for a day because no analyte is *named* 013). Accept it when the
+  // table has that number.
+  if (/^\d{1,3}$/.test(c)) {
+    const no = Number(c)
+    const known = override && override.length ? override.some((e) => e.no === no) : AU_TEST_BY_NO.has(no)
+    return known ? no : null
+  }
   if (override && override.length) {
     const hit = override.find((e) => e.code.trim().toUpperCase() === c)
     return hit ? hit.no : null
