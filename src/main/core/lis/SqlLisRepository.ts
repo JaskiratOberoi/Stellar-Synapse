@@ -505,12 +505,27 @@ export class SqlLisRepository implements ILisRepository {
       END
 
       -- Tier 3: same test by code (profile members keep the member test's code).
-      -- Only for test-level mappings (no paramid) so a panel can't be overwritten.
+      -- Only for test-level mappings (no paramid), and only when the code names
+      -- ONE analyte slot on this sample. A panel's parameters all share the
+      -- panel's testcode (Bilirubin BI046 = Conjugated 430 / Total 431 /
+      -- Indirect 432), so a bare code match would write one value into every
+      -- parameter: Haldwani SID 9735064 got its direct bilirubin 0.17 in all
+      -- three rows, which then blocked the real total. Count distinct
+      -- testid/paramid slots over filled and blank rows alike (the layout, not
+      -- the fill state, decides ambiguity) and leave ambiguous codes to the
+      -- name tiers.
       IF @matched = 0 AND @testcode <> '' AND @paramid IS NULL
       BEGIN
-        UPDATE tbl_med_mcc_patient_test_result ${setCols}
-        WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
-        SET @matched = @@ROWCOUNT;
+        DECLARE @codeSlots int = (
+          SELECT COUNT(DISTINCT CONVERT(varchar(12), testid) + '|' + CONVERT(varchar(12), ISNULL(paramid, 0)))
+          FROM tbl_med_mcc_patient_test_result
+          WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile'));
+        IF @codeSlots = 1
+        BEGIN
+          UPDATE tbl_med_mcc_patient_test_result ${setCols}
+          WHERE vailid = @vailid AND testcode = @testcode AND testtype NOT IN ('Head', 'Profile') ${blankOnly};
+          SET @matched = @@ROWCOUNT;
+        END
       END
 
       -- Tier 4: same test/parameter by name. Last resort; the name is specific to
@@ -545,7 +560,11 @@ export class SqlLisRepository implements ILisRepository {
           AND value IS NOT NULL AND LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
           AND ( (@paramid IS NOT NULL AND paramid = @paramid)
                 OR (@paramid IS NULL AND @testcode <> '' AND testcode = @testcode
-                    AND (paramid IS NULL OR paramid = 0)) );
+                    AND (paramid IS NULL OR paramid = 0))
+                -- the Tier 4 slot: a filled same-name row (e.g. panel param
+                -- "Bilirubin Total" for a standalone BI048 rule) is "already
+                -- filled", not "not ordered"
+                OR (@testname <> '' AND testname = @testname) );
 
       ${this.statusRecomputeSql}
 

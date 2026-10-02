@@ -89,8 +89,39 @@
           "matchRegex": "/rheumatoid arthritis factor|\\bra factor\\b/i"
         }
       ],
-      "mappings": [],
-      "_mappingsNote": "AU480 analyte->Noble-LIS mappings are NOT in code — they are configured per site. To complete this preset with Haldwani's real mappings, export the rules whose driverId === 'beckman-au480' from the Haldwani install's %APPDATA%\\stellar-synapse\\stellar-synapse.json and paste them here."
+      "mappingsSummary": { "total": 24, "mapped": 24, "unmapped": 0 },
+      "_mappingNotes": [
+        "Captured 2026-10-02 from Noble itself: every row below is the slot this AU480 actually filled for Haldwani samples (business unit 20) over the previous 90 days (e.g. Bilirubin Total 87/431 ~6,000 rows, ALT 79 ~6,000, Albumin 163/676 ~5,900). HDL-C/LDL-C had no AU writes in that window but are ordered via host query; they target the same Noble HDL/LDL tests used on Jammu (same Noble DB).",
+        "Bilirubin: the lab orders the BI046 panel, so DBILC/TBILC target its parameters 430 (Conjugated) / 431 (Total). A standalone BI048 'Bilirubin Total' order is still filled by name (same testname), as are standalone BI019 Albumin / BI186 Total Protein via the name key.",
+        "GLU and RF stay TEST-level (no paramId) so the AU variant resolver can fill whichever glucose / RA-factor variant the sample ordered.",
+        "Applying this preset OVERWRITES the driver's rules for these codes. That is deliberate: on 2026-10-02 the Jammu preset was applied on this PC and left Jammu's rules on the shared beckman-au480 driver (e.g. TP -> BI183, a test-level BI046 Direct-bilirubin rule). Re-onboarding with this preset restores Haldwani's targets. Codes not listed (AMY, AMY06, LIPASE, PHOS, CRPHS, the BuBc bilirubin blanks, LIH) had no Haldwani writes and are left as they are."
+      ],
+      "mappings": [
+        {"instrumentCode": "GLU", "instrumentName": "Glucose", "lisTestId": 284, "lisTestCode": "BI114", "lisTestName": "Glucose - Fasting", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "UREA", "instrumentName": "Urea (BUN)", "lisTestId": 172, "lisTestCode": "BI224", "lisTestName": "Urea", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "UA", "instrumentName": "Uric Acid", "lisTestId": 173, "lisTestCode": "BI227", "lisTestName": "Uric acid", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "TP", "instrumentName": "Total Protein", "lisTestId": 163, "lisTestCode": "BI213", "lisTestName": "Total protein (with albumin and globulin)", "lisParamId": 678, "lisParamName": "Protein Total  Serum", "unit": "g/dL", "status": "manual"},
+        {"instrumentCode": "CREAT", "instrumentName": "Creatinine", "lisTestId": 114, "lisTestCode": "BI089", "lisTestName": "Creatinine", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "DBILC", "instrumentName": "Direct Bilirubin (DCA)", "lisTestId": 87, "lisTestCode": "BI046", "lisTestName": "Bilirubin (Total, Direct & Indirect )", "lisParamId": 430, "lisParamName": "Bilirubin Conjugated", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "TBILC", "instrumentName": "Total Bilirubin (DCA)", "lisTestId": 87, "lisTestCode": "BI046", "lisTestName": "Bilirubin (Total, Direct & Indirect )", "lisParamId": 431, "lisParamName": "Bilirubin Total", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "ALB", "instrumentName": "Albumin", "lisTestId": 163, "lisTestCode": "BI213", "lisTestName": "Total protein (with albumin and globulin)", "lisParamId": 676, "lisParamName": "Albumin - Serum", "unit": "g/dL", "status": "manual"},
+        {"instrumentCode": "CHOL", "instrumentName": "Total Cholesterol", "lisTestId": 104, "lisTestCode": "BI079", "lisTestName": "Cholesterol - Total", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "HDL-C", "instrumentName": "HDL Cholesterol", "lisTestId": 102, "lisTestCode": "BI077", "lisTestName": "Cholesterol - HDL", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "TRIG", "instrumentName": "Triglycerides", "lisTestId": 168, "lisTestCode": "BI218", "lisTestName": "Triglycerides", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "LDL-C", "instrumentName": "LDL Cholesterol", "lisTestId": 103, "lisTestCode": "BI078", "lisTestName": "Cholesterol - LDL DIRECT", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "ALP", "instrumentName": "Alkaline Phosphatase", "lisTestId": 279, "lisTestCode": "BI023", "lisTestName": "Alkaline Phosphatase (ALP)", "unit": "U/L", "status": "manual"},
+        {"instrumentCode": "ALT", "instrumentName": "Alanine Aminotransferase", "lisTestId": 79, "lisTestCode": "BI014", "lisTestName": "Alanine amino Transferase - (ALT / SGPT)", "unit": "U/L", "status": "manual"},
+        {"instrumentCode": "AST", "instrumentName": "Aspartate Aminotransferase", "lisTestId": 81, "lisTestCode": "BI040", "lisTestName": "Aspartate Aminotransferase (AST/SGOT)", "unit": "U/L", "status": "manual"},
+        {"instrumentCode": "GGT", "instrumentName": "Gamma GT", "lisTestId": 130, "lisTestCode": "BI112", "lisTestName": "Gamma Glutamyl Transferase (GGT)", "unit": "U/L", "status": "manual"},
+        {"instrumentCode": "CALA", "instrumentName": "Calcium", "lisTestId": 96, "lisTestCode": "BI064", "lisTestName": "Calcium", "unit": "mg/dL", "status": "manual"},
+        {"instrumentCode": "IRON", "instrumentName": "Iron", "lisTestId": 135, "lisTestCode": "BI137", "lisTestName": "Iron", "unit": "ug/dL", "status": "manual"},
+        {"instrumentCode": "UIBC", "instrumentName": "Unsaturated Iron Binding Capacity", "lisTestId": 252, "lisTestCode": "BI222", "lisTestName": "Unsaturated Iron Binding Capacity (UIBC)", "unit": "ug/dL", "status": "manual"},
+        {"instrumentCode": "RF", "instrumentName": "Rheumatoid Factor", "lisTestId": 1890, "lisTestCode": "MS111", "lisTestName": "Rheumatoid Arthritis Factor (Nephelometry)", "unit": "IU/mL", "status": "manual"},
+        {"instrumentCode": "CRPN", "instrumentName": "C-Reactive Protein", "lisTestId": 113, "lisTestCode": "MS024", "lisTestName": "C-Reactive Protein (CRP)", "lisParamId": 491, "lisParamName": "C-Reactive Protein (CRP)", "unit": "mg/L", "status": "manual"},
+        {"instrumentCode": "Na", "instrumentName": "Sodium", "lisTestId": 157, "lisTestCode": "BI205", "lisTestName": "Sodium", "unit": "mmol/L", "status": "manual"},
+        {"instrumentCode": "K", "instrumentName": "Potassium", "lisTestId": 297, "lisTestCode": "BI174", "lisTestName": "Potassium", "unit": "mmol/L", "status": "manual"},
+        {"instrumentCode": "Cl", "instrumentName": "Chloride", "lisTestId": 101, "lisTestCode": "BI074", "lisTestName": "Chloride - Serum", "unit": "mmol/L", "status": "manual"}
+      ]
     },
     {
       "driverId": "maglumi-x3",

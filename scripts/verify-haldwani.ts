@@ -14,6 +14,7 @@ import { parseBeckmanAu, buildAuOrderResponse } from '../src/main/core/drivers/b
 import { parseAuHeader, mergeAuFormat } from '../src/main/core/protocols/beckmanAu'
 import type { ProtocolMessage } from '../src/main/core/drivers/IInstrumentDriver'
 import { PRESETS } from '../src/main/core/presets/registry'
+import { MappingEngine } from '../src/main/core/mapping/MappingEngine'
 
 let failed = 0
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -82,6 +83,50 @@ const jGot = new Map(
   parseBeckmanAu(msg, 'inst-jammu', fmt, jammu?.auOnlineTestNos ?? []).map((r) => [r.analyteCode, r.value])
 )
 check('Jammu table decodes 011 as TBILC (wrong for Haldwani)', jGot.get('TBILC') === '187.5', `got ${jGot.get('TBILC')}`)
+
+// ---- 6. Mappings: the Noble slots this AU actually fills --------------------
+// Taken from 90 days of Haldwani rows in Noble (2026-10-02). The bilirubin and
+// protein channels are parameters of shared panels — pin them so a later edit
+// cannot collapse them back onto one test-level row.
+const rule = new Map((au.mappings ?? []).map((m) => [m.instrumentCode, m]))
+const slot = (code: string): string => {
+  const m = rule.get(code)
+  return m ? `${m.lisTestId}/${m.lisParamId ?? '-'}` : 'missing'
+}
+const SLOTS: Array<[string, string]> = [
+  ['DBILC', '87/430'], ['TBILC', '87/431'], ['TP', '163/678'], ['ALB', '163/676'],
+  ['UA', '173/-'], ['CREAT', '114/-'], ['CHOL', '104/-'], ['GGT', '130/-'], ['CALA', '96/-'],
+  ['ALT', '79/-'], ['AST', '81/-'], ['ALP', '279/-'], ['UREA', '172/-'], ['TRIG', '168/-'],
+  ['Na', '157/-'], ['K', '297/-'], ['Cl', '101/-'], ['GLU', '284/-'], ['RF', '1890/-']
+]
+for (const [code, want] of SLOTS) check(`mapping ${code} -> ${want}`, slot(code) === want, `got ${slot(code)}`)
+check('every mapping is manual (locked against auto-map)', (au.mappings ?? []).every((m) => m.status === 'manual'))
+
+// ---- 7. Re-onboarding over the Jammu rules restores Haldwani's targets ------
+// On 2026-10-02 the Jammu preset was applied on the Haldwani PC first; the
+// Haldwani preset must overwrite every overlapping rule on the shared driver.
+const engine = new MappingEngine({} as never)
+engine.applyPresetMappings('beckman-au480', jammu?.mappings ?? [])
+engine.applyPresetMappings('beckman-au480', au.mappings ?? [])
+const live = (code: string): string => {
+  const r = engine.resolve({ analyteCode: code } as never, 'beckman-au480')
+  return r ? `${r.lisTestId}/${r.lisParamId ?? '-'}` : 'missing'
+}
+for (const code of ['TP', 'DBILC', 'TBILC', 'ALB', 'ALP', 'TRIG', 'IRON', 'UIBC']) {
+  check(`after Jammu then Haldwani: ${code} -> ${slot(code)}`, live(code) === slot(code), `got ${live(code)}`)
+}
+
+// ---- 8. Host query: LIS orders -> analyzer channels -------------------------
+const order = (codes: string[], names: string[]): string =>
+  engine.instrumentCodesForLisTests('beckman-au480', codes, names).sort().join(',')
+check('BI046 bilirubin panel orders DBILC + TBILC', order(['BI046'], []) === 'DBILC,TBILC', order(['BI046'], []))
+check(
+  'standalone BI048 "Bilirubin Total" orders TBILC only',
+  order(['BI048'], ['Bilirubin Total']) === 'TBILC',
+  order(['BI048'], ['Bilirubin Total'])
+)
+check('BI213 total-protein panel orders ALB + TP', order(['BI213'], []) === 'ALB,TP', order(['BI213'], []))
+check('standalone BI019 "Albumin" orders ALB', order(['BI019'], ['Albumin']) === 'ALB', order(['BI019'], ['Albumin']))
 
 console.log(failed ? `\n${failed} check(s) FAILED` : '\nAll Haldwani AU480 checks passed')
 process.exit(failed ? 1 : 0)

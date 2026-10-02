@@ -704,7 +704,11 @@ export class MappingEngine {
       const variant = auVariantGroup(r.instrumentCode)
       const variantHit = !!variant && lisTestNames.some((n) => variant.matches(n))
       if (!codeHit && !nameHit && !keyHit && !variantHit) continue
-      const key = String(r.lisTestId ?? r.lisTestCode ?? r.instrumentCode).toUpperCase()
+      // Group by the LIS SLOT (test + parameter): the parameters of one panel
+      // (Bilirubin 87: Conjugated 430 / Total 431; Total protein 163: Albumin
+      // 676 / Protein 678) are different analytes on different channels, not
+      // one test ordered twice.
+      const key = `${String(r.lisTestId ?? r.lisTestCode ?? r.instrumentCode)}|${r.lisParamId ?? ''}`.toUpperCase()
       const group = byTest.get(key) ?? []
       group.push(r)
       byTest.set(key, group)

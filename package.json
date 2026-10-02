@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
@@ -25,7 +25,7 @@
     "verify:mapgrade": "esbuild scripts/verify-mapgrade.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-mapgrade.mjs && node scripts/.verify-mapgrade.mjs",
     "verify:units": "esbuild scripts/verify-units.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-units.mjs && node scripts/.verify-units.mjs",
     "verify:rohtak": "esbuild scripts/verify-rohtak.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak.mjs && node scripts/.verify-rohtak.mjs",
-    "verify:haldwani": "esbuild scripts/verify-haldwani.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-haldwani.mjs && node scripts/.verify-haldwani.mjs",
+    "verify:haldwani": "esbuild scripts/verify-haldwani.ts --bundle --platform=node --format=esm --alias:electron-store=./scripts/stubs/electron-store.ts --external:electron --external:mssql --external:serialport --outfile=scripts/.verify-haldwani.mjs && node scripts/.verify-haldwani.mjs",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "verify:rohtak-magicl": "esbuild scripts/verify-rohtak-magicl.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-rohtak-magicl.mjs && node scripts/.verify-rohtak-magicl.mjs",
