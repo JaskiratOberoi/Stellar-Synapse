@@ -10,7 +10,7 @@
  * Run:  npm run verify:agappe-cx4
  */
 import { AstmProtocol } from '../src/main/core/protocols/astm'
-import { extractAstmQuery } from '../src/main/core/drivers/parsing'
+import { extractAstmQueries, extractAstmQuery } from '../src/main/core/drivers/parsing'
 import {
   AGAPPE_CX4_CHEM,
   buildAgappeCx4AstmSample,
@@ -23,6 +23,8 @@ import {
 } from '../src/main/core/drivers/agappeCx4'
 import { getDriver } from '../src/main/core/drivers/registry'
 import { fingerprintInstrument } from '../src/main/core/discovery/fingerprint'
+import { cx4StockNameMigrationRows } from '../src/main/core/mapping/MappingEngine'
+import type { MappingRule, PresetMapping } from '../src/shared/types'
 import delhi from '../presets/delhi.json'
 import lucknow from '../presets/lucknow.json'
 
@@ -267,6 +269,27 @@ console.log('\n[4] Host query (Appendix E, Example 2 + Q field table)')
   ])
   eq('batch query: 6 records', batch.records.length, 6)
   eq('batch query: 4 Q records', batch.records.filter((r) => r[0] === 'Q').length, 4)
+  // The orchestrator answers EVERY query of a batch (handleCx4BatchQuery), so
+  // the extractor must surface all four with their full specimen ids.
+  const qs = extractAstmQueries(batch)
+  eq('extractAstmQueries: 4 queries', qs.length, 4)
+  eq('batch specimens in order', qs.map((q) => q.specimen).join(' '), '^11^2^11^N ^12^2^12^N ^13^2^13^N ^14^2^14^N')
+  eq('single-query extractor = first of batch', extractAstmQuery(batch)?.specimen, '^11^2^11^N')
+
+  // Batch REPLY (Example 3 "Batch"): one H/P/O…/L group per sample in one
+  // session, frame numbers restarting at 1 for each group.
+  const reply = [
+    ...buildAgappeCx4OrderFrames('128123^1^1^1^N', ['ALT', 'AST'], '20090119100417'),
+    ...buildAgappeCx4OrderFrames('1281234^2^1^2^N', ['ALT', 'ALB'], '20090119100425')
+  ].map(printable)
+  eq('batch reply: 10 frames (5 + 5)', reply.length, 10)
+  eq('group 1 ends 5L -> 08', reply[4], '[STX]5L|1|N[CR][ETX]08[CR][LF]')
+  eq('group 2 restarts at 1H -> E5', reply[5], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
+  eq(
+    'group 2 O|1 ALT -> 2E',
+    reply[7],
+    '[STX]3O|1|1281234^2^1^2^N||^^^ALT|R|20090119100425|||||||||1||||||||||O[CR][ETX]2E[CR][LF]'
+  )
 }
 
 // =============================================================================
@@ -461,12 +484,14 @@ console.log('\n[8] Delhi + Lucknow presets: CX4 rows are sane and identical')
     )
     // Exactly one live member per duplicate-reagent pair.
     for (const pair of [
-      ['GLU(OX)', 'GLU(HK)'],
-      ['CRE', 'CRE-E'],
-      ['TB', 'TB-V'],
-      ['DB', 'DB-V'],
-      ['Ca(CPC)', 'Ca(ARS)'],
-      ['PHOS', 'PHOS-S']
+      ['GLU', 'GLU(HK)'],
+      ['CRT-J', 'E-CRE'],
+      ['TBIL', 'TB-V'],
+      ['DBIL', 'DB-V'],
+      ['Ca', 'Ca(ARS)'],
+      ['PHOS', 'PHOS-S'],
+      ['ALP-IFCC', 'ALP'],
+      ['GLU', 'GLU-H']
     ]) {
       const n = pair.filter((c) => live.some((r) => r.instrumentCode === c)).length
       eq(`${site}: one live channel for ${pair.join('/')}`, n, 1)
@@ -481,6 +506,229 @@ console.log('\n[8] Delhi + Lucknow presets: CX4 rows are sane and identical')
       (l.mappings ?? []).map(strip).join('\n')
     )
   }
+}
+
+// =============================================================================
+console.log('\n[L] Live capture — Lucknow CX4 via Agappe LIS emulator, 2026-10-05 14:51')
+{
+  // Verbatim from the emulator log (sample 2, barcode 99011223): sender/receiver
+  // "1", stock item names, "***" placeholders, ranges "lo^hi\^".
+  const LIVE = [
+    '[STX]1H|\\^&|||1|||||1||1|20261005145112[CR][ETX]8A[CR][LF]',
+    '[STX]2P|1|||||||Male||||||^Y[CR][ETX]C1[CR][LF]',
+    '[STX]3O|1|99011223^2^1^2|||R|20261005105222|||||||||1||||||||||O[CR][ETX]B7[CR][LF]',
+    '[STX]4R|1|^^^TC|190.0|mg/dl|0^200\\^|N||F||||20261005105222[CR][ETX]3D[CR][LF]',
+    '[STX]5R|2|^^^TG|222.8|mg/dl|60^165\\^|H||F||||20261005105222[CR][ETX]81[CR][LF]',
+    '[STX]6R|3|^^^UREA|12.80|mg/dl|10^50\\^|N||F||||20261005105222[CR][ETX]DC[CR][LF]',
+    '[STX]7R|4|^^^E-CRE|***|mg/dl|0.6^1.1\\^|A||F||||20261005105222[CR][ETX]D3[CR][LF]',
+    '[STX]0R|5|^^^UA|3.1|mg/dl|3.5^7.5\\^|L||F||||20261005105222[CR][ETX]42[CR][LF]',
+    '[STX]1R|6|^^^AST|***|U/L|0^35\\^|A||F||||20261005110353[CR][ETX]DD[CR][LF]',
+    '[STX]2R|7|^^^ALT|39.1|U/L|0^45\\^|N||F||||20261005105222[CR][ETX]32[CR][LF]',
+    '[STX]3R|8|^^^ALB|5.1|g/dl|0^0\\^|H||F||||20261005105222[CR][ETX]42[CR][LF]',
+    '[STX]4R|9|^^^TP|6.3|g/dl|6^8\\^|N||F||||20261005105222[CR][ETX]30[CR][LF]',
+    '[STX]5R|10|^^^TBIL|0.1|mg/dl|0^1.2\\^|N||F||||20261005105222[CR][ETX]98[CR][LF]',
+    '[STX]6R|11|^^^DBIL|0.01|mg/dl|0^0.4\\^|N||F||||20261005105222[CR][ETX]BB[CR][LF]',
+    '[STX]7R|12|^^^ALP|***|U/L|80^306\\^|A||F||||20261005105222[CR][ETX]6D[CR][LF]',
+    '[STX]0R|13|^^^ALP-IFCC|68.0|U/L|40^129\\^|N||F||||20261005105222[CR][ETX]03[CR][LF]',
+    '[STX]1R|14|^^^GGT|0.6|U/L|10^45\\^|L||F||||20261005105222[CR][ETX]58[CR][LF]',
+    '[STX]2R|15|^^^Ca|12.3|mg/dl|8.8^10.2\\^|H||F||||20261005105222[CR][ETX]E0[CR][LF]',
+    '[STX]3R|16|^^^CRT-J|0.16|mg/dl|0.7^1.4\\^|L||F||||20261005105222[CR][ETX]6C[CR][LF]',
+    '[STX]4L|1|N[CR][ETX]07[CR][LF]'
+  ]
+  // Our framer reproduces every live checksum (so our order frames will pass
+  // the analyzer's check too).
+  let csOk = 0
+  for (const f of LIVE) {
+    const m = /^\[STX\](\d)(.*)\[CR\]\[ETX\]([0-9A-F]{2})\[CR\]\[LF\]$/.exec(f)!
+    const ours = printable(frameAgappeCx4Record(Number(m[1]), m[2]))
+    if (ours === f) csOk++
+    else failures.push(`live checksum ${m[2].slice(0, 20)}: ours ${ours.slice(-12)}`)
+  }
+  eq('all 20 live frame checksums reproduced', csOk, LIVE.length)
+  failed += LIVE.length - csOk
+
+  const msg = decodeSession(LIVE)
+  eq('20 records decoded', msg.records.length, 20)
+  const results = parseAgappeCx4Astm(msg, INSTR)
+  const codes = results.map((r) => r.analyteCode)
+  eq('13 results filed (16 R records minus three "***")', results.length, 13)
+  ok('"***" placeholders dropped (E-CRE, AST, ALP)', !codes.some((c) => ['E-CRE', 'AST', 'ALP'].includes(c)))
+  ok('all under barcode 99011223', results.every((r) => r.sampleId === '99011223'))
+  const by = Object.fromEntries(results.map((r) => [r.analyteCode, r]))
+  eq('TBIL value', by['TBIL']?.value, '0.1')
+  eq('CRT-J value', by['CRT-J']?.value, '0.16')
+  eq('ALP-IFCC value', by['ALP-IFCC']?.value, '68.0')
+  eq('TC range 0^200\\^ -> "0-200"', by['TC']?.referenceRange, '0-200')
+  eq('flag H', by['TG']?.flag, 'H')
+  eq('unit as sent (mg/dl)', by['Ca']?.unit, 'mg/dl')
+
+  // Every live item is a known driver analyte and, in both site presets, maps
+  // to Noble — except the retired twins (E-CRE, ALP) which must be 'ignored'.
+  const panel = new Set(AGAPPE_CX4_CHEM.map((x) => x.code))
+  // TIBC and GLU-H joined the wire in the Lucknow Synapse logs 4-8 Oct 2026
+  // (both as "***" so far: TIBC uncalibrated, GLU-H no reagent).
+  const liveCodes = ['TC', 'TG', 'UREA', 'E-CRE', 'UA', 'AST', 'ALT', 'ALB', 'TP', 'TBIL', 'DBIL', 'ALP', 'ALP-IFCC', 'GGT', 'Ca', 'CRT-J', 'GLU', 'TIBC', 'GLU-H']
+  eq('every live item is in the driver panel', liveCodes.filter((c) => !panel.has(c)).join(','), '')
+  for (const [site, preset] of [['delhi', delhi], ['lucknow', lucknow]] as const) {
+    const rows = (preset.instruments as Array<{ driverId: string; mappings?: Row[] }>).find(
+      (i) => i.driverId === 'agappe-mispa-cx4'
+    )?.mappings ?? []
+    const row = (c: string) => rows.find((r) => r.instrumentCode === c)
+    const unfiled = liveCodes
+      .filter((c) => !['E-CRE', 'ALP', 'GLU-H'].includes(c))
+      .filter((c) => row(c)?.status !== 'manual' || !row(c)?.lisTestId)
+    eq(`${site}: every live item maps to Noble`, unfiled.join(','), '')
+    eq(`${site}: E-CRE retired`, row('E-CRE')?.status, 'ignored')
+    eq(`${site}: ALP retired in favour of ALP-IFCC`, row('ALP')?.status, 'ignored')
+    eq(`${site}: GLU-H retired in favour of GLU`, row('GLU-H')?.status, 'ignored')
+    eq(`${site}: TIBC -> Noble BI138 (t136)`, `${row('TIBC')?.lisTestCode}/${row('TIBC')?.lisTestId}`, 'BI138/136')
+    for (const gone of ['TB', 'DB', 'CRE', 'CRE-E', 'GLU(OX)', 'Ca(CPC)', 'LPS', 'Fe', 'HS-CRP']) {
+      ok(`${site}: manual-only name ${gone} no longer in the preset`, !row(gone))
+    }
+  }
+}
+
+// =============================================================================
+console.log('\n[S] Lucknow Sample Register item list (screen, 2026-10-08): nothing can fall through')
+{
+  // Every item the unit's software lists (black = reagent loaded, grey = not),
+  // read off the Sample Register screen. The serum indices L/H/I are never
+  // uploaded as results.
+  const SCREEN = [
+    'GLU-H', 'TC', 'TG', 'HDL-C', 'LDL-C', 'UREA', 'E-CRE', 'UA', 'AST', 'ALT', 'GLU', 'ALB', 'TP',
+    'TBIL', 'DBIL', 'ALP', 'ALP-IFCC', 'AMY', 'GGT', 'LDH', 'PHOS', 'Ca', 'Mg', 'CK', 'ASO', 'CRP',
+    'RF', 'HbA1c', 'MALB', 'U-HS-CRP', 'IgA', 'IgE', 'IgG', 'IgM', 'Lp(a)', 'C3', 'C4', 'APO A1',
+    'APO B', 'CER', 'CYS-C', 'PA', 'FER', 'CRT-J', 'Lipase', 'IRON MONO', 'TIBC'
+  ]
+  const LOADED = [
+    'GLU-H', 'TC', 'TG', 'HDL-C', 'LDL-C', 'UREA', 'E-CRE', 'UA', 'AST', 'ALT', 'GLU', 'ALB', 'TP',
+    'TBIL', 'DBIL', 'ALP', 'ALP-IFCC', 'AMY', 'GGT', 'LDH', 'PHOS', 'Ca', 'Mg', 'CRP', 'RF',
+    'CRT-J', 'Lipase', 'TIBC'
+  ]
+  // Deliberately unmapped (documented in _notMapped): unit mismatch or owned
+  // by another analyzer. Everything else on the screen must have a preset row.
+  const DOCUMENTED = new Set(['HbA1c', 'IgE', 'IgM', 'C3', 'C4', 'APO A1', 'APO B', 'ASO', 'PA', 'CER'])
+  const panel = new Set(AGAPPE_CX4_CHEM.map((x) => x.code.toUpperCase()))
+  eq(
+    'every screen item is a driver panel analyte (case-insensitive)',
+    SCREEN.filter((c) => !panel.has(c.toUpperCase())).join(','),
+    ''
+  )
+  for (const [site, preset] of [['delhi', delhi], ['lucknow', lucknow]] as const) {
+    const rows = (preset.instruments as Array<{ driverId: string; mappings?: Row[] }>).find(
+      (i) => i.driverId === 'agappe-mispa-cx4'
+    )?.mappings ?? []
+    const row = (c: string) => rows.find((r) => r.instrumentCode.toUpperCase() === c.toUpperCase())
+    eq(
+      `${site}: every screen item has a preset row or a _notMapped entry`,
+      SCREEN.filter((c) => !row(c) && !DOCUMENTED.has(c)).join(','),
+      ''
+    )
+    const liveTwins = new Set(['GLU-H', 'E-CRE', 'ALP'])
+    eq(
+      `${site}: every reagent-loaded item is mapped (twins retired)`,
+      LOADED.filter((c) => (liveTwins.has(c) ? row(c)?.status !== 'ignored' : row(c)?.status !== 'manual' || !row(c)?.lisTestId)).join(','),
+      ''
+    )
+  }
+}
+
+// =============================================================================
+console.log('\n[M] Migration: Lucknow v0.6.13 store -> stock item names (cx4StockNameMigrationRows)')
+{
+  // The install as the Lucknow logs show it: the 2026-09-23 preset rows under
+  // the manual's names, plus what the auto-mapper did with the stock names it
+  // met ("Ca" -> CA 72.4, TBIL -> standalone BI048, GLU -> BI114) and the ones
+  // it could not resolve at all (DBIL unmapped; CRT-J / ALP-IFCC / TIBC / GLU-H
+  // had no rule).
+  const DRV = 'agappe-mispa-cx4'
+  const rule = (
+    instrumentCode: string,
+    status: MappingRule['status'],
+    t?: { id: number; code: string; name: string; pid?: number; pname?: string },
+    unit = 'mg/dL'
+  ): MappingRule => ({
+    id: `r-${instrumentCode}`,
+    driverId: DRV,
+    instrumentCode,
+    instrumentName: instrumentCode,
+    status,
+    unit,
+    lisTestId: t?.id,
+    lisTestCode: t?.code,
+    lisTestName: t?.name,
+    lisParamId: t?.pid,
+    lisParamName: t?.pname,
+    updatedAt: '2026-10-04T17:35:31.047Z'
+  })
+  const BIL = { id: 87, code: 'BI046', name: 'Bilirubin (Total Direct & Indirect )' }
+  const store: MappingRule[] = [
+    rule('ALT', 'manual', { id: 79, code: 'BI014', name: 'Alanine amino Transferase - (ALT / SGPT)' }, 'U/L'),
+    rule('ALP', 'manual', { id: 279, code: 'BI023', name: 'Alkaline Phosphatase (ALP)' }, 'U/L'),
+    rule('TB', 'manual', { ...BIL, pid: 431, pname: 'Bilirubin Total' }),
+    rule('DB', 'manual', { ...BIL, pid: 430, pname: 'Bilirubin Conjugated' }),
+    rule('CRE', 'manual', { id: 114, code: 'BI089', name: 'Creatinine' }),
+    rule('CRE-E', 'ignored'),
+    rule('GLU(OX)', 'manual', { id: 284, code: 'BI114', name: 'Glucose - Fasting' }),
+    rule('Ca(CPC)', 'manual', { id: 96, code: 'BI064', name: 'Calcium' }),
+    rule('LPS', 'manual', { id: 139, code: 'BI146', name: 'Lipase' }, 'U/L'),
+    rule('Fe', 'manual', { id: 135, code: 'BI137', name: 'Iron' }, 'ug/dL'),
+    rule('UIBC', 'manual', { id: 252, code: 'BI222', name: 'Unsaturated Iron Binding Capacity (UIBC)' }, 'ug/dL'),
+    rule('HS-CRP', 'manual', { id: 202, code: 'MS067', name: 'hs-CRP', pid: 1549, pname: 'hs-CRP' }, 'mg/L'),
+    // what autoMapOnReceive made of the stock names
+    rule('Ca', 'auto', { id: 2208, code: 'IMCA', name: 'CA 72.4' }),
+    rule('TBIL', 'auto', { id: 89, code: 'BI048', name: 'Bilirubin Total' }),
+    rule('GLU', 'auto', { id: 284, code: 'BI114', name: 'Glucose - Fasting' }),
+    rule('DBIL', 'unmapped')
+  ]
+  const preset = (lucknow.instruments as Array<{ driverId: string; mappings?: PresetMapping[] }>).find(
+    (i) => i.driverId === DRV
+  )?.mappings ?? []
+  const rows = cx4StockNameMigrationRows(store, preset)
+
+  // Replay applyPresetMappings: later rows win, by code (case-insensitive).
+  const after = new Map<string, { status: string; target: string; code: string }>()
+  for (const r of store) after.set(r.instrumentCode.toUpperCase(), { status: r.status, target: `${r.lisTestId ?? '-'}/${r.lisParamId ?? '-'}`, code: r.instrumentCode })
+  for (const m of rows) {
+    const key = m.instrumentCode.toUpperCase()
+    after.set(key, m.status === 'ignored'
+      ? { status: 'ignored', target: '', code: m.instrumentCode }
+      : { status: 'manual', target: `${m.lisTestId ?? '-'}/${m.lisParamId ?? '-'}`, code: m.instrumentCode })
+  }
+  const at = (c: string) => after.get(c.toUpperCase())
+  eq('Ca: junk CA 72.4 auto-row replaced by Calcium BI064', `${at('Ca')?.status} ${at('Ca')?.target}`, 'manual 96/-')
+  eq('TBIL: standalone BI048 auto-row replaced by the composite p431', `${at('TBIL')?.status} ${at('TBIL')?.target}`, 'manual 87/431')
+  eq('DBIL: unmapped row now the composite p430', `${at('DBIL')?.status} ${at('DBIL')?.target}`, 'manual 87/430')
+  eq('GLU: keeps BI114 (now manual)', `${at('GLU')?.status} ${at('GLU')?.target}`, 'manual 284/-')
+  eq('CRT-J: created from CRE', `${at('CRT-J')?.status} ${at('CRT-J')?.target}`, 'manual 114/-')
+  eq('ALP-IFCC: created from ALP', `${at('ALP-IFCC')?.status} ${at('ALP-IFCC')?.target}`, 'manual 279/-')
+  eq('Lipase: created from LPS', `${at('Lipase')?.status} ${at('Lipase')?.target}`, 'manual 139/-')
+  eq('IRON MONO: created from Fe', `${at('IRON MONO')?.status} ${at('IRON MONO')?.target}`, 'manual 135/-')
+  eq('U-HS-CRP: created from HS-CRP', `${at('U-HS-CRP')?.status} ${at('U-HS-CRP')?.target}`, 'manual 202/1549')
+  eq('TIBC: backfilled from the preset', `${at('TIBC')?.status} ${at('TIBC')?.target}`, 'manual 136/-')
+  eq('GLU-H: backfilled as retired', at('GLU-H')?.status, 'ignored')
+  eq('E-CRE: retired under its real name', at('E-CRE')?.status, 'ignored')
+  for (const old of ['TB', 'DB', 'CRE', 'GLU(OX)', 'Ca(CPC)', 'ALP', 'LPS', 'Fe', 'HS-CRP', 'CRE-E']) {
+    eq(`${old}: retired`, at(old)?.status, 'ignored')
+  }
+  eq('UIBC: untouched (operator-owned row)', `${at('UIBC')?.status} ${at('UIBC')?.target}`, 'manual 252/-')
+  const live = [...after.values()].filter((v) => v.status === 'manual')
+  const targets = live.map((v) => v.target)
+  const dups = targets.filter((t, i) => targets.indexOf(t) !== i)
+  eq('no two live rows share a Noble target after migration', dups.join(','), '')
+  const presetLive = preset.filter((m) => m.status === 'manual' && m.lisTestId != null).map((m) => m.instrumentCode)
+  eq(
+    'every preset-mapped item is live on the migrated install',
+    presetLive.filter((c) => at(c)?.status !== 'manual').join(','),
+    ''
+  )
+  // Idempotence: a second pass over the migrated store changes nothing.
+  const migrated: MappingRule[] = [...after.entries()].map(([, v]) =>
+    rule(v.code, v.status as MappingRule['status'], v.status === 'manual'
+      ? { id: Number(v.target.split('/')[0]), code: 'X', name: 'x', pid: v.target.split('/')[1] === '-' ? undefined : Number(v.target.split('/')[1]) }
+      : undefined)
+  )
+  eq('second pass is a no-op', cx4StockNameMigrationRows(migrated, preset).length, 0)
 }
 
 // =============================================================================

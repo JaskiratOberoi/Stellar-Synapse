@@ -3,10 +3,19 @@ import type {
   AppSettings,
   InstrumentDefinition,
   LisConnectionSettings,
+  LisParameter,
   LisResultWrite,
+  LisTest,
   MappingRule,
   MonitorEvent
 } from '../shared/types'
+
+/** Last Noble test/parameter catalog fetched live, kept so an offline start still has one. */
+export interface LisCatalogCache {
+  tests: LisTest[]
+  parameters: LisParameter[]
+  fetchedAt: string
+}
 
 /** Cumulative counters per instrument, restored after restart. */
 export interface InstrumentPersistStats {
@@ -40,6 +49,8 @@ interface PersistShape {
   dailyStats: Record<string, Record<string, InstrumentDayStats>>
   /** Results awaiting the LIS (written here when the LIS is unreachable). */
   pendingWrites: LisResultWrite[]
+  /** Last live Noble catalog; served when the DB cannot be reached (absent until the first good fetch). */
+  lisCatalog?: LisCatalogCache
   /** One-time migration: enable live Noble LIS writes. */
   migratedLisLive?: boolean
   /** One-time migration: backfill the Noble SQL password for blank installs. */
@@ -58,6 +69,8 @@ interface PersistShape {
   migratedDelhiMagiclBackfill?: boolean
   /** One-time migration: add the 20-char Patient Information field to a stored Rohtak DxC 700 AU order response. */
   migratedRohtakAuPatientInfo?: boolean
+  /** One-time migration: move Mispa CX4 mappings from the manual's item names to the ones a live unit sends (TBIL, CRT-J, …). */
+  migratedCx4StockItemNames?: boolean
 }
 
 type MigrationFlagKey =
@@ -67,6 +80,7 @@ type MigrationFlagKey =
   | 'migratedDelhiTorchProfile'
   | 'migratedDelhiMagiclBackfill'
   | 'migratedRohtakAuPatientInfo'
+  | 'migratedCx4StockItemNames'
 
 const MAX_MONITOR_HISTORY = 2000
 
@@ -202,6 +216,9 @@ export const persist = {
 
   getPendingWrites: (): LisResultWrite[] => store().get('pendingWrites'),
   setPendingWrites: (v: LisResultWrite[]): void => store().set('pendingWrites', v),
+
+  getLisCatalog: (): LisCatalogCache | undefined => store().get('lisCatalog'),
+  setLisCatalog: (v: LisCatalogCache): void => store().set('lisCatalog', v),
 
   getInstrumentStats: (instrumentId: string): InstrumentPersistStats | undefined =>
     store().get('instrumentStats')[instrumentId],

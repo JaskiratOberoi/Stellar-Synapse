@@ -52,12 +52,56 @@ export class LisRouter implements ILisRepository {
     return new MockLisRepository()
   }
 
-  getTests(): Promise<LisTest[]> {
-    return this.backend.getTests()
+  /**
+   * The Noble test/parameter catalog, with the last live copy cached on disk.
+   * The renderer needs it to open the Mapping editor, and MappingEngine.autoMap
+   * needs it when settings are saved — neither should fail outright because the
+   * DB is unreachable at that moment (a WAN drop at a remote site was bricking
+   * the whole UI at startup). A live fetch refreshes the cache; a failed one
+   * serves the cache with a warning, and only throws when there is nothing
+   * cached yet (first run, never connected).
+   */
+  async getTests(): Promise<LisTest[]> {
+    try {
+      const tests = await this.backend.getTests()
+      if (this.backend.mode === 'sql') this.updateCatalogCache({ tests })
+      return tests
+    } catch (err) {
+      const cached = persist.getLisCatalog()
+      if (!cached || cached.tests.length === 0) throw err
+      logger.warn(
+        'lis',
+        `Noble test catalog unavailable (${(err as Error).message}); serving ${cached.tests.length} tests cached ${cached.fetchedAt}`
+      )
+      return cached.tests
+    }
   }
 
-  getParameters(testId?: number): Promise<LisParameter[]> {
-    return this.backend.getParameters(testId)
+  async getParameters(testId?: number): Promise<LisParameter[]> {
+    try {
+      const parameters = await this.backend.getParameters(testId)
+      if (this.backend.mode === 'sql' && testId == null) this.updateCatalogCache({ parameters })
+      return parameters
+    } catch (err) {
+      const cached = persist.getLisCatalog()
+      if (!cached || cached.parameters.length === 0) throw err
+      logger.warn(
+        'lis',
+        `Noble parameter catalog unavailable (${(err as Error).message}); serving ${cached.parameters.length} parameters cached ${cached.fetchedAt}`
+      )
+      return testId == null
+        ? cached.parameters
+        : cached.parameters.filter((p) => p.testId === testId)
+    }
+  }
+
+  private updateCatalogCache(part: { tests?: LisTest[]; parameters?: LisParameter[] }): void {
+    const prev = persist.getLisCatalog()
+    persist.setLisCatalog({
+      tests: part.tests ?? prev?.tests ?? [],
+      parameters: part.parameters ?? prev?.parameters ?? [],
+      fetchedAt: new Date().toISOString()
+    })
   }
 
   getOrder(vailid: string): Promise<TestOrder | null> {

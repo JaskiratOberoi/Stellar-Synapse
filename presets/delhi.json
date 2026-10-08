@@ -146,23 +146,24 @@
       },
       "source": "Delhi (business_unit_id 1) Agappe Mispa CX4 chemistry analyzer, added 2026-09-23 ahead of installation. Protocol from the Mispa CX4 user manual (REV.09-2017, §5.9 + Appendix E; the CX4 is a Dirui CS-400). Noble targets chosen from an aggregate read of this site's filled result rows over the last 180 days (which test/parameter row each analyte actually lands in, and its unit) — the same central catalog rows the Lucknow CX4 preset targets, so the two presets carry an identical mapping list. NOT yet verified against a live unit: no serial capture existed when this was written.",
       "mappingsSummary": {
-        "total": 49,
-        "mapped": 42,
-        "ignored": 7,
+        "total": 52,
+        "mapped": 43,
+        "ignored": 9,
         "unmapped": 0
       },
       "_protocolNotes": [
         "RS-232 ONLY. The analyzer PC has no network host link; the manual lists COM 1-4 (never COM 1 per §5.9), default 19200 8-N-1 (4800/9600/19200 selectable). Reach it over LAN only through a serial-to-Ethernet device server, then pick tcp-server/tcp-client in Synapse.",
-        "On the analyzer: System Setup > Host Communication — tick Open Communication, tick Bidirectional, Data transmission mode = realtime, Gather sample mode = \"Sample ID (Barcode)\" (Sample No. mode carries no barcode and Synapse cannot file it), Sample save mode = First host, then Save and reboot the analyzer software (Appendix E step 4). \"Simplified mode\" and \"Send QC Result To LIS\" are undocumented on the wire — leave them off until a capture exists.",
+        "\"Simplified mode\" OFF: when ON the analyzer expects the order download \"in sample unit\" (Dirui Appendix E v1.1), a layout no document specifies; OFF is the one-O-per-test \"item unit\" layout Synapse sends. \"Send QC Result To LIS\" may stay on (QC uploads are recognised and skipped). A host query is only operator-triggered: Sample Register > \"LIS Data Apply\" (one barcode) or \"S. Barcode Scan\" (one Q per tube in one session; Synapse answers them all in one session).",
         "In Synapse tick Host Query so the Q record is answered. Each result record arrives in its own numbered frame; the barcode is component 1 of the O Specimen ID (SID^S.No^Disk^Pos^Dil). The order reply is one O record per test echoing that specimen id; a barcode with no Noble order is answered with a bare ENQ/EOT as the manual requires. verify:agappe-cx4 pins all of this to the manual's printed frames and checksums.",
-        "ITEM NAMES ARE SITE-CONFIGURABLE. The instrumentCode here is the factory item abbreviation from the manual's Appendix C (ALT, GGT, GLU(OX), Ca(CPC), …), which the analyzer sends as \"^^^<abbr>\". Whoever configures the chemistry parameters on this unit must either keep these abbreviations or rename the mapping rows to match — Synapse matches the code exactly (case-insensitive).",
+        "ITEM NAMES: the instrumentCode is what the analyzer sends as \"^^^<item>\". A live CX4 (Lucknow, 2026-10-05, Agappe LIS-emulator capture) uploads the Dirui STOCK names — TBIL, DBIL, CRT-J, E-CRE, GLU, Ca, ALP, ALP-IFCC, plus TC, TG, UREA, UA, AST, ALT, ALB, TP, GGT — not the Appendix C abbreviations the manual prints (TB, DB, CRE, GLU(OX), Ca(CPC)); the preset follows the capture. Items are still site-configurable: if an engineer renames one, rename the mapping row to match — Synapse matches the code exactly (case-insensitive). A channel without a measurement uploads \"***\" (flag A); the driver drops it. The Lucknow unit's full Sample Register item list (screen, 2026-10-08): GLU-H, TC, TG, HDL-C, LDL-C, UREA, E-CRE, UA, AST, ALT, GLU, ALB, TP, TBIL, DBIL, ALP, ALP-IFCC, AMY, GGT, LDH, PHOS, Ca, Mg, CK, ASO, CRP, RF, HbA1c, MALB, U-HS-CRP, IgA, IgE, IgG, IgM, Lp(a), C3, C4, APO A1, APO B, CER, CYS-C, PA, FER, CRT-J, Lipase, IRON MONO, TIBC, L, H, I — every one is either mapped or ignored here (or listed in _notMapped), so no upload can fall through to the auto-mapper.",
         "Ordering an item the analyzer does not have raises its \"Illegal test item\" alarm (code 143-49). Before go-live set every mapped row whose reagent is not loaded on this unit to ignored — particularly the ISE trio (K/Na/Cl) if no ISE module is fitted.",
         "STOCK MENU ALTERNATES (from the Dirui interface protocol v1.1 Sample Register screen, which the CX4 software is built on): a unit set up from the stock item list sends TBIL/DBIL (not TB/DB), GLU (not GLU(OX)/GLU(HK)), CRE (single item), Ca (not Ca(CPC)/Ca(ARS)), P (not PHOS), Mb, APO A1, 5'-NT, U-HS-CRP, plus AFU, Cu, D-Dimer, ACE, GPDA, AFP, AMM, ACP, MAST and the L/H/I serum indices. The driver panel recognises all of these; if the Received panel shows them, rename the affected rows here (instrumentCode) rather than adding second live rows for the same Noble target.",
         "The H-record sender/receiver are the \"Analyzer ID\" and \"Host ID\" typed on the Host Communication screen (the generic manual shows \" Analyzer \" / \"Host\"). Type CX4 as the Analyzer ID so Synapse's auto-discovery fingerprints the unit; the Host ID is free text. QC uploads (\"Send QC Result To LIS\": P name QC, O field 4 = control name^lot, Westgard flags) are recognised by the driver and dropped, so that option may stay on."
       ],
       "_mappingNotes": [
         "Volumes behind each target (180 days, this site): ALT 60k, AST 60k, bilirubin composite 59k, GGT 59k, TP/ALB composite 59k, uric acid 58k, calcium 58k, creatinine 58k, K/Na 57k, ALP 56k, lipids 51k, urea 52k, glucose-fasting 38k, iron/TIBC/UIBC 29-35k, CRP 10k, RF 9k, phosphorus 2.4k, ferritin 2.1k, lipase/amylase 1.2k, magnesium 0.7k, hs-CRP 0.7k, homocysteine 0.6k, LDH 0.6k, bile acids 0.6k, CK 0.4k, Lp(a) 0.4k. Targets with no rows at this site are still listed (harmless: host query only sends what the sample ordered) so the two CX4 sites stay identical.",
-        "DUPLICATE-CHANNEL RULE: the CX4 menu carries two items for several analytes (GLU(HK)/GLU(OX), CRE/CRE-E, TB/TB-V, DB/DB-V, Ca(CPC)/Ca(ARS), PHOS/PHOS-S). Exactly one of each pair is mapped and the other is \"ignored\"; ordering both would run the test twice and race to fill one Noble cell. The mapped member is the Agappe standard kit — swap the pair if this unit is loaded with the other reagent.",
+        "DUPLICATE-CHANNEL RULE: the CX4 menu carries two items for several analytes (GLU/GLU(HK), CRT-J/E-CRE, TBIL/TB-V, DBIL/DB-V, Ca/Ca(ARS), PHOS/PHOS-S, ALP-IFCC/ALP). Exactly one of each pair is mapped and the other is \"ignored\"; ordering both would run the test twice and race to fill one Noble cell. The mapped member is the Agappe standard kit — swap the pair if this unit is loaded with the other reagent.",
+        "EVERY STOCK NAME MUST HAVE A ROW: on the v0.6.13 Lucknow install the unit's \"Ca\" had no preset row (the preset said Ca(CPC)), so the auto-mapper resolved it by abbreviation to the tumour marker \"CA 72.4\" (IMCA) — only the fact that no sample ordered CA 72.4 kept calcium out of that cell. The abbreviation matcher now rejects such hits, but the preset is the real guard.",
         "UNITS: every mapped unit was read from Noble's stored rows at this site (testunit), not assumed. Where the CX4 factory unit disagrees with Noble the item is left unmapped (see _notMapped) rather than mapped with a silent conversion; convertForLis has no rules for these pairs.",
         "OVERLAP: at Delhi, Ferritin is also on the MAGICL 6000i and X3 menus, and electrolytes/chemistry are also written by the Beckman AU480 and DxC. Host query offers an ordered test to every instrument that maps it; decide per analyte which analyzer owns it and set the other to ignored."
       ],
@@ -172,6 +173,7 @@
         "APOA1 / APO B — Noble stores mg/dL (BI038/BI039); the CX4 factory item reports g/L. Map only after the analyzer item unit is set to mg/dL.",
         "C3 / C4 — Noble mg/dL (BI082/MS023) vs CX4 g/L; same as Apo.",
         "IgM — Noble mg/dL (BI256) vs CX4 g/L.",
+        "IgE — on the unit's menu but no reagent loaded at Lucknow (greyed, 2026-10-08). Noble files it under BI133 \"IgE Total\" (t133 p568, IU/mL; Lucknow 2.2k rows / 180 d), the row the Delhi MAGLUMI X3 targets. Map to that row only once the kit is loaded and the item's unit is confirmed IU/mL.",
         "B2-MG — Noble ng/mL (BI042) vs CX4 mg/L (x1000).",
         "Zn — Noble µg/dL (BI268) vs CX4 µmol/L.",
         "LAC — Noble mg/dL (BI139) vs CX4 mmol/L.",
@@ -202,12 +204,20 @@
         {
           "instrumentCode": "ALP",
           "instrumentName": "Alkaline Phosphatase",
+          "unit": "U/L",
+          "status": "ignored",
+          "_note": "Duplicate channel of ALP-IFCC (retired: uploads \"***\" on the Lucknow unit). Swap if the site runs the non-IFCC ALP kit."
+        },
+        {
+          "instrumentCode": "ALP-IFCC",
+          "instrumentName": "Alkaline Phosphatase (IFCC)",
           "lisTestId": 279,
           "lisTestCode": "BI023",
           "lisTestName": "Alkaline Phosphatase (ALP)",
           "unit": "U/L",
           "status": "manual",
-          "confidence": 1
+          "confidence": 1,
+          "_note": "Live channel per the Lucknow capture 2026-10-05: ALP-IFCC carried the value while plain ALP uploaded \"***\". Duplicate channel of ALP — swap if a site loads the non-IFCC kit."
         },
         {
           "instrumentCode": "GGT",
@@ -220,7 +230,7 @@
           "confidence": 1
         },
         {
-          "instrumentCode": "TB",
+          "instrumentCode": "TBIL",
           "instrumentName": "Total Bilirubin",
           "lisTestId": 87,
           "lisTestCode": "BI046",
@@ -230,10 +240,10 @@
           "unit": "mg/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "Composite BI046 at both sites (59k rows Delhi / 11k Lucknow); the standalone \"Bilirubin Total\" BI048 (t89) is a minority row and is deliberately not targeted. Indirect (p432) is derived by Noble."
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05). Composite BI046 at both sites (59k rows Delhi / 11k Lucknow); the standalone \"Bilirubin Total\" BI048 (t89) is a minority row and is deliberately not targeted. Indirect (p432) is derived by Noble."
         },
         {
-          "instrumentCode": "DB",
+          "instrumentCode": "DBIL",
           "instrumentName": "Direct Bilirubin",
           "lisTestId": 87,
           "lisTestCode": "BI046",
@@ -242,21 +252,22 @@
           "lisParamName": "Bilirubin Conjugated",
           "unit": "mg/dL",
           "status": "manual",
-          "confidence": 1
+          "confidence": 1,
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05)."
         },
         {
           "instrumentCode": "TB-V",
           "instrumentName": "Total Bilirubin (Vanadate)",
           "unit": "mg/dL",
           "status": "ignored",
-          "_note": "Duplicate channel of TB (vanadate-oxidation reagent). Two channels resolving to one Noble row is the duplicate-channel hazard that broke the Rohtak Getein; if the lab runs the vanadate kit instead of the diazo kit, swap: map TB-V to BI046/p431 and retire TB."
+          "_note": "Duplicate channel of TBIL (vanadate-oxidation reagent). Two channels resolving to one Noble row is the duplicate-channel hazard that broke the Rohtak Getein; if the lab runs the vanadate kit instead of the diazo kit, swap: map TB-V to BI046/p431 and retire TBIL."
         },
         {
           "instrumentCode": "DB-V",
           "instrumentName": "Direct Bilirubin (Vanadate)",
           "unit": "mg/dL",
           "status": "ignored",
-          "_note": "Duplicate channel of DB — see TB-V."
+          "_note": "Duplicate channel of DBIL — see TB-V."
         },
         {
           "instrumentCode": "TP",
@@ -306,7 +317,7 @@
           "_note": "Serum ADA. Noble also has ADA CSF (BI012, t18) and \"FLUID FOR ADA\" (BI360, t2089) — those are body-fluid orders; if the lab runs fluid ADA on this analyzer under the same item, the sample-level order decides which row is filled."
         },
         {
-          "instrumentCode": "GLU(OX)",
+          "instrumentCode": "GLU",
           "instrumentName": "Glucose (GOD-PAP)",
           "lisTestId": 284,
           "lisTestCode": "BI114",
@@ -314,14 +325,21 @@
           "unit": "mg/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "Test-level target on purpose (no lisParamId): Noble orders glucose as Fasting (BI114), Post Prandial (BI115) or Random (BI116) and Synapse's variant retargeting fills whichever the sample ordered. Agappe's standard glucose kit is GOD-PAP, hence the oxidase item is the live channel."
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05). Test-level target on purpose (no lisParamId): Noble orders glucose as Fasting (BI114), Post Prandial (BI115) or Random (BI116) and Synapse's variant retargeting fills whichever the sample ordered. Agappe's standard glucose kit is GOD-PAP, hence the oxidase item is the live channel."
         },
         {
           "instrumentCode": "GLU(HK)",
           "instrumentName": "Glucose (Hexokinase)",
           "unit": "mg/dL",
           "status": "ignored",
-          "_note": "Duplicate channel of GLU(OX). If this site loads the hexokinase kit, swap: map GLU(HK) to BI114 (test level) and retire GLU(OX). Never leave both mapped — host query would order glucose twice."
+          "_note": "Duplicate channel of GLU. If this site loads the hexokinase kit, swap: map GLU(HK) to BI114 (test level) and retire GLU. Never leave both mapped — host query would order glucose twice."
+        },
+        {
+          "instrumentCode": "GLU-H",
+          "instrumentName": "Glucose (Hexokinase, stock name)",
+          "unit": "mg/dL",
+          "status": "ignored",
+          "_note": "The Lucknow unit's name for the hexokinase glucose twin (first item on its Sample Register, 2026-10-08; uploads \"***\" there — no reagent). Retired like GLU(HK): GLU is the live channel."
         },
         {
           "instrumentCode": "UREA",
@@ -352,7 +370,7 @@
           "confidence": 1
         },
         {
-          "instrumentCode": "CRE",
+          "instrumentCode": "CRT-J",
           "instrumentName": "Creatinine (Jaffe)",
           "lisTestId": 114,
           "lisTestCode": "BI089",
@@ -360,14 +378,14 @@
           "unit": "mg/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "Serum creatinine (58k Delhi / 12k Lucknow). Noble's parameterised Creatinine rows (BI099 p507, BI195 p653, B2043 p399) are urine/ratio tests and are not targeted."
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05). Serum creatinine (58k Delhi / 12k Lucknow). Noble's parameterised Creatinine rows (BI099 p507, BI195 p653, B2043 p399) are urine/ratio tests and are not targeted."
         },
         {
-          "instrumentCode": "CRE-E",
+          "instrumentCode": "E-CRE",
           "instrumentName": "Creatinine (Enzymatic)",
           "unit": "mg/dL",
           "status": "ignored",
-          "_note": "Duplicate channel of CRE. Swap if the site runs the enzymatic kit (map CRE-E to BI089, retire CRE)."
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05). Duplicate channel of CRT-J. Swap if the site runs the enzymatic kit (map E-CRE to BI089, retire CRT-J)."
         },
         {
           "instrumentCode": "CYS-C",
@@ -512,14 +530,15 @@
           "_note": "Serum amylase; Amylase-Urine (BI032) and body-fluid amylase (BI028) are not targeted."
         },
         {
-          "instrumentCode": "LPS",
+          "instrumentCode": "Lipase",
           "instrumentName": "Lipase",
           "lisTestId": 139,
           "lisTestCode": "BI146",
           "lisTestName": "Lipase",
           "unit": "U/L",
           "status": "manual",
-          "confidence": 1
+          "confidence": 1,
+          "_note": "Renamed from the manual's LPS to the stock item name on the Lucknow unit's Sample Register (2026-10-08). Lucknow files 325 rows / 180 d."
         },
         {
           "instrumentCode": "K",
@@ -555,7 +574,7 @@
           "_note": "See K. Noble labels the unit \"mm0l/L\" (typo in the catalog) — a label only."
         },
         {
-          "instrumentCode": "Ca(CPC)",
+          "instrumentCode": "Ca",
           "instrumentName": "Calcium (CPC)",
           "lisTestId": 96,
           "lisTestCode": "BI064",
@@ -563,14 +582,14 @@
           "unit": "mg/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "Serum calcium. Ionized calcium (BI063) and 24h-urine calcium are separate orders."
+          "_note": "Renamed to the stock item name a live CX4 uploads (Lucknow capture 2026-10-05). Serum calcium. Ionized calcium (BI063) and 24h-urine calcium are separate orders."
         },
         {
           "instrumentCode": "Ca(ARS)",
           "instrumentName": "Calcium (Arsenazo)",
           "unit": "mg/dL",
           "status": "ignored",
-          "_note": "Duplicate channel of Ca(CPC). Swap if the site runs the Arsenazo-III kit."
+          "_note": "Duplicate channel of Ca. Swap if the site runs the Arsenazo-III kit."
         },
         {
           "instrumentCode": "Mg",
@@ -601,15 +620,15 @@
           "_note": "Duplicate channel of PHOS (alternate reagent generation). Swap if that is the kit in use."
         },
         {
-          "instrumentCode": "Fe",
-          "instrumentName": "Iron",
+          "instrumentCode": "IRON MONO",
+          "instrumentName": "Iron (mono-reagent)",
           "lisTestId": 135,
           "lisTestCode": "BI137",
           "lisTestName": "Iron",
           "unit": "ug/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "Noble stores µg/dL (\"ug/dl\") at both sites; the analyzer item must report µg/dL, not µmol/L."
+          "_note": "Renamed from the manual's Fe to the stock item name on the Lucknow unit's Sample Register (2026-10-08). Noble stores µg/dL (\"ug/dl\") at both sites (Lucknow 8.1k rows / 180 d); the analyzer item must report µg/dL, not µmol/L."
         },
         {
           "instrumentCode": "UIBC",
@@ -620,7 +639,18 @@
           "unit": "ug/dL",
           "status": "manual",
           "confidence": 1,
-          "_note": "The CX4 has no TIBC item (TIBC = Fe + UIBC). Noble's TIBC (BI138) and Transferrin Saturation (BI217) rows are filled heavily at both sites — confirm with the lab whether Noble derives them from Fe + UIBC or whether a TIBC item must be added on the analyzer."
+          "_note": "Not on the Lucknow unit's item list (2026-10-08) — that unit runs a direct TIBC item instead; kept for a unit that loads the UIBC kit. Transferrin Saturation (BI217) is derived by Noble."
+        },
+        {
+          "instrumentCode": "TIBC",
+          "instrumentName": "Total Iron Binding Capacity",
+          "lisTestId": 136,
+          "lisTestCode": "BI138",
+          "lisTestName": "Iron Binding Capacity - Total (TIBC)",
+          "unit": "ug/dL",
+          "status": "manual",
+          "confidence": 1,
+          "_note": "Direct TIBC item on the Lucknow unit (Sample Register 2026-10-08; 61 uploads 4-8 Oct, all \"***\" so far = reagent not yet calibrated). Same Noble row the Lucknow Mindray and Haldwani AU480 presets fill (8.1k rows / 180 d, ug/dl)."
         },
         {
           "instrumentCode": "CRP",
@@ -635,8 +665,8 @@
           "confidence": 1
         },
         {
-          "instrumentCode": "HS-CRP",
-          "instrumentName": "High-Sensitivity CRP",
+          "instrumentCode": "U-HS-CRP",
+          "instrumentName": "Ultra-Sensitive CRP",
           "lisTestId": 202,
           "lisTestCode": "MS067",
           "lisTestName": "hs-CRP",
@@ -645,7 +675,7 @@
           "unit": "mg/L",
           "status": "manual",
           "confidence": 1,
-          "_note": "Delhi only (683 rows). Separate Noble test from CRP, so both channels may stay mapped."
+          "_note": "Renamed from the manual's HS-CRP to the stock item name on the Lucknow unit's Sample Register (2026-10-08; reagent not loaded there). Delhi only (683 rows). Separate Noble test from CRP, so both channels may stay mapped."
         },
         {
           "instrumentCode": "RF",

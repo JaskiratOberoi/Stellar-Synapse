@@ -63,6 +63,32 @@ import { simValue } from './sampleBuilders'
  * 4. QC UPLOAD ("Send QC Result To LIS"): P|1||||QC…, O with the control
  *    name^lot in field 4 and no barcode, R flags as Westgard rules — skipped by
  *    the parser (see isQcOrder).
+ *
+ * LIVE CAPTURE (Lucknow, 2026-10-05, Agappe's own LIS emulator log): a real
+ * unit matches the above byte-for-byte (one record per frame, CR before ETX,
+ * mod-256 checksums verified against the printed values), with two facts the
+ * manual does not state:
+ *   - the item names on the wire are the Dirui STOCK names, not Appendix C's:
+ *     TBIL / DBIL (not TB / DB), CRT-J and E-CRE (Jaffe / enzymatic creatinine,
+ *     not CRE / CRE-E), GLU (not GLU(OX)), Ca (not Ca(CPC)), ALP and ALP-IFCC;
+ *     TC, TG, UREA, UA, AST, ALT, ALB, TP, GGT, ALP are the same in both lists.
+ *   - a channel with no usable measurement uploads the value "***" with flag A
+ *     (seen on E-CRE, AST, ALP). It is not a number and must never reach Noble.
+ * The H sender/receiver were both "1" (the screen defaults), so a configured
+ * instrument must not depend on the sender name.
+ *
+ * HOST COMMUNICATION SCREEN (Dirui Appendix E v1.1, legible copy 2026-10-05):
+ *   - "Simplified Mode" ON = the LIS's order download is expected "in sample
+ *     unit" (one unit per sample, shorter data); OFF = "in item unit", which is
+ *     the one-O-record-per-test layout documented in Example 3 and built here.
+ *     The sample-unit layout is not specified anywhere, so run the unit with
+ *     Simplified Mode OFF. Result upload is unaffected either way.
+ *   - A query is only ever operator-triggered: Sample Register > "LIS Request"
+ *     (Agappe build: "LIS Data Apply") for one barcode / sample-number range, or
+ *     "S. Barcode Scan" which sends one Q per scanned tube in ONE session
+ *     (Example 2 "Batch"). The host answers a batch in ONE session with a full
+ *     H/P/O…/L group per sample, frame numbers restarting at 1 for each group
+ *     (Example 3 "Batch") — see Orchestrator.handleCx4BatchQuery.
  */
 
 // ---------------------------------------------------------------------------
@@ -180,6 +206,22 @@ export const AGAPPE_CX4_CHEM: DriverAnalyte[] = [
   a('DBIL', 'Direct Bilirubin (stock name)', 'mg/dL', 0, 0.3),
   a('GLU', 'Glucose (stock name)', 'mg/dL', 70, 100, 0),
   a('Ca', 'Calcium (stock name)', 'mg/dL', 8.6, 10.2, 1),
+  // Seen on the Lucknow unit (2026-10-05 capture): the two creatinine methods
+  // and the IFCC alkaline phosphatase channel carry their own stock names.
+  a('CRT-J', 'Creatinine (Jaffe, stock name)', 'mg/dL', 0.7, 1.4),
+  a('E-CRE', 'Creatinine (Enzymatic, stock name)', 'mg/dL', 0.6, 1.1),
+  a('ALP-IFCC', 'Alkaline Phosphatase (IFCC, stock name)', 'U/L', 40, 129, 0),
+  // Read off the Lucknow unit's Sample Register screen (2026-10-08): the
+  // hexokinase glucose twin, a direct TIBC item, and the lipase / iron items
+  // under their full stock names (the manual abbreviates them LPS / Fe).
+  a('GLU-H', 'Glucose (Hexokinase, stock name)', 'mg/dL', 70, 100, 0),
+  a('TIBC', 'Total Iron Binding Capacity', 'ug/dL', 250, 450, 0),
+  a('Lipase', 'Lipase (stock name)', 'U/L', 13, 60, 0),
+  a('IRON MONO', 'Iron (mono-reagent, stock name)', 'ug/dL', 60, 170, 0),
+  // Also on that screen (greyed: no reagent loaded) — listed so the Received
+  // panel names them; both are left unmapped by the presets (see _notMapped).
+  a('IgE', 'Immunoglobulin E', 'IU/mL', 0, 100, 0),
+  a('CER', 'Ceruloplasmin', 'mg/dL', 20, 60, 0),
   a('Mb', 'Myoglobin (stock name)', 'ng/mL', 0, 70, 0),
   a("5'-NT", "5'-Nucleotidase (stock name)", 'U/L', 0, 10, 1),
   a('APO A1', 'Apolipoprotein A1 (stock name)', 'g/L', 1.0, 1.6),
@@ -294,13 +336,19 @@ export function parseAgappeCx4Astm(
       if (skipping) continue
       const code = testCode(rec[2])
       if (!code) continue
+      // "***" is the analyzer's "no result" placeholder (reagent missing, out of
+      // range, failed run — live capture 2026-10-05); flag A rides with it.
+      // There is nothing to file, and writing the literal would poison the Noble
+      // cell and mark the sample Partially Tested.
+      const value = (rec[3] || '').trim()
+      if (!value || /^\*+$/.test(value)) continue
       results.push({
         id: randomUUID(),
         instrumentId,
         sampleId: currentSample,
         analyteCode: code,
         analyteName: code,
-        value: (rec[3] || '').trim(),
+        value,
         unit: (rec[4] || '').trim() || undefined,
         referenceRange: cx4ReferenceRange(rec[5]),
         flag: normFlag(rec[6]),

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { Search, Check, Ban } from 'lucide-react'
+import { Search, Check, Ban, RefreshCw } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Label } from '@/components/ui/Input'
@@ -17,6 +17,8 @@ export function MappingEditor({
 }) {
   const tests = useAppStore((s) => s.tests)
   const parameters = useAppStore((s) => s.parameters)
+  const lisCatalogError = useAppStore((s) => s.lisCatalogError)
+  const refreshLisCatalog = useAppStore((s) => s.refreshLisCatalog)
   const [search, setSearch] = useState('')
   const [selTest, setSelTest] = useState<LisTest | null>(null)
   const [selParam, setSelParam] = useState<LisParameter | null>(null)
@@ -99,6 +101,23 @@ export function MappingEditor({
             {selTest && <p className="font-mono text-xs text-muted-foreground">{selTest.testCode}</p>}
           </div>
         </div>
+
+        {tests.length === 0 && lisCatalogError && (
+          <div className="flex items-start justify-between gap-3 rounded-2xl bg-warning/10 p-3 text-sm">
+            <div className="min-w-0">
+              <p className="font-medium text-warning">Noble test catalog unavailable</p>
+              <p className="truncate text-xs text-muted-foreground" title={lisCatalogError}>
+                {lisCatalogError}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Results keep queueing; the catalog is retried in the background.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => void refreshLisCatalog()}>
+              <RefreshCw className="h-4 w-4" strokeWidth={1.75} /> Retry
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label>Search LIS test catalog</Label>

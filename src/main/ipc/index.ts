@@ -309,8 +309,14 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
       persist.setLis(settings)
     }
     if (settings.live) {
-      await orchestrator.mapping.autoMap('landwind-ld-560')
-      win.webContents.send(IPC_EVENT.mappingsChanged, orchestrator.mapping.list())
+      // Best-effort: the settings are already persisted above, and a DB that is
+      // unreachable right now must not turn Save into an error.
+      try {
+        await orchestrator.mapping.autoMap('landwind-ld-560')
+        win.webContents.send(IPC_EVENT.mappingsChanged, orchestrator.mapping.list())
+      } catch (err) {
+        logger.warn('lis', `Auto-map after settings save skipped: ${(err as Error).message}`)
+      }
     }
     win.webContents.send(IPC_EVENT.lisStateChanged, { mode: lis.mode })
     return persist.getLis()

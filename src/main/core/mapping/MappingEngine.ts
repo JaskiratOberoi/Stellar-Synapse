@@ -387,6 +387,57 @@ export class MappingEngine {
   }
 
   /**
+   * One-time: the Mispa CX4 presets (Delhi, Lucknow) were built from the
+   * manual's Appendix C item abbreviations before any unit had been captured.
+   * The Lucknow capture (2026-10-05) shows a real CX4 uploads the Dirui STOCK
+   * names instead — TBIL/DBIL, CRT-J/E-CRE, GLU, Ca, ALP-IFCC — so an install
+   * carrying the old rows files none of those analytes and would order tests
+   * the analyzer does not know. Move each mapped target onto the stock-name row
+   * and retire the manual-name row as 'ignored' (the unit never sends it, and a
+   * mapped twin would make host query order the analyte twice).
+   *
+   * Gated on evidence, not on the driver: it fires only once this install has
+   * SEEN one of the stock-only names arrive from a CX4 (persisted monitor
+   * history), so a site whose unit really is configured with the Appendix C
+   * names is never touched. Until then it stays unflagged and re-checks at each
+   * start. An operator's own 'manual' mapping on a stock-name row is kept.
+   */
+  migrateCx4StockItemNames(): number {
+    if (persist.getMigrationFlag('migratedCx4StockItemNames')) return 0
+    const driverId = 'agappe-mispa-cx4'
+    const cx4Ids = new Set(
+      persist
+        .getInstruments()
+        .filter((i) => i.driverId === driverId)
+        .map((i) => i.id)
+    )
+    if (cx4Ids.size === 0) return 0
+    const stockOnly = new Set(['TBIL', 'DBIL', 'CRT-J', 'E-CRE', 'ALP-IFCC', 'TIBC', 'GLU-H'])
+    const seen = persist
+      .getMonitorHistory()
+      .some((e) => cx4Ids.has(e.instrumentId) && stockOnly.has(e.analyteCode.toUpperCase()))
+    if (!seen) return 0
+
+    // Both CX4 presets carry the identical, stock-named mapping list; it is the
+    // source of the rows an older install is missing outright (TIBC, GLU-H, …).
+    const preset =
+      listPresets()
+        .find((p) => p.preset === 'lucknow')
+        ?.instruments.find((i) => i.driverId === driverId)?.mappings ?? []
+    const rows = cx4StockNameMigrationRows(this.list(driverId), preset)
+
+    const changed = rows.length > 0 ? this.applyPresetMappings(driverId, rows) : 0
+    persist.setMigrationFlag('migratedCx4StockItemNames', true)
+    if (changed > 0) {
+      logger.info(
+        'mapping',
+        `Mispa CX4: moved mappings to the analyzer's stock item names (${changed} row(s) changed)`
+      )
+    }
+    return changed
+  }
+
+  /**
    * Resolve ONLY currently-unmapped rows for the given drivers, leaving every
    * 'auto', 'manual' and 'ignored' rule untouched. Run at startup so analytes
    * that seeding could not match (e.g. immunoassay channels whose LIS names only
@@ -868,10 +919,23 @@ function matchTestByCodeAbbreviation(code: string, tests: LisTest[]): LisTest | 
       parenHits.push(t)
       continue
     }
-    // (b) name starts with CODE followed by a non-alphanumeric boundary.
-    const rest = name.startsWith(c) ? name.charAt(c.length) : ''
-    if (name.startsWith(c) && (rest === '' || !/[A-Z0-9]/.test(rest))) {
-      leadHits.push(t)
+    // (b) name starts with CODE followed by a non-alphanumeric boundary — but
+    // not when the code is only the first half of a compound identifier: the
+    // Mispa CX4's "Ca" lead-matched "CA 72.4" (the tumour marker, shortest of
+    // the CA 125 / 15.3 / 19.9 / 72.4 family) on the Lucknow install, and "CK"
+    // would land on "CK-MB". A digit after the boundary, or a '-' / '/' / '.'
+    // joining it to more letters, means the name's own token is longer than
+    // the code, so it is not an abbreviation match. "T3 (Tri Iodothyronine)"
+    // and "HbA1c - Glycated" still pass.
+    if (name.startsWith(c)) {
+      const after = name.slice(c.length)
+      const boundary = after.charAt(0)
+      const next = after.replace(/^\s+/, '').charAt(0)
+      const compound =
+        /[0-9]/.test(next) || (/[-\/.]/.test(boundary) && /[A-Z0-9]/.test(after.charAt(1)))
+      if ((boundary === '' || !/[A-Z0-9]/.test(boundary)) && !compound) {
+        leadHits.push(t)
+      }
     }
   }
   const pick = (arr: LisTest[]): LisTest | null =>
@@ -950,6 +1014,89 @@ function fuzzyNameConfidence(instrumentName: string, lisName: string): number {
 
 /** Test-only export of the grader (see scripts/verify-mapgrade.ts). */
 export const __fuzzyNameConfidenceForTest = fuzzyNameConfidence
+export const __matchTestByCodeAbbreviationForTest = matchTestByCodeAbbreviation
+
+/**
+ * The rows that move a Mispa CX4 install from the manual's item names to the
+ * ones a live unit sends (see migrateCx4StockItemNames), computed from the
+ * install's current rules and the bundled preset's stock-named list. Pure, so
+ * verify:agappe-cx4 can pin it against the Lucknow v0.6.13 store shape.
+ *
+ *   1. RENAME: for each manual-name row that is mapped, re-issue its Noble
+ *      target under the stock name (unless the operator already mapped the
+ *      stock name manually) and retire the manual name as 'ignored'. A junk
+ *      'auto' row on the stock name (Lucknow: "Ca" -> "CA 72.4") is replaced.
+ *   2. BACKFILL: every preset row whose code the install does not have at all
+ *      is added as the preset has it — mapped (TIBC) or retired (GLU-H) — so
+ *      no stock item can fall through to the auto-mapper again.
+ * Applied in order, later rows win, which applyPresetMappings honours.
+ */
+export function cx4StockNameMigrationRows(
+  rules: readonly MappingRule[],
+  preset: readonly PresetMapping[]
+): PresetMapping[] {
+  const renames: Array<[manualName: string, stockName: string, label: string]> = [
+    ['TB', 'TBIL', 'Total Bilirubin'],
+    ['DB', 'DBIL', 'Direct Bilirubin'],
+    ['CRE', 'CRT-J', 'Creatinine (Jaffe)'],
+    ['GLU(OX)', 'GLU', 'Glucose'],
+    ['Ca(CPC)', 'Ca', 'Calcium'],
+    // The unit uploads the IFCC channel with a value and the plain ALP channel
+    // as "***", so the IFCC item is the live one.
+    ['ALP', 'ALP-IFCC', 'Alkaline Phosphatase (IFCC)'],
+    // Lucknow Sample Register (2026-10-08): the full stock names, not the
+    // manual's abbreviations.
+    ['LPS', 'Lipase', 'Lipase'],
+    ['Fe', 'IRON MONO', 'Iron (mono-reagent)'],
+    ['HS-CRP', 'U-HS-CRP', 'Ultra-Sensitive CRP']
+  ]
+  const find = (code: string): MappingRule | undefined =>
+    rules.find((r) => r.instrumentCode.toUpperCase() === code.toUpperCase())
+  const isMapped = (r?: MappingRule): boolean =>
+    !!r && (r.status === 'auto' || r.status === 'manual') && (!!r.lisTestId || !!r.lisTestCode)
+
+  const rows: PresetMapping[] = []
+  const touched = new Set<string>()
+  for (const [oldCode, newCode, label] of renames) {
+    const old = find(oldCode)
+    if (!old || !isMapped(old)) continue
+    const cur = find(newCode)
+    if (!(cur?.status === 'manual' && isMapped(cur))) {
+      rows.push({
+        instrumentCode: newCode,
+        instrumentName: label,
+        unit: old.unit,
+        status: 'manual',
+        lisTestId: old.lisTestId,
+        lisTestCode: old.lisTestCode,
+        lisTestName: old.lisTestName,
+        lisParamId: old.lisParamId,
+        lisParamName: old.lisParamName
+      })
+    }
+    touched.add(newCode.toUpperCase())
+    rows.push({ instrumentCode: oldCode, instrumentName: old.instrumentName, status: 'ignored' })
+    touched.add(oldCode.toUpperCase())
+  }
+  // The enzymatic creatinine twin: keep it retired under its real name too.
+  if (find('CRE-E')?.status === 'ignored' && !find('E-CRE')) {
+    rows.push({ instrumentCode: 'E-CRE', instrumentName: 'Creatinine (Enzymatic)', status: 'ignored' })
+    touched.add('E-CRE')
+  }
+  // Backfill: preset rows this install never received (added to the JSON after
+  // the instrument was set up). A row the install has — mapped, ignored or
+  // unmapped — is the operator's and is left alone.
+  for (const m of preset) {
+    const code = m.instrumentCode.toUpperCase()
+    if (touched.has(code) || find(code)) continue
+    const hasTarget =
+      m.status === 'ignored' || m.lisTestId != null || !!m.lisTestCode || m.lisParamId != null
+    if (!hasTarget) continue
+    rows.push({ ...m })
+    touched.add(code)
+  }
+  return rows
+}
 
 /** Lowercase a name and collapse separators/punctuation for tolerant matching. */
 function normName(s: string): string {

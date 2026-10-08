@@ -29,6 +29,13 @@ interface AppState {
   logs: LogEntry[]
   tests: LisTest[]
   parameters: LisParameter[]
+  /**
+   * Why the Noble test/parameter catalog is missing, if it is. The catalog is
+   * fetched best-effort: an unreachable DB at launch must not block the app
+   * (the engine keeps queueing results regardless), so the lists stay empty,
+   * this holds the reason, and the store retries in the background.
+   */
+  lisCatalogError: string | null
   settings: AppSettings | null
   lisSettings: LisConnectionSettings | null
   stats: DashboardStats | null
@@ -42,6 +49,8 @@ interface AppState {
    * store catches up from the authoritative buffers in one round trip.
    */
   resync: () => Promise<void>
+  /** Re-fetch the Noble catalog; clears or updates `lisCatalogError`. Never throws. */
+  refreshLisCatalog: () => Promise<void>
   refreshInstruments: () => Promise<void>
   refreshMappings: () => Promise<void>
   refreshStats: () => Promise<void>
@@ -67,6 +76,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   logs: [],
   tests: [],
   parameters: [],
+  lisCatalogError: null,
   settings: null,
   lisSettings: null,
   stats: null,
@@ -85,6 +95,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       return
     }
     try {
+      // Everything here is local to the machine except the two Noble catalog
+      // calls, which cross the WAN. Those degrade to empty lists plus a reason
+      // instead of failing startup; everything else failing is a real fault.
+      let lisCatalogError: string | null = null
+      const catalog = <T>(p: Promise<T[]>): Promise<T[]> =>
+        p.catch((err: Error) => {
+          lisCatalogError = err.message
+          return []
+        })
       const [drivers, presets, instruments, mappings, monitor, logs, tests, parameters, settings, lisSettings, stats] =
         await Promise.all([
           api.drivers.list(),
@@ -93,8 +112,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           api.mappings.list(),
           api.monitor.recent(),
           api.logs.recent(),
-          api.lis.tests(),
-          api.lis.parameters(),
+          catalog(api.lis.tests()),
+          catalog(api.lis.parameters()),
           api.settings.get(),
           api.lis.getSettings(),
           api.dashboard.stats()
@@ -108,6 +127,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         logs: logs.slice(0, MAX_LOGS),
         tests,
         parameters,
+        lisCatalogError,
         settings,
         lisSettings,
         stats,
@@ -156,9 +176,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
 
       // Periodic dashboard refresh — idle while hidden; resync covers the catch-up.
+      // Every ~30 s of that cadence, retry the Noble catalog if it is still missing.
+      let ticks = 0
       setInterval(() => {
         if (document.visibilityState !== 'visible') return
         void get().refreshStats().catch(() => undefined)
+        ticks++
+        if (ticks % 8 === 0 && get().lisCatalogError) void get().refreshLisCatalog()
       }, 4000)
     } catch (err) {
       set({ error: (err as Error).message, ready: true })
@@ -187,6 +211,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       })
     } catch {
       /* best-effort; the next push or poll fills in */
+    }
+    if (get().lisCatalogError) void get().refreshLisCatalog()
+  },
+
+  refreshLisCatalog: async () => {
+    const api = window.api
+    if (!api) return
+    try {
+      const [tests, parameters] = await Promise.all([api.lis.tests(), api.lis.parameters()])
+      set({ tests, parameters, lisCatalogError: null })
+    } catch (err) {
+      set({ lisCatalogError: (err as Error).message })
     }
   },
 

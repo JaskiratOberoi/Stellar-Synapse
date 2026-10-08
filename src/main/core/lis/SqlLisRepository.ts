@@ -461,8 +461,12 @@ export class SqlLisRepository implements ILisRepository {
     // that is currently EMPTY. A re-run that re-sends the whole panel must never
     // overwrite values already in the LIS — labs re-run a sample to capture ONE
     // missed analyte and expect the rest to stay exactly as reported.
+    // A cell holding only asterisks counts as blank: "***" is an analyzer's
+    // "no result" placeholder (the Mispa CX4 uploads it for a channel it could
+    // not measure, and v0.6.13 filed it verbatim at Lucknow), never a value a
+    // lab reported — so the re-run that carries the real number must get in.
     const blankOnly =
-      'AND (value IS NULL OR LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) = 0)'
+      "AND (value IS NULL OR LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) = 0 OR CONVERT(varchar(50), value) NOT LIKE '%[^* ]%')"
     // Value-only drivers (e.g. Agappe Mispa Maestro HbA1c) write just the value
     // plus bookkeeping — never the abnormal flag — so Noble keeps its own
     // reference-range determination instead of having it overwritten.
@@ -558,6 +562,7 @@ export class SqlLisRepository implements ILisRepository {
         FROM tbl_med_mcc_patient_test_result
         WHERE vailid = @vailid AND testtype NOT IN ('Head', 'Profile')
           AND value IS NOT NULL AND LEN(LTRIM(RTRIM(CONVERT(varchar(50), value)))) > 0
+          AND CONVERT(varchar(50), value) LIKE '%[^* ]%'
           AND ( (@paramid IS NOT NULL AND paramid = @paramid)
                 OR (@paramid IS NULL AND @testcode <> '' AND testcode = @testcode
                     AND (paramid IS NULL OR paramid = 0))

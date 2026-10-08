@@ -34,10 +34,22 @@ function astmTestId(field?: string): { code: string; name?: string } {
  * non-empty caret component. `specimen` is that field verbatim, for dialects
  * that must echo the analyzer's full specimen id (disk/position) in the order.
  */
-export function extractAstmQuery(
-  message: ProtocolMessage
-): { sid: string; specimen: string; analyzerName?: string; hostName?: string } | null {
-  if (message.protocol !== 'astm') return null
+export interface AstmQuery {
+  sid: string
+  specimen: string
+  analyzerName?: string
+  hostName?: string
+}
+
+/**
+ * Every Q record in the message, in order. One session normally carries a
+ * single query, but the Dirui/Agappe CX4 "S. Barcode Scan" sends one Q per
+ * scanned tube in ONE session (Appendix E, Example 2 "Batch") and expects an
+ * order group back for each — answering only the first would leave the rest
+ * of the disk unordered.
+ */
+export function extractAstmQueries(message: ProtocolMessage): AstmQuery[] {
+  if (message.protocol !== 'astm') return []
   // Capture how the analyzer identifies itself in its own H record so the order
   // reply can mirror it exactly — the Maglumi validates the order header against
   // its configured Analyzer ID / Host ID and silently drops the assay otherwise.
@@ -49,6 +61,7 @@ export function extractAstmQuery(
       hostName = rec[9]?.trim() || hostName
     }
   }
+  const out: AstmQuery[] = []
   for (const rec of message.records) {
     if ((rec[0] || '').toUpperCase() !== 'Q') continue
     const field = rec[2] || rec[3] || ''
@@ -56,9 +69,14 @@ export function extractAstmQuery(
       .split('^')
       .map((p) => p.trim())
       .find((p) => p.length > 0)
-    if (sid) return { sid, specimen: field.trim(), analyzerName, hostName }
+    if (sid) out.push({ sid, specimen: field.trim(), analyzerName, hostName })
   }
-  return null
+  return out
+}
+
+/** The first query in the message (what single-query analyzers send), or null. */
+export function extractAstmQuery(message: ProtocolMessage): AstmQuery | null {
+  return extractAstmQueries(message)[0] ?? null
 }
 
 /** Parse an ASTM E1394 message into canonical results. */

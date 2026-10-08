@@ -21,7 +21,7 @@ import { buildAgappeCx4OrderFrames, cx4SampleId } from '../drivers/agappeCx4'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT, mergeAuFormat } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_CHANNELS_BY_DRIVER } from '../drivers/maglumi'
-import { applyHba1cDerivations, extractAstmQuery } from '../drivers/parsing'
+import { applyHba1cDerivations, extractAstmQueries, type AstmQuery } from '../drivers/parsing'
 import {
   parseGeteinQuery,
   geteinResultControlId,
@@ -133,6 +133,10 @@ export class Orchestrator extends EventEmitter {
     // One-time hygiene: keep a single bilirubin method per AU analyte so the host
     // query never double-orders the DCA + BuBc variants (matches the reference).
     this.mapping.migrateAuSingleBilirubinMethod()
+
+    // Evidence-gated: once a Mispa CX4 has been seen uploading its stock item
+    // names (TBIL, CRT-J, …), move the preset mappings onto those names.
+    this.mapping.migrateCx4StockItemNames()
 
     // One-time: re-grade flat-0.6 name matches so the new write trust floor does
     // not silently mute correct mappings (Ferritin, Troponin I, D-Dimer, MPV) on
@@ -744,7 +748,14 @@ export class Orchestrator extends EventEmitter {
 
     // Host query (analyzer asks the LIS which tests to run for a barcode).
     if (def.connection.hostQuery && def.protocol === 'astm') {
-      const query = extractAstmQuery(message)
+      const queries = extractAstmQueries(message)
+      // Mispa CX4 "S. Barcode Scan": one Q per scanned tube in a single session;
+      // every one of them needs its order group in the single reply session.
+      if (queries.length > 1 && driver.astmDialect === 'agappe-cx4') {
+        await this.handleCx4BatchQuery(def, driver.info.id, queries, message.raw)
+        return
+      }
+      const query = queries[0]
       if (query) {
         // Mispa CX4: the barcode is strictly component 1 of the specimen id. In
         // the analyzer's "Sample No." mode that component is empty and the
@@ -1025,6 +1036,105 @@ export class Orchestrator extends EventEmitter {
     } catch (err) {
       logger.error('host-query', `${def.name}: failed to send orders for ${sid}: ${(err as Error).message}`)
       this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: (err as Error).message })
+    }
+  }
+
+  /**
+   * Answer a Mispa CX4 batch query (Dirui Appendix E, Example 2 "Batch" / Example
+   * 3 "Batch"): the analyzer sends one Q per scanned tube in ONE session, and the
+   * host replies in ONE session with a complete H/P/O…/L group per sample whose
+   * frame numbers restart at 1 for each group. Samples with nothing to order are
+   * simply left out; if no sample has an order the reply is the bare ENQ/EOT the
+   * manual prescribes for "not found".
+   */
+  private async handleCx4BatchQuery(
+    def: InstrumentDefinition,
+    driverId: string,
+    queries: AstmQuery[],
+    raw: string
+  ): Promise<void> {
+    const sender = this.connections.get(def.id)?.sender
+    const frames: Buffer[] = []
+    const ordered: string[] = []
+    const rawShown = raw.length > 600 ? `${raw.slice(0, 600)}...` : raw
+    for (const [i, q] of queries.entries()) {
+      const sid = cx4SampleId(q.specimen)
+      const baseEvent = {
+        instrumentId: def.id,
+        instrumentName: def.name,
+        sampleId: sid,
+        analyteCode: 'QUERY',
+        analyteName: 'Host query',
+        value: '',
+        raw: rawShown,
+        timestamp: new Date().toISOString()
+      }
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'received',
+        message: `Host query ${i + 1}/${queries.length} for ${sid || '(no barcode)'}`
+      })
+      let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
+      try {
+        if (sid) order = await this.lis.getOrder(sid)
+      } catch (err) {
+        logger.warn('host-query', `${def.name}: order lookup failed for ${sid}: ${(err as Error).message}`)
+      }
+      order = await this.dropFilledFromOrder(def, order)
+      const codes = order
+        ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
+        : []
+      if (codes.length === 0) {
+        this.pushMonitor({
+          ...baseEvent,
+          id: randomUUID(),
+          stage: 'skipped',
+          value: order ? `${order.testCodes.length} ordered, 0 on ${def.name}` : 'not registered',
+          message: order
+            ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this ${def.name} (left out of the batch reply)`
+            : sid
+              ? `Barcode ${sid} not registered in LIS — left out of the batch reply`
+              : `Query carries no barcode (Sample No. mode) — left out of the batch reply`
+        })
+        continue
+      }
+      frames.push(...buildAgappeCx4OrderFrames(q.specimen || sid, codes))
+      ordered.push(sid)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'ordered',
+        value: codes.join(', '),
+        mappedTo: codes.join(', '),
+        message: `Ordered to analyzer: ${codes.join(', ')}`
+      })
+    }
+    if (!sender) return
+    try {
+      if (frames.length === 0) {
+        logger.info('host-query', `${def.name}: batch of ${queries.length} queries, nothing to order — sending ENQ/EOT (CX4 "not found")`)
+      }
+      await sender.sendFrames(frames)
+      logger.info(
+        'host-query',
+        `${def.name}: answered batch of ${queries.length} queries — orders for ${ordered.length} sample(s) [${ordered.join(', ')}]`
+      )
+    } catch (err) {
+      logger.error('host-query', `${def.name}: failed to send batch orders: ${(err as Error).message}`)
+      this.pushMonitor({
+        instrumentId: def.id,
+        instrumentName: def.name,
+        sampleId: ordered[0] ?? '',
+        analyteCode: 'QUERY',
+        analyteName: 'Host query',
+        value: '',
+        raw: rawShown,
+        timestamp: new Date().toISOString(),
+        id: randomUUID(),
+        stage: 'error',
+        message: (err as Error).message
+      })
     }
   }
 

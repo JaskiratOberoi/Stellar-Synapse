@@ -51,6 +51,8 @@ export function LisConnection() {
   const save = async (): Promise<void> => {
     const next = await window.api.lis.saveSettings(form)
     useAppStore.setState({ lisSettings: next })
+    // New target or credentials: pick up the catalog if startup could not.
+    void useAppStore.getState().refreshLisCatalog()
   }
 
   return (
