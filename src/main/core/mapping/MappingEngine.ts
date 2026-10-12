@@ -481,6 +481,47 @@ export class MappingEngine {
   }
 
   /**
+   * One-time, after the two passes above: Lucknow's first 0.6.16 batch
+   * (2026-10-12 16:17) still ordered GLU(HK), Ca(ARS) and UIBC — twins the
+   * preset retires and an item the unit's menu lacks — because rows an
+   * operator had set to manual survive every pass that respects 'manual'.
+   * The bundled preset's 'ignored' list IS the unit's menu knowledge (read
+   * off the Sample Register screen), so it is authoritative: every row the
+   * preset retires is forced to 'ignored' on the install. Evidence-gated like
+   * the others; an operator can re-enable a row afterwards and it will stick.
+   */
+  migrateCx4AlignPresetRetired(): number {
+    if (persist.getMigrationFlag('migratedCx4AlignPresetRetired')) return 0
+    const driverId = 'agappe-mispa-cx4'
+    const cx4Ids = new Set(
+      persist
+        .getInstruments()
+        .filter((i) => i.driverId === driverId)
+        .map((i) => i.id)
+    )
+    if (cx4Ids.size === 0) return 0
+    const stockOnly = new Set(['TBIL', 'DBIL', 'CRT-J', 'E-CRE', 'ALP-IFCC', 'TIBC', 'GLU-H'])
+    const seen = persist
+      .getMonitorHistory()
+      .some((e) => cx4Ids.has(e.instrumentId) && stockOnly.has(e.analyteCode.toUpperCase()))
+    if (!seen) return 0
+    const preset =
+      listPresets()
+        .find((p) => p.preset === 'lucknow')
+        ?.instruments.find((i) => i.driverId === driverId)?.mappings ?? []
+    const rows = cx4PresetRetireRows(this.list(driverId), preset)
+    const changed = rows.length > 0 ? this.applyPresetMappings(driverId, rows) : 0
+    persist.setMigrationFlag('migratedCx4AlignPresetRetired', true)
+    if (changed > 0) {
+      logger.info(
+        'mapping',
+        `Mispa CX4: retired ${changed} channel(s) the preset retires (${rows.map((r) => r.instrumentCode).join(', ')})`
+      )
+    }
+    return changed
+  }
+
+  /**
    * Resolve ONLY currently-unmapped rows for the given drivers, leaving every
    * 'auto', 'manual' and 'ignored' rule untouched. Run at startup so analytes
    * that seeding could not match (e.g. immunoassay channels whose LIS names only
@@ -1170,6 +1211,26 @@ export function cx4RetireUnknownItemRows(
     if (!seenWithValue.has(code.toUpperCase())) retire(code)
   }
   if (live(find('CRT-J')) && !seenWithValue.has('E-CRE')) retire('E-CRE')
+  return rows
+}
+
+/**
+ * Rows forcing every channel the bundled CX4 preset retires to 'ignored' on an
+ * install, whatever status the install's row has (see
+ * migrateCx4AlignPresetRetired). Rows the install does not have are not
+ * created. Pure.
+ */
+export function cx4PresetRetireRows(
+  rules: readonly MappingRule[],
+  preset: readonly PresetMapping[]
+): PresetMapping[] {
+  const rows: PresetMapping[] = []
+  for (const m of preset) {
+    if (m.status !== 'ignored') continue
+    const r = rules.find((x) => x.instrumentCode.toUpperCase() === m.instrumentCode.toUpperCase())
+    if (!r || r.status === 'ignored') continue
+    rows.push({ instrumentCode: r.instrumentCode, instrumentName: r.instrumentName ?? m.instrumentName, status: 'ignored' })
+  }
   return rows
 }
 

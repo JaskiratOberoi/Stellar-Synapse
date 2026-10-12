@@ -146,6 +146,8 @@ export class Orchestrator extends EventEmitter {
     // unit has never uploaded, so a host query never orders an item the
     // analyzer does not have (Lucknow 2026-10-12: CRE, CRE-E, K, Na).
     this.mapping.migrateCx4RetireUnknownItems()
+    // And every channel the preset itself retires (twins, off-menu items).
+    this.mapping.migrateCx4AlignPresetRetired()
 
     // One-time: re-grade flat-0.6 name matches so the new write trust floor does
     // not silently mute correct mappings (Ferritin, Troponin I, D-Dimer, MPV) on

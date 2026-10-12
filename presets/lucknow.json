@@ -496,24 +496,16 @@
         {
           "instrumentCode": "TBA",
           "instrumentName": "Total Bile Acids",
-          "lisTestId": 1944,
-          "lisTestCode": "BI295",
-          "lisTestName": "Bile Acids Total",
           "unit": "umol/L",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Delhi files 575 rows in µmol/L; Lucknow none in the window (harmless — only ordered tests are sent)."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu (Sample Register, 2026-10-08/12); ordering an item the analyzer lacks raises \"Illegal test item\" and the tube is not registered. Target when a unit carries TBA: BI295 Bile Acids Total, umol/L. Previously: Delhi files 575 rows in µmol/L; Lucknow none in the window (harmless — only ordered tests are sent)."
         },
         {
           "instrumentCode": "ADA",
           "instrumentName": "Adenosine Deaminase",
-          "lisTestId": 1986,
-          "lisTestCode": "BI401",
-          "lisTestName": "ADA (Adenosine Deaminase)",
           "unit": "U/L",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Serum ADA. Noble also has ADA CSF (BI012, t18) and \"FLUID FOR ADA\" (BI360, t2089) — those are body-fluid orders; if the lab runs fluid ADA on this analyzer under the same item, the sample-level order decides which row is filled."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu; see TBA. Target when a unit carries it: BI401 ADA (Adenosine Deaminase), U/L. Previously: Serum ADA. Noble also has ADA CSF (BI012, t18) and \"FLUID FOR ADA\" (BI360, t2089) — those are body-fluid orders; if the lab runs fluid ADA on this analyzer under the same item, the sample-level order decides which row is filled."
         },
         {
           "instrumentCode": "GLU",
@@ -613,13 +605,9 @@
         {
           "instrumentCode": "FMN",
           "instrumentName": "Fructosamine",
-          "lisTestId": 283,
-          "lisTestCode": "BI111",
-          "lisTestName": "Fructosamine",
           "unit": "umol/L",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Delhi only (47 rows). Noble stores µmol/L, matching the analyzer."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu; see TBA. Target when a unit carries it: BI111 Fructosamine, umol/L. Previously: Delhi only (47 rows). Noble stores µmol/L, matching the analyzer."
         },
         {
           "instrumentCode": "TC",
@@ -676,13 +664,9 @@
         {
           "instrumentCode": "HCY",
           "instrumentName": "Homocysteine",
-          "lisTestId": 228,
-          "lisTestCode": "BI132",
-          "lisTestName": "Homocysteine",
           "unit": "umol/L",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Delhi only (630 rows), µmol/L at both ends."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu; see TBA. Target when a unit carries it: BI132 Homocysteine, umol/L. Previously: Delhi only (630 rows), µmol/L at both ends."
         },
         {
           "instrumentCode": "CK",
@@ -709,13 +693,9 @@
         {
           "instrumentCode": "cTnI",
           "instrumentName": "Troponin I",
-          "lisTestId": 2003,
-          "lisTestCode": "BI412",
-          "lisTestName": "Troponin I(Quantitative)",
           "unit": "ng/mL",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Delhi 167 / Lucknow 75 rows, ng/mL. Only valid if the analyzer runs the Agappe turbidimetric hs-cTnI item; retire if troponin comes from an FIA reader."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu; see TBA. Target when a unit carries it: BI412 Troponin I(Quantitative), ng/mL. Previously: Delhi 167 / Lucknow 75 rows, ng/mL. Only valid if the analyzer runs the Agappe turbidimetric hs-cTnI item; retire if troponin comes from an FIA reader."
         },
         {
           "instrumentCode": "AMY",
@@ -820,13 +800,9 @@
         {
           "instrumentCode": "UIBC",
           "instrumentName": "Unsaturated Iron Binding Capacity",
-          "lisTestId": 252,
-          "lisTestCode": "BI222",
-          "lisTestName": "Unsaturated Iron Binding Capacity (UIBC)",
           "unit": "ug/dL",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "Not on the Lucknow unit's item list (2026-10-08) — that unit runs a direct TIBC item instead; kept for a unit that loads the UIBC kit. Transferrin Saturation (BI217) is derived by Noble."
+          "status": "ignored",
+          "_note": "Not on the Lucknow unit's item menu — it runs a direct TIBC item instead (2026-10-12 host query ordered UIBC and the tube was not registered). Target when a unit carries UIBC: BI222 Unsaturated Iron Binding Capacity (UIBC), ug/dL. Previously: Not on the Lucknow unit's item list (2026-10-08) — that unit runs a direct TIBC item instead; kept for a unit that loads the UIBC kit. Transferrin Saturation (BI217) is derived by Noble."
         },
         {
           "instrumentCode": "TIBC",

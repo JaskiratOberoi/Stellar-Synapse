@@ -24,7 +24,11 @@ import {
 } from '../src/main/core/drivers/agappeCx4'
 import { getDriver } from '../src/main/core/drivers/registry'
 import { fingerprintInstrument } from '../src/main/core/discovery/fingerprint'
-import { cx4RetireUnknownItemRows, cx4StockNameMigrationRows } from '../src/main/core/mapping/MappingEngine'
+import {
+  cx4PresetRetireRows,
+  cx4RetireUnknownItemRows,
+  cx4StockNameMigrationRows
+} from '../src/main/core/mapping/MappingEngine'
 import type { MappingRule, PresetMapping } from '../src/shared/types'
 import delhi from '../presets/delhi.json'
 import lucknow from '../presets/lucknow.json'
@@ -657,6 +661,15 @@ console.log('\n[S] Lucknow Sample Register item list (screen, 2026-10-08): nothi
       LOADED.filter((c) => (liveTwins.has(c) ? row(c)?.status !== 'ignored' : row(c)?.status !== 'manual' || !row(c)?.lisTestId)).join(','),
       ''
     )
+    // The converse: nothing is mapped that the unit's menu does not carry.
+    // 2026-10-12: a host query ordered UIBC, GLU(HK) and Ca(ARS) and the tube
+    // was not registered ("Illegal test item").
+    const onScreen = new Set(SCREEN.map((c) => c.toUpperCase()))
+    eq(
+      `${site}: no mapped row for an item off the unit's menu`,
+      rows.filter((r) => r.status === 'manual' && !onScreen.has(r.instrumentCode.toUpperCase())).map((r) => r.instrumentCode).join(','),
+      ''
+    )
   }
 }
 
@@ -911,6 +924,25 @@ console.log('\n[M] Migration: Lucknow v0.6.13 store -> stock item names (cx4Stoc
   // enzymatic creatinine kit keeps E-CRE.
   const withIse = cx4RetireUnknownItemRows(lucknow1012, new Set([...seen, 'K', 'NA', 'CL', 'E-CRE']))
   eq('ISE + E-CRE kept when the unit has reported them', withIse.map((r) => r.instrumentCode).sort().join(','), 'ALP,CRE,CRE-E')
+  // Lucknow 16:17 on 0.6.16: GLU(HK), Ca(ARS) and UIBC were still ordered —
+  // operator-manual rows the preset retires. cx4PresetRetireRows forces every
+  // preset-retired channel to ignored, whatever the install's status.
+  const lucknow1617: MappingRule[] = [
+    ...lucknow1012.filter((r) => !['GLU(HK)', 'Ca(ARS)', 'UIBC', 'TB-V'].includes(r.instrumentCode)),
+    rule('GLU(HK)', 'manual', { id: 284, code: 'BI114', name: 'Glucose - Fasting' }),
+    rule('Ca(ARS)', 'manual', { id: 96, code: 'BI064', name: 'Calcium' }),
+    rule('UIBC', 'manual', { id: 252, code: 'BI222', name: 'Unsaturated Iron Binding Capacity (UIBC)' }, 'ug/dL'),
+    rule('TB-V', 'auto', { ...BIL, pid: 431, pname: 'Bilirubin Total' })
+  ]
+  const aligned = cx4PresetRetireRows(lucknow1617, preset)
+  eq(
+    'forces every preset-retired channel to ignored',
+    aligned.map((r) => r.instrumentCode).sort().join(','),
+    'ALP,Ca(ARS),Cl,E-CRE,GLU(HK),K,Na,TB-V,UIBC'
+  )
+  ok('manual-name twins (CRE-E) are the other pass\'s job, not this one\'s', !aligned.some((r) => r.instrumentCode === 'CRE-E'))
+  ok('align rows are all ignored', aligned.every((r) => r.status === 'ignored'))
+  eq('align pass never creates rows the install lacks', aligned.some((r) => !lucknow1617.find((x) => x.instrumentCode === r.instrumentCode)), false)
   eq('retire pass is a no-op on the current preset list', cx4RetireUnknownItemRows(
     preset.map((m) => rule(m.instrumentCode, m.status === 'ignored' ? 'ignored' : 'manual', m.lisTestId != null ? { id: m.lisTestId, code: m.lisTestCode ?? '', name: m.lisTestName ?? '', pid: m.lisParamId } : undefined, m.unit)),
     seen

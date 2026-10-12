@@ -73,6 +73,8 @@ interface PersistShape {
   migratedCx4StockItemNames?: boolean
   /** One-time migration: retire the Mispa CX4 manual-name twins and the ISE trio outright (Lucknow 2026-10-12 ordered CRE/CRE-E/K/Na, items the unit does not have). */
   migratedCx4RetireUnknownItems?: boolean
+  /** One-time migration: force every channel the bundled CX4 preset retires to 'ignored' (Lucknow 2026-10-12 still ordered GLU(HK)/Ca(ARS)/UIBC). */
+  migratedCx4AlignPresetRetired?: boolean
 }
 
 type MigrationFlagKey =
@@ -84,6 +86,7 @@ type MigrationFlagKey =
   | 'migratedRohtakAuPatientInfo'
   | 'migratedCx4StockItemNames'
   | 'migratedCx4RetireUnknownItems'
+  | 'migratedCx4AlignPresetRetired'
 
 const MAX_MONITOR_HISTORY = 2000
 
