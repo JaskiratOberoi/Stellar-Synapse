@@ -14,6 +14,7 @@ import { extractAstmQueries, extractAstmQuery } from '../src/main/core/drivers/p
 import {
   AGAPPE_CX4_CHEM,
   buildAgappeCx4AstmSample,
+  buildAgappeCx4BatchOrderFrames,
   buildAgappeCx4OrderFrames,
   buildAgappeCx4OrderRecords,
   cx4ReferenceRange,
@@ -276,20 +277,29 @@ console.log('\n[4] Host query (Appendix E, Example 2 + Q field table)')
   eq('batch specimens in order', qs.map((q) => q.specimen).join(' '), '^11^2^11^N ^12^2^12^N ^13^2^13^N ^14^2^14^N')
   eq('single-query extractor = first of batch', extractAstmQuery(batch)?.specimen, '^11^2^11^N')
 
-  // Batch REPLY (Example 3 "Batch"): one H/P/O…/L group per sample in one
-  // session, frame numbers restarting at 1 for each group.
-  const reply = [
-    ...buildAgappeCx4OrderFrames('128123^1^1^1^N', ['ALT', 'AST'], '20090119100417'),
-    ...buildAgappeCx4OrderFrames('1281234^2^1^2^N', ['ALT', 'ALB'], '20090119100425')
-  ].map(printable)
-  eq('batch reply: 10 frames (5 + 5)', reply.length, 10)
-  eq('group 1 ends 5L -> 08', reply[4], '[STX]5L|1|N[CR][ETX]08[CR][LF]')
-  eq('group 2 restarts at 1H -> E5', reply[5], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
+  // Batch REPLY: ONE session — H, then P|n + O|1..k per tube, then L — with
+  // continuous frame numbers (the layout a production LIS was captured using,
+  // section [B]); a tube with nothing to order keeps its P record.
+  const reply = buildAgappeCx4BatchOrderFrames(
+    [
+      { specimen: '128123^1^1^1^N', codes: ['ALT', 'AST'] },
+      { specimen: '^12^2^12^N', codes: [] },
+      { specimen: '1281234^2^1^2^N', codes: ['ALT', 'ALB'] }
+    ],
+    '20090119100425'
+  ).map(printable)
+  eq('batch reply: 9 frames (H P O O P P O O L)', reply.length, 9)
+  eq('one header -> E5', reply[0], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
+  eq('tube 1: P|1', reply[1], '[STX]2P|1|||||||||||||[CR][ETX]8B[CR][LF]')
+  eq('tube 2 (nothing to order): lone P|2', reply[4], '[STX]5P|2|||||||||||||[CR][ETX]8F[CR][LF]')
+  eq('tube 3: P|3 then O|1 restarts at 1', reply[5], '[STX]6P|3|||||||||||||[CR][ETX]91[CR][LF]')
   eq(
-    'group 2 O|1 ALT -> 2E',
-    reply[7],
-    '[STX]3O|1|1281234^2^1^2^N||^^^ALT|R|20090119100425|||||||||1||||||||||O[CR][ETX]2E[CR][LF]'
+    'tube 3 O|1 ALT carries frame 7',
+    reply[6],
+    '[STX]7O|1|1281234^2^1^2^N||^^^ALT|R|20090119100425|||||||||1||||||||||O[CR][ETX]32[CR][LF]'
   )
+  eq('frame numbers roll 7 -> 0 across tubes', reply[7].slice(0, 6), '[STX]0')
+  eq('one terminator', reply[8], '[STX]1L|1|N[CR][ETX]04[CR][LF]')
 }
 
 // =============================================================================
@@ -631,6 +641,127 @@ console.log('\n[S] Lucknow Sample Register item list (screen, 2026-10-08): nothi
       ''
     )
   }
+}
+
+// =============================================================================
+console.log('\n[B] Live bidirectional batch — analyzer HOST log 2026-08-27 (Bindu Logic LIS broker)')
+{
+  // The analyzer's own HOST debug log ("Machine Comm file.txt"): operator ran
+  // "S. Barcode Scan" over 17 tubes, the analyzer sent H + 17 Q + L in one
+  // session, and the LIS answered in ONE session with the frames below. Every
+  // ordered item was then run and uploaded (e.g. 2608016757: E-CRE, GLU, TP,
+  // ALT, ALB at 13:08), so this is a layout the CX4 software accepts.
+  const LIVE_BATCH = [
+    '[STX]1H|\\^&|||MISPA|||||Host||1|20260827122638[CR][ETX]53[CR][LF]',
+    '[STX]2P|1|||||||||||||[CR][ETX]8B[CR][LF]',
+    '[STX]3O|1|2608016829^^1^1^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]B6[CR][LF]',
+    '[STX]4P|2|||||||||||||[CR][ETX]8E[CR][LF]',
+    '[STX]5O|1|2608016807^^1^2^N||^^^TBIL|R|20260827122638|||||||||1||||||||||O[CR][ETX]F8[CR][LF]',
+    '[STX]6O|2|2608016807^^1^2^N||^^^ALT|R|20260827122638|||||||||1||||||||||O[CR][ETX]B0[CR][LF]',
+    '[STX]7P|3|||||||||||||[CR][ETX]92[CR][LF]',
+    '[STX]0O|1|2608016298^^1^3^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]B5[CR][LF]',
+    '[STX]1P|4|||||||||||||[CR][ETX]8D[CR][LF]',
+    '[STX]2O|1|2608016772^^1^4^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]C2[CR][LF]',
+    '[STX]3P|5|||||||||||||[CR][ETX]90[CR][LF]',
+    '[STX]4O|1|2608016881^^1^5^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]C6[CR][LF]',
+    '[STX]5P|6|||||||||||||[CR][ETX]93[CR][LF]',
+    '[STX]6O|1|2608016811^^1^6^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]B5[CR][LF]',
+    '[STX]7O|2|2608016811^^1^6^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]1B[CR][LF]',
+    '[STX]0O|3|2608016811^^1^6^N||^^^CRP|R|20260827122638|||||||||1||||||||||O[CR][ETX]AE[CR][LF]',
+    '[STX]1P|7|||||||||||||[CR][ETX]90[CR][LF]',
+    '[STX]2O|1|2608016952^^1^7^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]C5[CR][LF]',
+    '[STX]3P|8|||||||||||||[CR][ETX]93[CR][LF]',
+    '[STX]4O|1|2608016810^^1^8^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]C1[CR][LF]',
+    '[STX]5P|9|||||||||||||[CR][ETX]96[CR][LF]',
+    '[STX]6O|1|2608016659^^1^9^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]CF[CR][LF]',
+    '[STX]7P|10|||||||||||||[CR][ETX]C0[CR][LF]',
+    '[STX]0O|1|2608016684^^1^10^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]EF[CR][LF]',
+    '[STX]1P|11|||||||||||||[CR][ETX]BB[CR][LF]',
+    '[STX]2O|1|2608016883^^1^11^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]F3[CR][LF]',
+    '[STX]3P|12|||||||||||||[CR][ETX]BE[CR][LF]',
+    '[STX]4O|1|2608016757^^1^12^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]4D[CR][LF]',
+    '[STX]5O|2|2608016757^^1^12^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]EB[CR][LF]',
+    '[STX]6O|3|2608016757^^1^12^N||^^^TP|R|20260827122638|||||||||1||||||||||O[CR][ETX]A9[CR][LF]',
+    '[STX]7O|4|2608016757^^1^12^N||^^^ALT|R|20260827122638|||||||||1||||||||||O[CR][ETX]E8[CR][LF]',
+    '[STX]0O|5|2608016757^^1^12^N||^^^ALB|R|20260827122638|||||||||1||||||||||O[CR][ETX]D0[CR][LF]',
+    '[STX]1P|13|||||||||||||[CR][ETX]BD[CR][LF]',
+    '[STX]2O|1|2608016705^^1^13^N||^^^ALB|R|20260827122638|||||||||1||||||||||O[CR][ETX]C8[CR][LF]',
+    '[STX]3O|2|2608016705^^1^13^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]47[CR][LF]',
+    '[STX]4O|3|2608016705^^1^13^N||^^^ALT|R|20260827122638|||||||||1||||||||||O[CR][ETX]DE[CR][LF]',
+    '[STX]5O|4|2608016705^^1^13^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]E7[CR][LF]',
+    '[STX]6P|14|||||||||||||[CR][ETX]C3[CR][LF]',
+    '[STX]7O|1|2608016766^^1^14^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]52[CR][LF]',
+    '[STX]0O|2|2608016766^^1^14^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]E8[CR][LF]',
+    '[STX]1O|3|2608016766^^1^14^N||^^^ALT|R|20260827122638|||||||||1||||||||||O[CR][ETX]E3[CR][LF]',
+    '[STX]2P|15|||||||||||||[CR][ETX]C0[CR][LF]',
+    '[STX]3O|1|2608016780^^1^15^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]4B[CR][LF]',
+    '[STX]4O|2|2608016780^^1^15^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]E9[CR][LF]',
+    '[STX]5P|16|||||||||||||[CR][ETX]C4[CR][LF]',
+    '[STX]6O|1|2608016818^^1^16^N||^^^TP|R|20260827122638|||||||||1||||||||||O[CR][ETX]A9[CR][LF]',
+    '[STX]7O|2|2608016818^^1^16^N||^^^ALT|R|20260827122638|||||||||1||||||||||O[CR][ETX]E8[CR][LF]',
+    '[STX]0O|3|2608016818^^1^16^N||^^^ALB|R|20260827122638|||||||||1||||||||||O[CR][ETX]D0[CR][LF]',
+    '[STX]1O|4|2608016818^^1^16^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]EB[CR][LF]',
+    '[STX]2O|5|2608016818^^1^16^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]51[CR][LF]',
+    '[STX]3P|17|||||||||||||[CR][ETX]C3[CR][LF]',
+    '[STX]4O|1|2608016943^^1^17^N||^^^CRP|R|20260827122638|||||||||1||||||||||O[CR][ETX]E8[CR][LF]',
+    '[STX]5O|2|2608016943^^1^17^N||^^^GLU|R|20260827122638|||||||||1||||||||||O[CR][ETX]ED[CR][LF]',
+    '[STX]6O|3|2608016943^^1^17^N||^^^IgE|R|20260827122638|||||||||1||||||||||O[CR][ETX]FC[CR][LF]',
+    '[STX]7O|4|2608016943^^1^17^N||^^^E-CRE|R|20260827122638|||||||||1||||||||||O[CR][ETX]55[CR][LF]',
+    '[STX]0L|1|N[CR][ETX]03[CR][LF]'
+  ]
+  // Every live checksum reproduces through our framer.
+  let csOk = 0
+  for (const f of LIVE_BATCH) {
+    const m = /^\[STX\](\d)(.*)\[CR\]\[ETX\]([0-9A-F]{2})\[CR\]\[LF\]$/.exec(f)!
+    if (printable(frameAgappeCx4Record(Number(m[1]), m[2])) === f) csOk++
+    else failures.push(`live batch checksum ${m[2].slice(0, 24)}`)
+  }
+  eq('all 56 live frame checksums reproduced', csOk, LIVE_BATCH.length)
+  failed += LIVE_BATCH.length - csOk
+
+  // The analyzer's 17 queries, in order (its own H + Q×17 + L session).
+  const LIVE_QUERIES = [
+    '2608016829^^1^1^N', '2608016807^^1^2^N', '2608016298^^1^3^N', '2608016772^^1^4^N',
+    '2608016881^^1^5^N', '2608016811^^1^6^N', '2608016952^^1^7^N', '2608016810^^1^8^N',
+    '2608016659^^1^9^N', '2608016684^^1^10^N', '2608016883^^1^11^N', '2608016757^^1^12^N',
+    '2608016705^^1^13^N', '2608016766^^1^14^N', '2608016780^^1^15^N', '2608016818^^1^16^N',
+    '2608016943^^1^17^N'
+  ]
+  // What the LIS ordered per tube, read back from its O records.
+  const orders = new Map<string, string[]>()
+  for (const f of LIVE_BATCH) {
+    const o = /\dO\|\d+\|([^|]+)\|\|\^\^\^([^|]+)\|/.exec(f)
+    if (o) orders.set(o[1], [...(orders.get(o[1]) ?? []), o[2]])
+  }
+  const groups = LIVE_QUERIES.map((specimen) => ({ specimen, codes: orders.get(specimen) ?? [] }))
+  eq('17 tubes, 37 orders', `${groups.length}/${groups.reduce((n, g) => n + g.codes.length, 0)}`, '17/37')
+  eq('barcode is component 1 of every live specimen id', cx4SampleId(LIVE_QUERIES[11]), '2608016757')
+
+  // Our batch reply for the same 17 queries is the live session byte-for-byte
+  // from frame 2 on; frame 1 differs only in the optional header fields (ours
+  // is the manual's bare H|\^&).
+  const ours = buildAgappeCx4BatchOrderFrames(groups, '20260827122638').map(printable)
+  eq('same frame count as the live session', ours.length, LIVE_BATCH.length)
+  eq('header is the manual bare form', ours[0], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
+  const diff = ours.slice(1).map((f, i) => (f === LIVE_BATCH[i + 1] ? null : i + 2)).filter((x) => x != null)
+  eq('frames 2..56 identical to the live LIS reply', diff.join(','), '')
+
+  // Second session, query 4 (2608015162, pos 21): the LIS had nothing for it
+  // and sent a lone P|4 between P|3's orders and P|5's — the builder does the same.
+  const second = buildAgappeCx4BatchOrderFrames(
+    [
+      { specimen: '2608016664^^1^20^N', codes: ['E-CRE', 'ALT'] },
+      { specimen: '2608015162^^1^21^N', codes: [] },
+      { specimen: '2608017048^^1^22^N', codes: ['IgE', 'GLU'] }
+    ],
+    '20260827124012'
+  ).map(printable)
+  eq('empty tube keeps its P record', second[4], '[STX]5P|2|||||||||||||[CR][ETX]8F[CR][LF]')
+  eq(
+    'next tube O|1 matches the live frame text',
+    second[6].replace(/^\[STX\]\d/, '').replace(/\[ETX\][0-9A-F]{2}/, '[ETX]'),
+    'O|1|2608017048^^1^22^N||^^^IgE|R|20260827124012|||||||||1||||||||||O[CR][ETX][CR][LF]'
+  )
 }
 
 // =============================================================================

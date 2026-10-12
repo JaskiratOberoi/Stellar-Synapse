@@ -86,9 +86,21 @@ import { simValue } from './sampleBuilders'
  *   - A query is only ever operator-triggered: Sample Register > "LIS Request"
  *     (Agappe build: "LIS Data Apply") for one barcode / sample-number range, or
  *     "S. Barcode Scan" which sends one Q per scanned tube in ONE session
- *     (Example 2 "Batch"). The host answers a batch in ONE session with a full
- *     H/P/O…/L group per sample, frame numbers restarting at 1 for each group
- *     (Example 3 "Batch") — see Orchestrator.handleCx4BatchQuery.
+ *     (Example 2 "Batch"). The host answers a batch in ONE session — one H,
+ *     then P|n + O|1..k per tube, then one L, frame numbers continuous — the
+ *     layout a production LIS was captured using on a CX4 (analyzer HOST log
+ *     2026-08-27; every ordered item was then run), NOT the manual's Example 3
+ *     "Batch" shape (a full H/P/O…/L group per tube). See
+ *     buildAgappeCx4BatchOrderRecords and Orchestrator.handleCx4BatchQuery.
+ *
+ * PRODUCTION CAPTURES (analyzer HOST debug logs, two other CX4 units):
+ *   - 2026-08-27 "mispacx4" -> "bindulogiclisbroker": the bidirectional batch
+ *     above; Q = `Q|n|<SID>^^<Disk>^<Pos>^N||ALL||||||||O` (S.No empty in
+ *     barcode mode); the unit later uploads `O|1|<SID>^<S.No>^<Disk>^<Pos>`
+ *     with the items ordered plus its own calculated ones (AG RATIO, %).
+ *   - 2026-08-07 "CS-400" -> "Host": result-only; that site renamed items
+ *     (IRON C / IRON FS / IRON ARC, GGT ARC, CALCIUM, BUN, LDH) — proof the
+ *     names are per-site and a preset must be read off the unit's own screen.
  */
 
 // ---------------------------------------------------------------------------
@@ -423,6 +435,52 @@ export function buildAgappeCx4OrderFrames(
   now?: string
 ): Buffer[] {
   return buildAgappeCx4OrderRecords(specimen, codes, now).map((rec, i) =>
+    frameAgappeCx4Record(i + 1, rec)
+  )
+}
+
+/** One queried tube of a batch: the specimen id to echo and the items to order. */
+export interface Cx4OrderGroup {
+  specimen: string
+  codes: readonly string[]
+}
+
+/**
+ * Build the reply to a BATCH query ("S. Barcode Scan": many Q records in one
+ * session) as a production LIS was captured answering a Mispa CX4 (analyzer
+ * HOST log, 2026-08-27, 17 + 33 tubes; every ordered item was then run and
+ * uploaded): ONE session, ONE header, then for each queried tube in query
+ * order a `P|n` record (n = position in the batch) followed by its `O|1..k`
+ * records, then ONE terminator. Frame numbers run 1..7,0 continuously across
+ * the whole session. A tube with nothing to order still gets its P record,
+ * with no O under it — that is how the live LIS said "not found" inside a
+ * batch (query 4 of the second session), and the analyzer carried on.
+ *
+ * The Dirui manual's Example 3 "Batch" prints a different shape (a full
+ * H/P/O…/L group per tube, frame numbers restarting at 1 for each group);
+ * nothing has shown a unit accepting that, so the captured layout is the one
+ * sent. The P record is byte-for-byte the live one (no trailing caret).
+ */
+export function buildAgappeCx4BatchOrderRecords(
+  groups: readonly Cx4OrderGroup[],
+  now = ts()
+): string[] {
+  const records: string[] = ['H|\\^&']
+  groups.forEach((g, i) => {
+    records.push(`P|${i + 1}|||||||||||||`)
+    g.codes.forEach((code, j) => {
+      records.push(`O|${j + 1}|${g.specimen}||^^^${code}|R|${now}|||||||||1||||||||||O`)
+    })
+  })
+  records.push('L|1|N')
+  return records
+}
+
+export function buildAgappeCx4BatchOrderFrames(
+  groups: readonly Cx4OrderGroup[],
+  now?: string
+): Buffer[] {
+  return buildAgappeCx4BatchOrderRecords(groups, now).map((rec, i) =>
     frameAgappeCx4Record(i + 1, rec)
   )
 }

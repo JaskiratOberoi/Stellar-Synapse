@@ -17,7 +17,12 @@ import type { IProtocol, ProtocolMessage } from '../protocols/IProtocol'
 import { AstmHostQuerySender, buildAstmOrderRecords, frameAstmSimple } from '../protocols/astmHostQuery'
 import { buildMindrayOrderRecords, frameMindrayMessage } from '../drivers/mindray'
 import { buildBeckmanDxiOrderFrames } from '../drivers/beckmanDxi'
-import { buildAgappeCx4OrderFrames, cx4SampleId } from '../drivers/agappeCx4'
+import {
+  buildAgappeCx4BatchOrderFrames,
+  buildAgappeCx4OrderFrames,
+  cx4SampleId,
+  type Cx4OrderGroup
+} from '../drivers/agappeCx4'
 import { AuHostQuerySender, DEFAULT_AU_FORMAT, mergeAuFormat } from '../protocols/beckmanAu'
 import { buildAuOrderResponse, auOnlineTestNo, auVariantGroup } from '../drivers/beckmanAu'
 import { MAGLUMI_CHANNELS_BY_DRIVER } from '../drivers/maglumi'
@@ -1040,12 +1045,12 @@ export class Orchestrator extends EventEmitter {
   }
 
   /**
-   * Answer a Mispa CX4 batch query (Dirui Appendix E, Example 2 "Batch" / Example
-   * 3 "Batch"): the analyzer sends one Q per scanned tube in ONE session, and the
-   * host replies in ONE session with a complete H/P/O…/L group per sample whose
-   * frame numbers restart at 1 for each group. Samples with nothing to order are
-   * simply left out; if no sample has an order the reply is the bare ENQ/EOT the
-   * manual prescribes for "not found".
+   * Answer a Mispa CX4 batch query ("S. Barcode Scan": one Q per scanned tube in
+   * ONE session) the way a production LIS was captured doing it (analyzer HOST
+   * log 2026-08-27, see buildAgappeCx4BatchOrderRecords): ONE reply session —
+   * H, then P|n + O|1..k per tube in query order, then L — with a tube that has
+   * nothing to order still getting its P record (no O). Only when NO tube has
+   * an order is the reply the bare ENQ/EOT the manual prescribes for "not found".
    */
   private async handleCx4BatchQuery(
     def: InstrumentDefinition,
@@ -1054,7 +1059,7 @@ export class Orchestrator extends EventEmitter {
     raw: string
   ): Promise<void> {
     const sender = this.connections.get(def.id)?.sender
-    const frames: Buffer[] = []
+    const groups: Cx4OrderGroup[] = []
     const ordered: string[] = []
     const rawShown = raw.length > 600 ? `${raw.slice(0, 600)}...` : raw
     for (const [i, q] of queries.entries()) {
@@ -1092,14 +1097,15 @@ export class Orchestrator extends EventEmitter {
           stage: 'skipped',
           value: order ? `${order.testCodes.length} ordered, 0 on ${def.name}` : 'not registered',
           message: order
-            ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this ${def.name} (left out of the batch reply)`
+            ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this ${def.name} (empty P record in the batch reply)`
             : sid
-              ? `Barcode ${sid} not registered in LIS — left out of the batch reply`
-              : `Query carries no barcode (Sample No. mode) — left out of the batch reply`
+              ? `Barcode ${sid} not registered in LIS — empty P record in the batch reply`
+              : `Query carries no barcode (Sample No. mode) — empty P record in the batch reply`
         })
+        groups.push({ specimen: q.specimen || sid, codes: [] })
         continue
       }
-      frames.push(...buildAgappeCx4OrderFrames(q.specimen || sid, codes))
+      groups.push({ specimen: q.specimen || sid, codes })
       ordered.push(sid)
       this.pushMonitor({
         ...baseEvent,
@@ -1112,6 +1118,9 @@ export class Orchestrator extends EventEmitter {
     }
     if (!sender) return
     try {
+      // Nothing for any tube: bare ENQ/EOT ("not found"). Otherwise one session
+      // carrying every tube, the empty ones as a lone P record.
+      const frames = ordered.length === 0 ? [] : buildAgappeCx4BatchOrderFrames(groups)
       if (frames.length === 0) {
         logger.info('host-query', `${def.name}: batch of ${queries.length} queries, nothing to order — sending ENQ/EOT (CX4 "not found")`)
       }
