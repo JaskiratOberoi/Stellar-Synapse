@@ -71,6 +71,8 @@ interface PersistShape {
   migratedRohtakAuPatientInfo?: boolean
   /** One-time migration: move Mispa CX4 mappings from the manual's item names to the ones a live unit sends (TBIL, CRT-J, …). */
   migratedCx4StockItemNames?: boolean
+  /** One-time migration: retire the Mispa CX4 manual-name twins and the ISE trio outright (Lucknow 2026-10-12 ordered CRE/CRE-E/K/Na, items the unit does not have). */
+  migratedCx4RetireUnknownItems?: boolean
 }
 
 type MigrationFlagKey =
@@ -81,6 +83,7 @@ type MigrationFlagKey =
   | 'migratedDelhiMagiclBackfill'
   | 'migratedRohtakAuPatientInfo'
   | 'migratedCx4StockItemNames'
+  | 'migratedCx4RetireUnknownItems'
 
 const MAX_MONITOR_HISTORY = 2000
 

@@ -147,8 +147,8 @@
       "source": "Delhi (business_unit_id 1) Agappe Mispa CX4 chemistry analyzer, added 2026-09-23 ahead of installation. Protocol from the Mispa CX4 user manual (REV.09-2017, §5.9 + Appendix E; the CX4 is a Dirui CS-400). Noble targets chosen from an aggregate read of this site's filled result rows over the last 180 days (which test/parameter row each analyte actually lands in, and its unit) — the same central catalog rows the Lucknow CX4 preset targets, so the two presets carry an identical mapping list. NOT yet verified against a live unit: no serial capture existed when this was written.",
       "mappingsSummary": {
         "total": 52,
-        "mapped": 43,
-        "ignored": 9,
+        "mapped": 40,
+        "ignored": 12,
         "unmapped": 0
       },
       "_protocolNotes": [
@@ -543,34 +543,22 @@
         {
           "instrumentCode": "K",
           "instrumentName": "Potassium (ISE)",
-          "lisTestId": 297,
-          "lisTestCode": "BI174",
-          "lisTestName": "Potassium",
           "unit": "mmol/L",
-          "status": "manual",
-          "confidence": 1,
-          "_note": "ONLY if the optional ISE module is fitted. Both sites file Na/K/Cl heavily (Delhi 56k, Lucknow 11k) but from another instrument today; an order for an item the analyzer lacks raises its \"Illegal test item\" alarm, so set K/Na/Cl to ignored at onboarding if there is no ISE."
+          "status": "ignored",
+          "_note": "RETIRED: no ISE module on the Lucknow unit (its Sample Register lists no K/Na/Cl, 2026-10-08), and the 2026-10-12 host query that ordered K and Na was not taken by the analyzer (\"Illegal test item\"). If a unit has the ISE option, map K to BI174 Potassium (t297, mmol/L), Na to BI205 Sodium (t157), Cl to BI074 Chloride - Serum (t101)."
         },
         {
           "instrumentCode": "Na",
           "instrumentName": "Sodium (ISE)",
-          "lisTestId": 157,
-          "lisTestCode": "BI205",
-          "lisTestName": "Sodium",
           "unit": "mmol/L",
-          "status": "manual",
-          "confidence": 1,
+          "status": "ignored",
           "_note": "See K."
         },
         {
           "instrumentCode": "Cl",
           "instrumentName": "Chloride (ISE)",
-          "lisTestId": 101,
-          "lisTestCode": "BI074",
-          "lisTestName": "Chloride - Serum",
           "unit": "mmol/L",
-          "status": "manual",
-          "confidence": 1,
+          "status": "ignored",
           "_note": "See K. Noble labels the unit \"mm0l/L\" (typo in the catalog) — a label only."
         },
         {

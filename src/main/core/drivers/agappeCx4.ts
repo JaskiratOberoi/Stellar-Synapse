@@ -412,16 +412,24 @@ export function frameAgappeCx4Record(frameNum: number, record: string): Buffer {
 export function buildAgappeCx4OrderRecords(
   specimen: string,
   codes: readonly string[],
-  now = ts()
+  now = ts(),
+  ids?: Cx4HeaderIds
 ): string[] {
-  const records: string[] = ['H|\\^&', 'P|1|||||||||||||^']
-  codes.forEach((code, i) => {
-    // O-3 specimen echo, O-5 universal test id, O-6 priority R, O-7 order
-    // time, O-16 specimen descriptor 1 (serum), O-26 report type O.
-    records.push(`O|${i + 1}|${specimen}||^^^${code}|R|${now}|||||||||1||||||||||O`)
-  })
-  records.push('L|1|N')
-  return records
+  // A single query is a batch of one: same header, P and O shapes as the
+  // production capture (see buildAgappeCx4BatchOrderRecords).
+  return buildAgappeCx4BatchOrderRecords([{ specimen, codes }], now, ids)
+}
+
+/**
+ * Sender / receiver names for the order header (H-5 / H-10). The captured LIS
+ * sent "MISPA" / "Host" to a unit configured as "mispacx4" /
+ * "bindulogiclisbroker" and was accepted, so the values are not validated —
+ * but the fields were present, with processing id 1 and a timestamp, and that
+ * is the only header shape a CX4 has been seen to act on.
+ */
+export interface Cx4HeaderIds {
+  sender?: string
+  receiver?: string
 }
 
 /**
@@ -432,9 +440,10 @@ export function buildAgappeCx4OrderRecords(
 export function buildAgappeCx4OrderFrames(
   specimen: string,
   codes: readonly string[],
-  now?: string
+  now?: string,
+  ids?: Cx4HeaderIds
 ): Buffer[] {
-  return buildAgappeCx4OrderRecords(specimen, codes, now).map((rec, i) =>
+  return buildAgappeCx4OrderRecords(specimen, codes, now, ids).map((rec, i) =>
     frameAgappeCx4Record(i + 1, rec)
   )
 }
@@ -459,13 +468,20 @@ export interface Cx4OrderGroup {
  * The Dirui manual's Example 3 "Batch" prints a different shape (a full
  * H/P/O…/L group per tube, frame numbers restarting at 1 for each group);
  * nothing has shown a unit accepting that, so the captured layout is the one
- * sent. The P record is byte-for-byte the live one (no trailing caret).
+ * sent. The P record is byte-for-byte the live one (no trailing caret), and
+ * the header carries sender, receiver, processing id and timestamp like the
+ * live one (`H|\^&|||MISPA|||||Host||1|20260827122638`) rather than the
+ * manual's bare `H|\^&` — Lucknow's unit took no order from the bare form
+ * (2026-10-05 single, 2026-10-12 batch).
  */
 export function buildAgappeCx4BatchOrderRecords(
   groups: readonly Cx4OrderGroup[],
-  now = ts()
+  now = ts(),
+  ids: Cx4HeaderIds = {}
 ): string[] {
-  const records: string[] = ['H|\\^&']
+  const sender = (ids.sender ?? '').trim() || 'Synapse'
+  const receiver = (ids.receiver ?? '').trim() || 'Host'
+  const records: string[] = [`H|\\^&|||${sender}|||||${receiver}||1|${now}`]
   groups.forEach((g, i) => {
     records.push(`P|${i + 1}|||||||||||||`)
     g.codes.forEach((code, j) => {
@@ -478,9 +494,10 @@ export function buildAgappeCx4BatchOrderRecords(
 
 export function buildAgappeCx4BatchOrderFrames(
   groups: readonly Cx4OrderGroup[],
-  now?: string
+  now?: string,
+  ids?: Cx4HeaderIds
 ): Buffer[] {
-  return buildAgappeCx4BatchOrderRecords(groups, now).map((rec, i) =>
+  return buildAgappeCx4BatchOrderRecords(groups, now, ids).map((rec, i) =>
     frameAgappeCx4Record(i + 1, rec)
   )
 }

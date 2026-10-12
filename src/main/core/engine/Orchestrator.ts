@@ -142,6 +142,10 @@ export class Orchestrator extends EventEmitter {
     // Evidence-gated: once a Mispa CX4 has been seen uploading its stock item
     // names (TBIL, CRT-J, …), move the preset mappings onto those names.
     this.mapping.migrateCx4StockItemNames()
+    // Evidence-gated too: retire the manual-name twins and the ISE trio the
+    // unit has never uploaded, so a host query never orders an item the
+    // analyzer does not have (Lucknow 2026-10-12: CRE, CRE-E, K, Na).
+    this.mapping.migrateCx4RetireUnknownItems()
 
     // One-time: re-grade flat-0.6 name matches so the new write trust floor does
     // not silently mute correct mappings (Ferritin, Troponin I, D-Dimer, MPV) on
@@ -1010,7 +1014,14 @@ export class Orchestrator extends EventEmitter {
         // Mispa CX4 (Dirui CS-400): H, P, ONE O record per test echoing the
         // analyzer's full specimen id (SID^S.No^Disk^Pos^Dil), L — each in its
         // own numbered, checksummed E1381 frame (manual Appendix E).
-        await sender.sendFrames(buildAgappeCx4OrderFrames(header?.specimen || sid, codes))
+        // Header mirrors the analyzer's own H: we are its Host ID, it is the
+        // Analyzer ID (the captured LIS's names were not validated, but present).
+        await sender.sendFrames(
+          buildAgappeCx4OrderFrames(header?.specimen || sid, codes, undefined, {
+            sender: header?.hostName,
+            receiver: header?.analyzerName
+          })
+        )
       } else if (dialect === 'mindray') {
         // Mindray BS-series: answer with the "SA" order download in a single
         // standard E1381 frame (frame no. 1 + checksum, CR before ETX), all tests
@@ -1120,7 +1131,13 @@ export class Orchestrator extends EventEmitter {
     try {
       // Nothing for any tube: bare ENQ/EOT ("not found"). Otherwise one session
       // carrying every tube, the empty ones as a lone P record.
-      const frames = ordered.length === 0 ? [] : buildAgappeCx4BatchOrderFrames(groups)
+      const frames =
+        ordered.length === 0
+          ? []
+          : buildAgappeCx4BatchOrderFrames(groups, undefined, {
+              sender: queries[0]?.hostName,
+              receiver: queries[0]?.analyzerName
+            })
       if (frames.length === 0) {
         logger.info('host-query', `${def.name}: batch of ${queries.length} queries, nothing to order — sending ENQ/EOT (CX4 "not found")`)
       }

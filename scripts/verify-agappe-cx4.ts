@@ -24,7 +24,7 @@ import {
 } from '../src/main/core/drivers/agappeCx4'
 import { getDriver } from '../src/main/core/drivers/registry'
 import { fingerprintInstrument } from '../src/main/core/discovery/fingerprint'
-import { cx4StockNameMigrationRows } from '../src/main/core/mapping/MappingEngine'
+import { cx4RetireUnknownItemRows, cx4StockNameMigrationRows } from '../src/main/core/mapping/MappingEngine'
 import type { MappingRule, PresetMapping } from '../src/shared/types'
 import delhi from '../presets/delhi.json'
 import lucknow from '../presets/lucknow.json'
@@ -289,7 +289,11 @@ console.log('\n[4] Host query (Appendix E, Example 2 + Q field table)')
     '20090119100425'
   ).map(printable)
   eq('batch reply: 9 frames (H P O O P P O O L)', reply.length, 9)
-  eq('one header -> E5', reply[0], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
+  eq(
+    'one header, live form (sender, receiver, processing id, timestamp)',
+    reply[0].replace(/\[ETX\][0-9A-F]{2}/, '[ETX]'),
+    '[STX]1H|\\^&|||Synapse|||||Host||1|20090119100425[CR][ETX][CR][LF]'
+  )
   eq('tube 1: P|1', reply[1], '[STX]2P|1|||||||||||||[CR][ETX]8B[CR][LF]')
   eq('tube 2 (nothing to order): lone P|2', reply[4], '[STX]5P|2|||||||||||||[CR][ETX]8F[CR][LF]')
   eq('tube 3: P|3 then O|1 restarts at 1', reply[5], '[STX]6P|3|||||||||||||[CR][ETX]91[CR][LF]')
@@ -311,16 +315,29 @@ console.log('\n[5] Order download (Appendix E, Example 3 "Sample ID mode, Single
     ['AST', 'TP', 'ALB'],
     '20090119100534'
   )
+  // O and L frames are the manual's byte-for-byte. H and P take the form the
+  // production capture (section [B]) proved: the manual's bare `H|\^&` and
+  // `P|1|||||||||||||^` were never seen accepted (Lucknow took no order from
+  // them, 2026-10-05 and 2026-10-12).
   const expected = [
-    '[STX]1H|\\^&[CR][ETX]E5[CR][LF]',
-    '[STX]2P|1|||||||||||||^[CR][ETX]E9[CR][LF]',
+    '[STX]1H|\\^&|||Synapse|||||Host||1|20090119100534[CR][ETX]',
+    '[STX]2P|1|||||||||||||[CR][ETX]8B[CR][LF]',
     '[STX]3O|1|3977777^4^1^1^N||^^^AST|R|20090119100534|||||||||1||||||||||O[CR][ETX]51[CR][LF]',
     '[STX]4O|2|3977777^4^1^1^N||^^^TP|R|20090119100534|||||||||1||||||||||O[CR][ETX]0F[CR][LF]',
     '[STX]5O|3|3977777^4^1^1^N||^^^ALB|R|20090119100534|||||||||1||||||||||O[CR][ETX]3C[CR][LF]',
     '[STX]6L|1|N[CR][ETX]09[CR][LF]'
   ]
   eq('6 frames (H P O O O L)', frames.length, 6)
-  frames.forEach((f, i) => eq(`frame ${i + 1} matches manual`, printable(f), expected[i]))
+  eq('frame 1: header in the live form', printable(frames[0]).startsWith(expected[0]), true)
+  frames.slice(1).forEach((f, i) => eq(`frame ${i + 2} matches ${i === 0 ? 'the live P' : 'manual'}`, printable(f), expected[i + 1]))
+  // Single query = batch of one: identical bytes.
+  eq(
+    'single reply == batch reply for one tube',
+    frames.map(printable).join(''),
+    buildAgappeCx4BatchOrderFrames([{ specimen: '3977777^4^1^1^N', codes: ['AST', 'TP', 'ALB'] }], '20090119100534')
+      .map(printable)
+      .join('')
+  )
 
   // Example 3 "Batch", 2nd session: 128123^1^1^1^N with ALT + AST at 20090119100417.
   const b = buildAgappeCx4OrderFrames('1281234^2^1^2^N', ['ALT', 'ALB'], '20090119100425')
@@ -737,14 +754,18 @@ console.log('\n[B] Live bidirectional batch — analyzer HOST log 2026-08-27 (Bi
   eq('17 tubes, 37 orders', `${groups.length}/${groups.reduce((n, g) => n + g.codes.length, 0)}`, '17/37')
   eq('barcode is component 1 of every live specimen id', cx4SampleId(LIVE_QUERIES[11]), '2608016757')
 
-  // Our batch reply for the same 17 queries is the live session byte-for-byte
-  // from frame 2 on; frame 1 differs only in the optional header fields (ours
-  // is the manual's bare H|\^&).
-  const ours = buildAgappeCx4BatchOrderFrames(groups, '20260827122638').map(printable)
+  // Our batch reply for the same 17 queries, with the live LIS's header names,
+  // is the live session byte-for-byte — all 56 frames.
+  const ours = buildAgappeCx4BatchOrderFrames(groups, '20260827122638', { sender: 'MISPA', receiver: 'Host' }).map(printable)
   eq('same frame count as the live session', ours.length, LIVE_BATCH.length)
-  eq('header is the manual bare form', ours[0], '[STX]1H|\\^&[CR][ETX]E5[CR][LF]')
-  const diff = ours.slice(1).map((f, i) => (f === LIVE_BATCH[i + 1] ? null : i + 2)).filter((x) => x != null)
-  eq('frames 2..56 identical to the live LIS reply', diff.join(','), '')
+  const diff = ours.map((f, i) => (f === LIVE_BATCH[i] ? null : i + 1)).filter((x) => x != null)
+  eq('all 56 frames identical to the live LIS reply', diff.join(','), '')
+  // Default names when the query carried none.
+  eq(
+    'default header names',
+    buildAgappeCx4BatchOrderFrames(groups.slice(0, 1), '20260827122638').map(printable)[0].slice(0, 48),
+    '[STX]1H|\\^&|||Synapse|||||Host||1|20260827122638'
+  )
 
   // Second session, query 4 (2608015162, pos 21): the LIS had nothing for it
   // and sent a lone P|4 between P|3's orders and P|5's — the builder does the same.
@@ -860,6 +881,40 @@ console.log('\n[M] Migration: Lucknow v0.6.13 store -> stock item names (cx4Stoc
       : undefined)
   )
   eq('second pass is a no-op', cx4StockNameMigrationRows(migrated, preset).length, 0)
+
+  // Lucknow 2026-10-12: after the rename migration the host query STILL ordered
+  // CRE, CRE-E, E-CRE, K and Na (the Synapse log warned "4 channels map to the
+  // same LIS test (CRE, CRE-E, CRT-J, E-CRE)") — rows an operator had set to
+  // manual survive the rename, and the ISE trio was live from the preset. The
+  // analyzer took none of the orders. cx4RetireUnknownItemRows retires them.
+  const CREA = { id: 114, code: 'BI089', name: 'Creatinine' }
+  const lucknow1012: MappingRule[] = [
+    ...migrated.filter((r) => !['CRE', 'CRE-E', 'E-CRE', 'K', 'Na', 'Cl', 'ALP'].includes(r.instrumentCode)),
+    rule('CRE', 'manual', CREA),
+    rule('CRE-E', 'manual', CREA),
+    rule('E-CRE', 'manual', CREA),
+    rule('ALP', 'manual', { id: 279, code: 'BI023', name: 'Alkaline Phosphatase (ALP)' }, 'U/L'),
+    rule('K', 'manual', { id: 297, code: 'BI174', name: 'Potassium' }, 'mmol/L'),
+    rule('Na', 'manual', { id: 157, code: 'BI205', name: 'Sodium' }, 'mmol/L'),
+    rule('Cl', 'manual', { id: 101, code: 'BI074', name: 'Chloride - Serum' }, 'mmol/L')
+  ]
+  // What the Lucknow unit has uploaded with a value (E-CRE, ALP, GLU-H, TIBC only ever "***").
+  const seen = new Set(['TC', 'TG', 'UREA', 'UA', 'AST', 'ALT', 'ALB', 'TP', 'TBIL', 'DBIL', 'ALP-IFCC', 'GGT', 'CA', 'CRT-J', 'GLU'])
+  const retired = cx4RetireUnknownItemRows(lucknow1012, seen)
+  eq(
+    'retires the manual-name twins, the ISE trio, plain ALP and E-CRE',
+    retired.map((r) => r.instrumentCode).sort().join(','),
+    'ALP,CRE,CRE-E,Cl,E-CRE,K,Na'
+  )
+  ok('every retiring row is ignored', retired.every((r) => r.status === 'ignored'))
+  // A unit that HAS uploaded potassium keeps its ISE rows; one running the
+  // enzymatic creatinine kit keeps E-CRE.
+  const withIse = cx4RetireUnknownItemRows(lucknow1012, new Set([...seen, 'K', 'NA', 'CL', 'E-CRE']))
+  eq('ISE + E-CRE kept when the unit has reported them', withIse.map((r) => r.instrumentCode).sort().join(','), 'ALP,CRE,CRE-E')
+  eq('retire pass is a no-op on the current preset list', cx4RetireUnknownItemRows(
+    preset.map((m) => rule(m.instrumentCode, m.status === 'ignored' ? 'ignored' : 'manual', m.lisTestId != null ? { id: m.lisTestId, code: m.lisTestCode ?? '', name: m.lisTestName ?? '', pid: m.lisParamId } : undefined, m.unit)),
+    seen
+  ).length, 0)
 }
 
 // =============================================================================

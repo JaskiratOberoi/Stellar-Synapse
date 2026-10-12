@@ -438,6 +438,49 @@ export class MappingEngine {
   }
 
   /**
+   * One-time, after migrateCx4StockItemNames: the Lucknow host query of
+   * 2026-10-12 still ordered CRE, CRE-E, E-CRE, K and Na alongside CRT-J —
+   * manual-name twins and the ISE trio, none of which the unit has (its
+   * Sample Register lists neither, and it raises "Illegal test item" for an
+   * unknown item in an order). The rename migration leaves an operator's
+   * 'manual' row alone, so rows an operator had re-enabled survived it.
+   * This pass is unconditional for the manual-name twins (the unit can never
+   * upload those names, so nothing is lost) and evidence-gated for the ISE
+   * trio and E-CRE (retired only when this install has never received a
+   * value for them from a CX4). Same evidence gate as the rename migration.
+   */
+  migrateCx4RetireUnknownItems(): number {
+    if (persist.getMigrationFlag('migratedCx4RetireUnknownItems')) return 0
+    const driverId = 'agappe-mispa-cx4'
+    const cx4Ids = new Set(
+      persist
+        .getInstruments()
+        .filter((i) => i.driverId === driverId)
+        .map((i) => i.id)
+    )
+    if (cx4Ids.size === 0) return 0
+    const history = persist.getMonitorHistory().filter((e) => cx4Ids.has(e.instrumentId))
+    const stockOnly = new Set(['TBIL', 'DBIL', 'CRT-J', 'E-CRE', 'ALP-IFCC', 'TIBC', 'GLU-H'])
+    if (!history.some((e) => stockOnly.has(e.analyteCode.toUpperCase()))) return 0
+    // Codes this CX4 has uploaded WITH a value (a "***" placeholder is not one).
+    const seen = new Set(
+      history
+        .filter((e) => e.value && !/^\*+$/.test(e.value.trim()))
+        .map((e) => e.analyteCode.toUpperCase())
+    )
+    const rows = cx4RetireUnknownItemRows(this.list(driverId), seen)
+    const changed = rows.length > 0 ? this.applyPresetMappings(driverId, rows) : 0
+    persist.setMigrationFlag('migratedCx4RetireUnknownItems', true)
+    if (changed > 0) {
+      logger.info(
+        'mapping',
+        `Mispa CX4: retired ${changed} item(s) the analyzer does not have (${rows.map((r) => r.instrumentCode).join(', ')})`
+      )
+    }
+    return changed
+  }
+
+  /**
    * Resolve ONLY currently-unmapped rows for the given drivers, leaving every
    * 'auto', 'manual' and 'ignored' rule untouched. Run at startup so analytes
    * that seeding could not match (e.g. immunoassay channels whose LIS names only
@@ -1095,6 +1138,38 @@ export function cx4StockNameMigrationRows(
     rows.push({ ...m })
     touched.add(code)
   }
+  return rows
+}
+
+/** The manual's item names a stock-named CX4 can never upload. */
+export const CX4_MANUAL_ONLY_NAMES = ['TB', 'DB', 'CRE', 'CRE-E', 'GLU(OX)', 'Ca(CPC)', 'LPS', 'Fe', 'HS-CRP'] as const
+
+/**
+ * Rows that retire every CX4 item a host query must not order (see
+ * migrateCx4RetireUnknownItems): the manual-only names whenever they are still
+ * live (whatever their status — the unit cannot send them); and, unless this
+ * install has received a real value for it, the ISE trio (K/Na/Cl — no ISE
+ * module on the Lucknow unit), plain ALP (the IFCC channel is the live one),
+ * and the enzymatic creatinine twin E-CRE when the Jaffe CRT-J is mapped. Pure.
+ */
+export function cx4RetireUnknownItemRows(
+  rules: readonly MappingRule[],
+  seenWithValue: ReadonlySet<string>
+): PresetMapping[] {
+  const find = (code: string): MappingRule | undefined =>
+    rules.find((r) => r.instrumentCode.toUpperCase() === code.toUpperCase())
+  const live = (r?: MappingRule): boolean =>
+    !!r && r.status !== 'ignored' && r.status !== 'unmapped' && (!!r.lisTestId || !!r.lisTestCode)
+  const rows: PresetMapping[] = []
+  const retire = (code: string): void => {
+    const r = find(code)
+    if (live(r)) rows.push({ instrumentCode: r!.instrumentCode, instrumentName: r!.instrumentName, status: 'ignored' })
+  }
+  for (const code of CX4_MANUAL_ONLY_NAMES) retire(code)
+  for (const code of ['K', 'Na', 'Cl', 'ALP']) {
+    if (!seenWithValue.has(code.toUpperCase())) retire(code)
+  }
+  if (live(find('CRT-J')) && !seenWithValue.has('E-CRE')) retire('E-CRE')
   return rows
 }
 
