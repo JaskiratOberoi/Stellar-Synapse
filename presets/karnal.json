@@ -12,8 +12,8 @@
       "mode": "bidirectional",
       "defaultPort": 8081,
       "transports": ["tcp-server"],
-      "source": "Captured from the eLab Assist HL7 logs (2026-07-22/23): Getein MAGICL 6000i, HL7 v2.3.1 ORU^R01 over TCP. LIS targets resolved against the live Noble catalog (tbl_med_test_master + tbl_med_parameter_master).",
-      "mappingsSummary": { "total": 12, "mapped": 12, "unmapped": 0 },
+      "source": "Captured from the eLab Assist HL7 logs (2026-07-22/23): Getein MAGICL 6000i, HL7 v2.3.1 ORU^R01 over TCP. LIS targets resolved against the live Noble catalog (tbl_med_test_master + tbl_med_parameter_master). β-HCG (26), Testosterone (34) and PRL (102) added 2026-10-23 from the analyzer's Item Param screens (photographed 2026-10-17); their Noble targets are the Delhi 6000i rows for the same item ids (same Noble DB).",
+      "mappingsSummary": { "total": 15, "mapped": 15, "unmapped": 0 },
       "_mappingNotes": [
         "Analyte key is the MAGICL numeric assay item-id (OBX-3), name in OBX-4 — e.g. 25=IgE, 18=TSH, 42=Vitamin D, 139=Vitamin B12, 157=Anti-CCP (18 and 42 identified from the 2026-07-22 host-query logs cross-referenced to the Noble order).",
         "Parameterized Noble tests write to the PARAMETER (lisParamId), e.g. IgE -> test 133 param 568 (per the eLab TestSubID). TSH, T3, T4 and Vitamin D are standalone (no param).",
@@ -27,9 +27,12 @@
         { "instrumentCode": "20", "instrumentName": "T4", "lisTestId": 165, "lisTestCode": "BI215", "lisTestName": "T4 (Thyroxine )", "unit": "ug/dL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "24", "instrumentName": "FSH", "lisTestId": 125, "lisTestCode": "BI106", "lisTestName": "FSH Follicle Stimulating Hormone", "lisParamId": 519, "lisParamName": "Follicle Stimulating Hormone FSH", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "25", "instrumentName": "IgE", "lisTestId": 133, "lisTestCode": "BI133", "lisTestName": "Total IgE", "lisParamId": 568, "lisParamName": "IgE Total", "unit": "IU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "26", "instrumentName": "β-HCG", "lisTestId": 85, "lisTestCode": "BI044", "lisTestName": "Beta-hCG (Quantitative) Serum", "lisParamId": 427, "lisParamName": "Beta hCG (Quantitative)-Serum", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "27", "instrumentName": "LH", "lisTestId": 138, "lisTestCode": "BI145", "lisTestName": "LH (Luteinizing Hormone) - Serum", "lisParamId": 589, "lisParamName": "Leutinizing Hormone LH", "unit": "mIU/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "34", "instrumentName": "Testosterone", "lisTestId": 158, "lisTestCode": "BI209", "lisTestName": "Testosterone  - Total", "lisParamId": 670, "lisParamName": "Testosterone - Total", "unit": "ng/dL", "status": "manual", "confidence": 1, "_note": "Analyzer Unit ng/mL, LIS Unit ng/dL (Item Param screen 2026-10-17) — the MAGICL converts on the way out, so ng/dL is what arrives and what BI209 stores." },
         { "instrumentCode": "42", "instrumentName": "Vitamin D", "lisTestId": 74, "lisTestCode": "BI005", "lisTestName": "VITAMIN D", "unit": "ng/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "79", "instrumentName": "AMH", "lisTestId": 626, "lisTestCode": "BI034", "lisTestName": "Anti - Mullerian Hormone (AMH)", "lisParamId": 417, "lisParamName": "Anti - Mullerian Hormone AMH", "unit": "ng/mL", "status": "manual", "confidence": 1 },
+        { "instrumentCode": "102", "instrumentName": "PRL", "lisTestId": 150, "lisTestCode": "BI180", "lisTestName": "Prolactin- Serum", "lisParamId": 623, "lisParamName": "Prolactin", "unit": "ng/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "139", "instrumentName": "Vitamin B12", "lisTestId": 175, "lisTestCode": "BI235", "lisTestName": "Vitamin B12 -Serum", "lisParamId": 701, "lisParamName": "Vitamin B12", "unit": "pg/mL", "status": "manual", "confidence": 1 },
         { "instrumentCode": "157", "instrumentName": "Anti-CCP", "lisTestId": 629, "lisTestCode": "BI036", "lisTestName": "Anti Cyclic Citrullinated Peptide (Anti - CCP)", "lisParamId": 419, "lisParamName": "Anti Cyclic Citrullinated Peptide (Anti - CCP)", "unit": "U/mL", "status": "manual", "confidence": 1 }
       ]

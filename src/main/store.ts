@@ -75,6 +75,8 @@ interface PersistShape {
   migratedCx4RetireUnknownItems?: boolean
   /** One-time migration: force every channel the bundled CX4 preset retires to 'ignored' (Lucknow 2026-10-12 still ordered GLU(HK)/Ca(ARS)/UIBC). */
   migratedCx4AlignPresetRetired?: boolean
+  /** One-time migration: backfill Karnal 6000i preset rows (β-HCG 26, Testosterone 34, PRL 102) missing from older installs. */
+  migratedKarnalMagiclBackfill?: boolean
 }
 
 type MigrationFlagKey =
@@ -87,6 +89,7 @@ type MigrationFlagKey =
   | 'migratedCx4StockItemNames'
   | 'migratedCx4RetireUnknownItems'
   | 'migratedCx4AlignPresetRetired'
+  | 'migratedKarnalMagiclBackfill'
 
 const MAX_MONITOR_HISTORY = 2000
 

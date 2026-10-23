@@ -717,6 +717,47 @@ export class MappingEngine {
   }
 
   /**
+   * One-time: give an already-configured Karnal 6000i the preset rows added
+   * after it was set up — β-HCG (item 26), Testosterone (34) and PRL (102), read
+   * off the analyzer's Item Param screens on 2026-10-17. Without them those
+   * results skip as "No LIS mapping for analyte" and the host query never
+   * orders them.
+   *
+   * GUARD: only for a store that also carries the Karnal DxI 800 rows (VitdD /
+   * TotT4), which only the Karnal preset ever produced. Fills codes that are
+   * missing or only auto/unmapped; a row the site set to manual or ignored is
+   * left alone. Flag-protected.
+   */
+  migrateKarnalMagiclBackfill(): number {
+    if (persist.getMigrationFlag('migratedKarnalMagiclBackfill')) return 0
+    persist.setMigrationFlag('migratedKarnalMagiclBackfill', true)
+    const isKarnal =
+      this.rules.some((r) => r.driverId === 'magicl-6000i') &&
+      this.rules.some(
+        (r) => r.driverId === 'beckman-dxi-800' && (r.instrumentCode === 'VitdD' || r.instrumentCode === 'TotT4')
+      )
+    if (!isKarnal) return 0
+    const inst = listPresets()
+      .find((p) => p.preset === 'karnal')
+      ?.instruments.find((i) => i.driverId === 'magicl-6000i')
+    if (!inst?.mappings?.length) return 0
+    const kept = new Set(
+      this.rules
+        .filter((r) => r.driverId === 'magicl-6000i' && (r.status === 'manual' || r.status === 'ignored'))
+        .map((r) => r.instrumentCode.toUpperCase())
+    )
+    const missing = inst.mappings.filter((m) => !kept.has(m.instrumentCode.toUpperCase()))
+    if (missing.length === 0) return 0
+    const applied = this.applyPresetMappings('magicl-6000i', missing)
+    logger.info(
+      'mapping',
+      `Karnal 6000i backfill: applied ${applied} preset row(s) missing from this install ` +
+        `(${missing.map((m) => m.instrumentCode).join(', ')})`
+    )
+    return applied
+  }
+
+  /**
    * Apply a location preset's curated analyte -> LIS mappings for one driver.
    * Each preset row overwrites (or creates) the matching driver+instrumentCode
    * rule and is locked as 'manual' so the auto-mapper never reverts it. Preserves

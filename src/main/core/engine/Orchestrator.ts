@@ -165,6 +165,10 @@ export class Orchestrator extends EventEmitter {
     // migration so its guard sees the TCH10 row either way.
     this.mapping.migrateDelhiMagiclBackfill()
 
+    // One-time: same for an already-configured Karnal 6000i (β-HCG 26,
+    // Testosterone 34, PRL 102). Guarded to a store carrying the Karnal DxI rows.
+    this.mapping.migrateKarnalMagiclBackfill()
+
     // One-time: an already-onboarded Rohtak DxC 700 AU carries a copy of the
     // preset's wire format from before the analyzer's 20-char Patient
     // Information row was known. Add it in place so the site does not have to
