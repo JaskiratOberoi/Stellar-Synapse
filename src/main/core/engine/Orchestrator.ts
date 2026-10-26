@@ -1,9 +1,12 @@
 import { EventEmitter } from 'node:events'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { extname } from 'node:path'
 import type {
   CanonicalResult,
   InstrumentDefinition,
   InstrumentRuntime,
+  LisImageWrite,
   LisResultWrite,
   MappingRule,
   MonitorEvent,
@@ -45,7 +48,7 @@ import { fingerprintInstrument } from '../discovery/fingerprint'
 import type { ILisRepository } from '../lis/ILisRepository'
 import { MappingEngine, MIN_TRUSTED_CONFIDENCE } from '../mapping/MappingEngine'
 import { convertForLis, roundResultValue } from './units'
-import { saveInstrumentImage } from './imageStore'
+import { findSavedImage, saveInstrumentImage } from './imageStore'
 import { persist, MAX_DAILY_STAT_DAYS, type InstrumentDayStats } from '../../store'
 import { logger } from '../logger'
 import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
@@ -85,6 +88,11 @@ export class Orchestrator extends EventEmitter {
   // flushed automatically when it returns. Survives restarts (persisted).
   private pendingWrites: LisResultWrite[] = []
   private readonly maxPending = 1000
+  // Analyzer pictures waiting for the LIS (down, or the sample not registered
+  // yet). Only the record is queued; the PNG stays on disk and is re-read.
+  private pendingImages: LisImageWrite[] = []
+  private readonly maxPendingImages = 500
+  private readonly pendingImageMaxAgeMs = 7 * 24 * 60 * 60 * 1000
   private flushing = false
   private flushTimer: NodeJS.Timeout | null = null
   // Auto-identify / converge state for discovery taps.
@@ -117,6 +125,7 @@ export class Orchestrator extends EventEmitter {
     // Restore persisted monitor history, counters, and the offline LIS queue.
     this.monitorBuffer = persist.getMonitorHistory()
     this.pendingWrites = persist.getPendingWrites()
+    this.pendingImages = persist.getPendingImages()
     this.dailyStats = persist.getDailyStats()
 
     // Show the configured instruments to the UI IMMEDIATELY (as offline), BEFORE
@@ -1700,7 +1709,8 @@ export class Orchestrator extends EventEmitter {
 
   /** Try to drain the offline queue to the LIS. Safe to call repeatedly. */
   async flushPendingWrites(): Promise<{ wrote: number; remaining: number }> {
-    if (this.flushing || this.pendingWrites.length === 0 || this.lis.mode !== 'sql') {
+    const nothingQueued = this.pendingWrites.length === 0 && this.pendingImages.length === 0
+    if (this.flushing || nothingQueued || this.lis.mode !== 'sql') {
       return { wrote: 0, remaining: this.pendingWrites.length }
     }
     this.flushing = true
@@ -1735,6 +1745,8 @@ export class Orchestrator extends EventEmitter {
           if (isLisDownError(err)) break
         }
       }
+      // Pictures ride behind the values so a sample's result rows exist first.
+      await this.flushPendingImages()
     } finally {
       if (wrote > 0) {
         persist.setPendingWrites(this.pendingWrites)
@@ -1747,6 +1759,162 @@ export class Orchestrator extends EventEmitter {
     }
     return { wrote, remaining: this.pendingWrites.length }
   }
+
+  // ----- analyzer pictures -> Noble ------------------------------------------
+
+  /**
+   * The Noble test a picture belongs to, read off the instrument's mappings: the
+   * HbA1c rule's test when there is one, else the single test every mapped
+   * analyte shares; undefined when the rules point at several tests (the
+   * repository then falls back to the sample's flagged row).
+   */
+  private resolveImageTestId(driverId: string): number | undefined {
+    const rules = persist
+      .getMappings()
+      .filter((r) => r.driverId === driverId && r.lisTestId && r.status !== 'unmapped' && r.status !== 'ignored')
+    const hba1c = rules.find((r) => /^hba1c$/i.test(r.instrumentCode.trim()))
+    if (hba1c?.lisTestId) return hba1c.lisTestId
+    const ids = new Set(rules.map((r) => r.lisTestId as number))
+    return ids.size === 1 ? [...ids][0] : undefined
+  }
+
+  private buildImageWrite(
+    def: InstrumentDefinition,
+    sampleId: string,
+    fileName: string,
+    file: string,
+    data: Buffer,
+    receivedAt = new Date().toISOString()
+  ): LisImageWrite {
+    const ext = (extname(file) || '.png').toLowerCase()
+    return {
+      vailid: sampleId,
+      testId: this.resolveImageTestId(def.driverId),
+      instrumentId: def.id,
+      driverId: def.driverId,
+      machineName: def.name,
+      fileName,
+      // Noble's worksheet accepts .png/.jpg/.jpeg/.pdf; anything else is stored as .png.
+      fileType: ['.png', '.jpg', '.jpeg'].includes(ext) ? ext : '.png',
+      file,
+      sha256: createHash('sha256').update(data).digest('hex'),
+      byteSize: data.length,
+      receivedAt
+    }
+  }
+
+  /**
+   * Send a saved picture to the LIS: Synapse ledger + (by default) Noble's own
+   * attachment table. Never blocks or alters the value pipeline — every outcome
+   * is only a Monitor row — and anything transient (LIS down, sample not
+   * registered yet) is queued and retried with the results.
+   */
+  private async submitImage(
+    def: InstrumentDefinition,
+    write: LisImageWrite,
+    data?: Buffer,
+    options?: { forceWrite?: boolean }
+  ): Promise<'written' | 'skipped' | 'suppressed' | 'queued' | 'error'> {
+    if (this.lis.mode !== 'sql') return 'skipped'
+    if (!persist.getSettings().lisAutoWrite && !options?.forceWrite) return 'skipped'
+    const base = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: write.vailid,
+      analyteCode: 'IMAGE',
+      analyteName: 'Chromatogram',
+      value: write.fileName,
+      imageFile: write.file
+    }
+    let bytes = data
+    if (!bytes) {
+      try {
+        bytes = readFileSync(write.file)
+      } catch (err) {
+        this.pushMonitor({
+          ...base,
+          id: randomUUID(),
+          stage: 'error',
+          message: `Picture file missing — ${(err as Error).message}`,
+          timestamp: new Date().toISOString()
+        })
+        return 'error'
+      }
+    }
+    try {
+      const { outcome, reason } = await this.lis.writeImage(write, bytes)
+      this.lisReachableForImages = true
+      this.pushMonitor({
+        ...base,
+        id: randomUUID(),
+        stage: outcome,
+        message: reason ?? (outcome === 'written' ? 'Attached in Noble' : 'Not attached'),
+        timestamp: new Date().toISOString()
+      })
+      return outcome
+    } catch (err) {
+      const message = (err as Error).message
+      this.lisReachableForImages = !isLisDownError(err)
+      if (isLisDownError(err) || /not registered|no patient_id/i.test(message)) {
+        this.enqueuePendingImage(write)
+        this.pushMonitor({
+          ...base,
+          id: randomUUID(),
+          stage: 'queued',
+          message: isLisDownError(err)
+            ? 'LIS unavailable — picture queued for retry'
+            : `${message} — picture queued until the sample is registered`,
+          timestamp: new Date().toISOString()
+        })
+        return 'queued'
+      }
+      logger.warn('lis', `${def.name}: picture ${write.fileName} for ${write.vailid} not attached — ${message}`)
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'error', message, timestamp: new Date().toISOString() })
+      return 'error'
+    }
+  }
+
+  private enqueuePendingImage(write: LisImageWrite): void {
+    const key = (w: LisImageWrite): string => `${w.vailid}|${w.instrumentId}|${w.fileName}`
+    this.pendingImages = this.pendingImages.filter((w) => key(w) !== key(write))
+    this.pendingImages.push(write)
+    if (this.pendingImages.length > this.maxPendingImages) {
+      this.pendingImages = this.pendingImages.slice(-this.maxPendingImages)
+    }
+    persist.setPendingImages(this.pendingImages)
+  }
+
+  /** Drain queued pictures. Called from flushPendingWrites (after the values). */
+  private async flushPendingImages(): Promise<void> {
+    if (this.pendingImages.length === 0 || this.lis.mode !== 'sql') return
+    const before = this.pendingImages.length
+    const now = Date.now()
+    for (const write of [...this.pendingImages]) {
+      // A picture nobody could file within a week (sample never registered) is dropped.
+      if (now - Date.parse(write.receivedAt) > this.pendingImageMaxAgeMs) {
+        this.pendingImages = this.pendingImages.filter((w) => w !== write)
+        logger.warn('lis', `Dropped queued picture ${write.fileName} for ${write.vailid}: older than 7 days`)
+        continue
+      }
+      const def = persist.getInstruments().find((i) => i.id === write.instrumentId)
+      if (!def) {
+        this.pendingImages = this.pendingImages.filter((w) => w !== write)
+        continue
+      }
+      const outcome = await this.submitImage(def, write, undefined, { forceWrite: true })
+      if (outcome === 'queued') {
+        // submitImage re-queued it (same key replaces the entry). LIS still down
+        // → stop here; "not registered" → move on to the next one.
+        if (!this.lisReachableForImages) break
+        continue
+      }
+      this.pendingImages = this.pendingImages.filter((w) => w !== write)
+    }
+    if (this.pendingImages.length !== before) persist.setPendingImages(this.pendingImages)
+  }
+
+  /** Set by submitImage on each attempt: false right after a LIS-down failure. */
+  private lisReachableForImages = true
 
   /** Number of results currently waiting for the LIS. */
   pendingWriteCount(): number {
@@ -1969,6 +2137,9 @@ export class Orchestrator extends EventEmitter {
         const oldest = this.frameImages.keys().next().value
         if (oldest !== undefined) this.frameImages.delete(oldest)
       }
+      // On to Noble, off the value pipeline's critical path.
+      const bytes = Buffer.from(img.data, img.encoding)
+      void this.submitImage(def, this.buildImageWrite(def, img.sampleId, img.name, file, bytes), bytes)
     }
     logger.info(
       'image',
@@ -2119,6 +2290,20 @@ export class Orchestrator extends EventEmitter {
       if (outcome === 'written') written++
       else if (outcome === 'error') errors++
       else skipped++
+    }
+
+    // The stored frame keeps only a placeholder for the picture, but the PNG is
+    // still on disk: re-post it too, so a backfill carries the chromatogram.
+    const saved = findSavedImage(instrumentId, sample.barcode)
+    if (saved) {
+      try {
+        const bytes = readFileSync(saved.file)
+        await this.submitImage(def, this.buildImageWrite(def, sample.barcode, saved.name, saved.file, bytes), bytes, {
+          forceWrite: true
+        })
+      } catch (err) {
+        logger.warn('lis', `${def.name}: could not re-post picture for ${sample.barcode}: ${(err as Error).message}`)
+      }
     }
 
     return { written, skipped, errors, barcode: sample.barcode }

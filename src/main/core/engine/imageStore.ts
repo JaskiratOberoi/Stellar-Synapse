@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 import { logger } from '../logger'
 
@@ -35,6 +35,32 @@ export function saveInstrumentImage(
     return file
   } catch (err) {
     logger.warn('image', `Could not save picture ${name} for ${sampleId}: ${(err as Error).message}`)
+    return null
+  }
+}
+
+/**
+ * The newest picture saved for a sample on this instrument (by file mtime), or
+ * null. Used when a stored frame is re-posted to Noble: the frame text keeps
+ * only a placeholder for the picture, but the file is still on disk.
+ */
+export function findSavedImage(
+  instrumentId: string,
+  sampleId: string
+): { file: string; name: string } | null {
+  try {
+    const dir = join(imagesRoot(), safeSegment(instrumentId))
+    if (!existsSync(dir)) return null
+    const prefix = `${safeSegment(sampleId)}__`
+    let best: { file: string; name: string; mtime: number } | null = null
+    for (const entry of readdirSync(dir)) {
+      if (!entry.startsWith(prefix)) continue
+      const file = join(dir, entry)
+      const mtime = statSync(file).mtimeMs
+      if (!best || mtime > best.mtime) best = { file, name: entry.slice(prefix.length), mtime }
+    }
+    return best ? { file: best.file, name: best.name } : null
+  } catch {
     return null
   }
 }

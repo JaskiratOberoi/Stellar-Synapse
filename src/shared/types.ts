@@ -421,6 +421,37 @@ export interface LisWriteResult {
 }
 
 /**
+ * A picture an analyzer embedded in a result frame (LD-560 chromatogram),
+ * bound for Noble. The bytes stay on disk at `file` and are re-read at write
+ * time, so a queued entry (LIS down) persists as a small record, not a blob.
+ */
+export interface LisImageWrite {
+  vailid: string
+  /** Noble test the picture belongs to (from the instrument's mapping), when known. */
+  testId?: number
+  instrumentId: string
+  driverId: string
+  /** Full instrument display name (the result rows carry its 20-char prefix). */
+  machineName: string
+  /** File name as the analyzer reported it, e.g. `2026-09-15-01-59_10.png`. */
+  fileName: string
+  /** Extension Noble's worksheet accepts: .png / .jpg / .jpeg. */
+  fileType: string
+  /** Absolute local path of the saved picture. */
+  file: string
+  sha256: string
+  byteSize: number
+  receivedAt: string
+}
+
+export interface LisImageWriteResult {
+  outcome: LisWriteOutcome
+  reason?: string
+  /** Noble attachment row id when the picture was mirrored into the LIS. */
+  attachmentId?: number
+}
+
+/**
  * Payload written to dbo.tbl_med_mcc_patient_test_result.
  * Captured here as a record of what *would* be persisted (mock phase).
  */
@@ -560,6 +591,14 @@ export interface LisConnectionSettings {
    */
   readOnly?: boolean
   encrypt: boolean
+  /**
+   * Mirror analyzer pictures (LD-560 chromatograms) into Noble's own result
+   * attachment table, the one its worksheet paperclip, report procedure and
+   * report e-mail read. Synapse's sidecar ledger is written regardless; this
+   * only controls whether the LIS itself shows the picture. On by default
+   * (undefined = on).
+   */
+  attachImages?: boolean
 }
 
 export type LisConnectionState = 'disconnected' | 'connected' | 'mock' | 'error'

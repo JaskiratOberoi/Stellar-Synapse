@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisImageWrite,
+  LisImageWriteResult,
   LisParameter,
   LisResultWrite,
   LisWriteResult,
@@ -10,6 +12,129 @@ import type {
 import type { ILisRepository } from './ILisRepository'
 import { normalizeTestNameKey } from '../mapping/MappingEngine'
 import { logger } from '../logger'
+
+/**
+ * Synapse's own sidecar for analyzer pictures. Created on first use (the Noble
+ * login is db_owner); nothing in Noble references it, so it can never break a
+ * LIS feature. One row per (sample, instrument, analyzer file name) with the
+ * PNG itself, its hash, and — when mirrored — the id of the Noble attachment
+ * row it was copied into, which is what makes a retransmitted frame idempotent.
+ */
+const LEDGER_DDL = `
+IF OBJECT_ID('dbo.syn_result_image', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.syn_result_image (
+    id            int IDENTITY(1,1) NOT NULL CONSTRAINT PK_syn_result_image PRIMARY KEY,
+    vailid        nvarchar(100) NOT NULL,
+    testid        int NULL,
+    result_id     int NULL,
+    attachment_id int NULL,
+    instrument_id varchar(64) NULL,
+    driver_id     varchar(64) NULL,
+    machine_name  nvarchar(100) NOT NULL,
+    file_name     nvarchar(200) NOT NULL,
+    file_type     varchar(50) NOT NULL,
+    byte_size     int NOT NULL,
+    sha256        char(64) NOT NULL,
+    image         varbinary(max) NOT NULL,
+    received_at   datetime2(0) NOT NULL,
+    addeddate     datetime2(0) NOT NULL CONSTRAINT DF_syn_result_image_added DEFAULT SYSDATETIME(),
+    updateddate   datetime2(0) NULL,
+    CONSTRAINT UQ_syn_result_image UNIQUE (vailid, machine_name, file_name)
+  );
+  CREATE INDEX IX_syn_result_image_vailid ON dbo.syn_result_image (vailid);
+END`
+
+/**
+ * Ledger upsert + mirror into Noble's native attachment table, in one
+ * transaction. Mirrors the way Noble's own worksheet files an upload: a row in
+ * tbl_med_mcc_patient_test_result_attachment hung off the result row that
+ * carries the paperclip flag (for HbA1c, the test's Head row — flagged from
+ * tbl_med_test_master.Has_graph at registration), keyed by vail_id, with the
+ * file extension in file_type. The report procedure (GET_PATIENT_REPORT_VAIL_ID)
+ * picks the sample's first .png/.jpg attachment, so the picture reaches the
+ * printed report through Noble's existing path. No result-row column is ever
+ * touched and nothing is inserted into the result table.
+ */
+const IMAGE_WRITE_SQL = `
+SET XACT_ABORT ON;
+DECLARE @ledgerId int, @prevSha char(64), @attId int, @targetId int, @attExists bit = 0, @status varchar(20);
+
+SELECT @ledgerId = id, @prevSha = sha256, @attId = attachment_id
+FROM dbo.syn_result_image
+WHERE vailid = @vailid AND machine_name = @machine AND file_name = @fileName;
+
+-- The row Noble shows its paperclip on: the sample's flagged row for this test,
+-- else the test's own Head/Test row. Never a Param row, never another test's.
+SELECT TOP 1 @targetId = id FROM tbl_med_mcc_patient_test_result
+WHERE vailid = @vailid AND (@testid IS NULL OR testid = @testid) AND attachment = 1
+ORDER BY CASE WHEN testtype = 'Head' THEN 0 ELSE 1 END, id;
+IF @targetId IS NULL AND @testid IS NOT NULL
+  SELECT TOP 1 @targetId = id FROM tbl_med_mcc_patient_test_result
+  WHERE vailid = @vailid AND testid = @testid AND (testtype IS NULL OR testtype <> 'Param')
+  ORDER BY CASE WHEN testtype = 'Head' THEN 0 ELSE 1 END, id;
+
+IF @attId IS NOT NULL AND EXISTS (SELECT 1 FROM tbl_med_mcc_patient_test_result_attachment WHERE id = @attId)
+  SET @attExists = 1;
+
+BEGIN TRAN;
+IF @ledgerId IS NOT NULL AND @prevSha = @sha
+BEGIN
+  -- Same picture again (retransmitted frame). Mirror it only if it never was
+  -- (mirroring was off, or no row existed yet); one a technician removed in
+  -- Noble stays removed.
+  IF @mirror = 1 AND @attId IS NULL AND @targetId IS NOT NULL
+  BEGIN
+    INSERT INTO tbl_med_mcc_patient_test_result_attachment (result_id, attachment, vail_id, file_type)
+    VALUES (@targetId, @image, @vailid, @fileType);
+    SET @attId = SCOPE_IDENTITY();
+    UPDATE dbo.syn_result_image
+    SET attachment_id = @attId, result_id = @targetId, testid = @testid, updateddate = SYSDATETIME()
+    WHERE id = @ledgerId;
+    SET @status = 'written';
+  END
+  ELSE
+    SET @status = CASE
+      WHEN @attId IS NOT NULL AND @attExists = 0 THEN 'removed'
+      WHEN @attId IS NULL AND @mirror = 1 THEN 'no-row'
+      ELSE 'unchanged' END;
+END
+ELSE
+BEGIN
+  IF @mirror = 1
+  BEGIN
+    IF @attExists = 1
+      UPDATE tbl_med_mcc_patient_test_result_attachment
+      SET attachment = @image, file_type = @fileType
+      WHERE id = @attId;
+    ELSE IF @targetId IS NOT NULL
+    BEGIN
+      INSERT INTO tbl_med_mcc_patient_test_result_attachment (result_id, attachment, vail_id, file_type)
+      VALUES (@targetId, @image, @vailid, @fileType);
+      SET @attId = SCOPE_IDENTITY();
+    END
+    ELSE
+      SET @attId = NULL;
+  END
+  IF @ledgerId IS NULL
+  BEGIN
+    INSERT INTO dbo.syn_result_image
+      (vailid, testid, result_id, attachment_id, instrument_id, driver_id, machine_name,
+       file_name, file_type, byte_size, sha256, image, received_at)
+    VALUES
+      (@vailid, @testid, @targetId, @attId, @instrument, @driver, @machine,
+       @fileName, @fileType, @size, @sha, @image, @received);
+    SET @ledgerId = SCOPE_IDENTITY();
+  END
+  ELSE
+    UPDATE dbo.syn_result_image
+    SET testid = @testid, result_id = @targetId, attachment_id = @attId, byte_size = @size,
+        sha256 = @sha, image = @image, received_at = @received, updateddate = SYSDATETIME()
+    WHERE id = @ledgerId;
+  SET @status = CASE WHEN @mirror = 0 THEN 'ledger-only' WHEN @attId IS NULL THEN 'no-row' ELSE 'written' END;
+END
+COMMIT;
+SELECT @status AS status, @ledgerId AS ledgerId, @attId AS attachmentId, @targetId AS resultId;`
 
 type MssqlModule = typeof import('mssql')
 type MssqlPool = import('mssql').ConnectionPool
@@ -727,6 +852,91 @@ export class SqlLisRepository implements ILisRepository {
         `(testid ${target.testid}, paramid ${target.paramid ?? 'null'})=${write.value} ${write.unit ?? ''}`
     )
     return true
+  }
+
+  /** Sidecar table creation, once per repository instance (re-attempted after a failure). */
+  private ledgerReady: Promise<void> | null = null
+
+  private ensureLedger(pool: MssqlPool): Promise<void> {
+    if (!this.ledgerReady) {
+      this.ledgerReady = pool
+        .request()
+        .query(LEDGER_DDL)
+        .then(() => undefined)
+        .catch((err) => {
+          this.ledgerReady = null
+          throw err
+        })
+    }
+    return this.ledgerReady
+  }
+
+  async writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult> {
+    const order = await this.getOrder(write.vailid)
+    if (!order) {
+      throw new Error(`Barcode ${write.vailid} is not registered in Noble LIS (tbl_med_mcc_patient_samples)`)
+    }
+    const pool = await this.getPool()
+    const mssql = await this.getMssql()
+    await this.ensureLedger(pool)
+
+    const mirror = this.settings.attachImages !== false
+    const req = pool.request()
+    req.input('vailid', mssql.NVarChar, write.vailid)
+    req.input('testid', mssql.Int, write.testId ?? null)
+    req.input('instrument', mssql.VarChar, write.instrumentId.slice(0, 64))
+    req.input('driver', mssql.VarChar, write.driverId.slice(0, 64))
+    req.input('machine', mssql.NVarChar, write.machineName.slice(0, 100))
+    req.input('fileName', mssql.NVarChar, write.fileName.slice(0, 200))
+    req.input('fileType', mssql.VarChar, write.fileType.slice(0, 50))
+    req.input('size', mssql.Int, data.length)
+    req.input('sha', mssql.Char(64), write.sha256)
+    req.input('image', mssql.VarBinary(mssql.MAX), data)
+    req.input('received', mssql.DateTime2, new Date(write.receivedAt))
+    req.input('mirror', mssql.Bit, mirror ? 1 : 0)
+
+    const result = await req.query<{
+      status: string
+      ledgerId: number | null
+      attachmentId: number | null
+      resultId: number | null
+    }>(IMAGE_WRITE_SQL)
+    const row = result.recordset[0]
+    const status = row?.status ?? 'unknown'
+    const attachmentId = row?.attachmentId ?? undefined
+    const where = write.testId ? `test ${write.testId}` : 'this sample'
+    logger.info(
+      'lis-sql',
+      `Picture ${write.fileName} (${data.length} B) for ${write.vailid}: ${status}` +
+        ` — ledger #${row?.ledgerId ?? '?'}` +
+        (attachmentId ? `, Noble attachment #${attachmentId} on result row ${row?.resultId}` : '')
+    )
+    switch (status) {
+      case 'written':
+        return { outcome: 'written', attachmentId, reason: `Attached in Noble (#${attachmentId})` }
+      case 'ledger-only':
+        return { outcome: 'written', reason: 'Saved in the Synapse ledger; Noble mirroring is off' }
+      case 'no-row':
+        return {
+          outcome: 'written',
+          reason: `Saved in the Synapse ledger only — ${write.vailid} has no result row for ${where} to attach it to`
+        }
+      case 'unchanged':
+        return {
+          outcome: 'skipped',
+          attachmentId,
+          reason: attachmentId
+            ? `Already attached in Noble (#${attachmentId})`
+            : 'Already in the Synapse ledger'
+        }
+      case 'removed':
+        return {
+          outcome: 'skipped',
+          reason: 'A user removed this picture in Noble — not re-added'
+        }
+      default:
+        return { outcome: 'skipped', reason: `Unexpected picture write status "${status}"` }
+    }
   }
 
   async recentWrites(): Promise<LisResultWrite[]> {

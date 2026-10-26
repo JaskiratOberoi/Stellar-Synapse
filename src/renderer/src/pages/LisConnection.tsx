@@ -173,6 +173,23 @@ export function LisConnection() {
               </div>
             )}
 
+            {form.live && (
+              <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Attach chromatograms in Noble</p>
+                  <p className="text-xs text-muted-foreground">
+                    File analyzer pictures (Zeus D-20 HPLC) on the sample&apos;s HbA1c row so the
+                    worksheet paperclip and report see them. Off keeps them in Synapse&apos;s own
+                    ledger table only.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.attachImages !== false}
+                  onChange={(v) => update({ attachImages: v })}
+                />
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button variant="outline" onClick={test} disabled={testing} className="flex-1">
                 {testing ? (

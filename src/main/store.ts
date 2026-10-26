@@ -3,6 +3,7 @@ import type {
   AppSettings,
   InstrumentDefinition,
   LisConnectionSettings,
+  LisImageWrite,
   LisParameter,
   LisResultWrite,
   LisTest,
@@ -49,6 +50,8 @@ interface PersistShape {
   dailyStats: Record<string, Record<string, InstrumentDayStats>>
   /** Results awaiting the LIS (written here when the LIS is unreachable). */
   pendingWrites: LisResultWrite[]
+  /** Analyzer pictures awaiting the LIS (down, or sample not registered yet); the bytes stay on disk. */
+  pendingImages?: LisImageWrite[]
   /** Last live Noble catalog; served when the DB cannot be reached (absent until the first good fetch). */
   lisCatalog?: LisCatalogCache
   /** One-time migration: enable live Noble LIS writes. */
@@ -225,6 +228,9 @@ export const persist = {
 
   getPendingWrites: (): LisResultWrite[] => store().get('pendingWrites'),
   setPendingWrites: (v: LisResultWrite[]): void => store().set('pendingWrites', v),
+
+  getPendingImages: (): LisImageWrite[] => store().get('pendingImages') ?? [],
+  setPendingImages: (v: LisImageWrite[]): void => store().set('pendingImages', v),
 
   getLisCatalog: (): LisCatalogCache | undefined => store().get('lisCatalog'),
   setLisCatalog: (v: LisCatalogCache): void => store().set('lisCatalog', v),

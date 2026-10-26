@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisImageWrite,
+  LisImageWriteResult,
   LisParameter,
   LisResultWrite,
   LisWriteResult,
@@ -55,6 +57,14 @@ export class ReadOnlyLisRepository implements ILisRepository {
         `${write.paramId ? `[${write.paramId}]` : ''}=${write.value} ${write.unit ?? ''}`
     )
     return { outcome: 'suppressed', reason: 'Read-only safe mode — write blocked' }
+  }
+
+  async writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult> {
+    logger.warn(
+      'lis-readonly',
+      `IMAGE BLOCKED (read-only mode) — would attach ${write.fileName} (${data.length} B) to ${write.vailid}`
+    )
+    return { outcome: 'suppressed', reason: 'Read-only safe mode — picture not attached' }
   }
 
   /** Surface the would-have-written results so the UI's "recent writes" still works. */

@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisImageWrite,
+  LisImageWriteResult,
   LisParameter,
   LisResultWrite,
   LisWriteResult,
@@ -114,6 +116,10 @@ export class LisRouter implements ILisRepository {
 
   writeResult(write: LisResultWrite): Promise<LisWriteResult> {
     return this.backend.writeResult(write)
+  }
+
+  writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult> {
+    return this.backend.writeImage(write, data)
   }
 
   recentWrites(): Promise<LisResultWrite[]> {

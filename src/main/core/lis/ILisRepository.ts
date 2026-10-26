@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisImageWrite,
+  LisImageWriteResult,
   LisParameter,
   LisResultWrite,
   LisWriteResult,
@@ -36,6 +38,16 @@ export interface ILisRepository {
    * (fill-blanks-only), 'suppressed' in read-only safe mode.
    */
   writeResult(write: LisResultWrite): Promise<LisWriteResult>
+  /**
+   * Persist an analyzer picture (chromatogram) for a sample: always into
+   * Synapse's sidecar ledger, and — unless the LIS settings turn it off — into
+   * Noble's native result attachment table so the worksheet/report show it.
+   * Idempotent per (sample, instrument, file name): a retransmitted frame
+   * never adds a second attachment. 'skipped' when already attached or when
+   * the sample has no result row to hang it on; throws when the LIS is down
+   * or the sample is not registered yet (caller queues and retries).
+   */
+  writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult>
   /** Recently written results (for the UI). */
   recentWrites(): Promise<LisResultWrite[]>
   /** Validate connectivity for the given settings. */

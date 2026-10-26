@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisImageWrite,
+  LisImageWriteResult,
   LisParameter,
   LisResultWrite,
   LisWriteResult,
@@ -44,6 +46,11 @@ export class MockLisRepository implements ILisRepository {
       'lis-mock',
       `(mock write) ${write.vailid} ${write.testCode}=${write.value} ${write.unit ?? ''}`
     )
+    return { outcome: 'written' }
+  }
+
+  async writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult> {
+    logger.debug('lis-mock', `(mock image) ${write.vailid} ${write.fileName} (${data.length} B)`)
     return { outcome: 'written' }
   }
 
