@@ -42,6 +42,21 @@ import {
   type GeteinQuery
 } from '../drivers/geteinHostQuery'
 import { horibaResultControlId, buildHoribaAck, frameHoribaHl7 } from '../drivers/horiba'
+import {
+  alinityMessageType,
+  alinityNeedsAck,
+  buildAlinityAck,
+  buildAlinityOrderDownload,
+  buildAlinityQueryResponse,
+  extractAlinityAssays,
+  extractAlinityExceptions,
+  frameAlinityHl7,
+  parseAlinityOrderResponse,
+  parseAlinityQuery,
+  type AlinityOrderTest,
+  type AlinityQuery
+} from '../drivers/abbottAlinity'
+import { Hl7Protocol } from '../protocols/hl7'
 import { getDriver } from '../drivers/registry'
 import type { IInstrumentDriver } from '../drivers/IInstrumentDriver'
 import { fingerprintInstrument } from '../discovery/fingerprint'
@@ -71,6 +86,12 @@ interface RunningConnection {
   sender?: AstmHostQuerySender
   /** Outbound Beckman-AU sender for sample-information (S) order responses. */
   auSender?: AuHostQuerySender
+  /**
+   * Second MLLP connection for order download (IHE LAW "server channel", Abbott
+   * Alinity): OML^O33 goes out here and the analyzer's ORL^O34 comes back here.
+   */
+  orderChannel?: ITransport
+  orderProtocol?: Hl7Protocol
 }
 
 /**
@@ -608,9 +629,48 @@ export class Orchestrator extends EventEmitter {
       }
     })
 
+    // Abbott Alinity (IHE LAW): order download runs on its OWN MLLP connection
+    // (the analyzer's receiver channel), separate from the sender channel that
+    // carries its queries and results. Open it only when host query is on and an
+    // endpoint is configured; the main link works (results + ACKs) without it.
+    let orderChannel: ITransport | undefined
+    let orderProtocol: Hl7Protocol | undefined
+    const oc = def.connection.orderChannel
+    if (
+      driver.hl7Dialect === 'abbott-law' &&
+      def.connection.hostQuery &&
+      !def.connection.passive &&
+      oc
+    ) {
+      orderChannel = createTransport(`${def.id}:orders`, {
+        transport: oc.transport,
+        host: oc.transport === 'tcp-server' ? '0.0.0.0' : oc.host,
+        port: oc.port
+      })
+      orderProtocol = new Hl7Protocol()
+      const where = oc.transport === 'tcp-server' ? `listening on ${oc.port}` : `dialling ${oc.host}:${oc.port}`
+      orderChannel.on('status', (status: ConnectionStatus, peer?: string) => {
+        logger.info('host-query', `${def.name}: order channel ${status}${peer ? ` (${peer})` : ''} — ${where}`)
+      })
+      orderChannel.on('error', (err: Error) => {
+        logger.warn('host-query', `${def.name}: order channel error: ${err.message}`)
+      })
+      orderChannel.on('data', (chunk: Buffer) => {
+        this.pushRawInbound(id, def.name, chunk, true)
+        for (const msg of orderProtocol!.feed(chunk)) this.handleAlinityOrderChannelMessage(def, msg)
+      })
+    }
+
     try {
       await transport.start()
-      this.connections.set(id, { transport, protocol, sender, auSender })
+      if (orderChannel) {
+        try {
+          await orderChannel.start()
+        } catch (err) {
+          logger.error('host-query', `${def.name}: order channel failed to start: ${(err as Error).message}`)
+        }
+      }
+      this.connections.set(id, { transport, protocol, sender, auSender, orderChannel, orderProtocol })
       const hasPoll = (def.connection.pollIntervalMs ?? 0) > 0
       const hasIdle = (def.connection.idleReconnectMs ?? 0) > 0
       if ((hasPoll || hasIdle) && !def.connection.passive) {
@@ -644,6 +704,8 @@ export class Orchestrator extends EventEmitter {
     if (conn) {
       await conn.transport.stop().catch(() => undefined)
       conn.protocol.reset()
+      await conn.orderChannel?.stop().catch(() => undefined)
+      conn.orderProtocol?.reset()
       this.connections.delete(id)
     }
     this.patchRuntime(id, { status: 'offline', peer: undefined })
@@ -853,6 +915,57 @@ export class Orchestrator extends EventEmitter {
     if (def.protocol === 'hl7' && driver.hl7Dialect === 'horiba' && !def.connection.passive) {
       const oruId = horibaResultControlId(message)
       if (oruId) this.writeHl7Response(def, frameHoribaHl7(buildHoribaAck(oruId)))
+    }
+
+    // Abbott Alinity (IHE LAW). Every event the analyzer sends on its sender
+    // channel needs an application ACK on the same connection, host query on or
+    // off — after its retries time out it DISABLES the HL7 link. A QBP^Q11 query
+    // gets RSP^K11 here and the order itself (or the negative response) on the
+    // order channel. Assay numbers are learned from whatever the message names.
+    if (def.protocol === 'hl7' && driver.hl7Dialect === 'abbott-law') {
+      const type = alinityMessageType(message)
+      if (!def.connection.passive) {
+        const query = parseAlinityQuery(message)
+        if (query) {
+          this.writeHl7Response(def, frameAlinityHl7(buildAlinityQueryResponse(query)))
+          await this.handleAlinityHostQuery(def, driver.info.id, query, message.raw)
+          return
+        }
+        if (alinityNeedsAck(message)) this.writeHl7Response(def, frameAlinityHl7(buildAlinityAck(message)))
+      }
+      const learned = extractAlinityAssays(message).map((a) => ({ code: a.assayNo, name: a.name }))
+      if (learned.length > 0) {
+        const changed = await this.mapping.learnAnalyzerCodes(driver.info.id, learned)
+        if (changed > 0) this.emit('mappings', this.mapping.list())
+        if (type.startsWith('TCU^U10')) {
+          const list = extractAlinityAssays(message)
+          const avail = list.filter((a) => a.availability === 'A').length
+          logger.info(
+            'engine',
+            `${def.name}: assay availability — ${list.length} installed (${avail} available): ` +
+              list.map((a) => `${a.assayNo}=${a.name}${a.availability === 'U' ? ' (unavailable)' : ''}`).join(', ')
+          )
+        }
+      }
+      for (const ex of extractAlinityExceptions(message)) {
+        logger.warn('engine', `${def.name}: ${ex.sampleId} ${ex.name} (assay ${ex.assayNo}) — exception ${ex.code}: ${ex.text}`)
+        this.pushMonitor({
+          id: randomUUID(),
+          instrumentId: def.id,
+          instrumentName: def.name,
+          sampleId: ex.sampleId,
+          analyteCode: ex.name || ex.assayNo,
+          analyteName: ex.name || undefined,
+          value: ex.code,
+          stage: 'error',
+          message: `Analyzer exception ${ex.code}: ${ex.text || 'test did not produce a result'}`,
+          raw: message.raw.length > 600 ? `${message.raw.slice(0, 600)}...` : message.raw,
+          timestamp: new Date().toISOString()
+        })
+      }
+      // Status updates, calibrations, sample status, connection tests and assay
+      // lists are acknowledged above and carry no patient value to post.
+      if (!type.startsWith('OUL^R22')) return
     }
 
     let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })
@@ -1256,6 +1369,158 @@ export class Orchestrator extends EventEmitter {
       mappedTo: codes.join(', '),
       message: `Ordered to analyzer: ${codes.join(', ')}`
     })
+  }
+
+  /**
+   * Answer an Abbott Alinity order query (LAW LAB-27/28). The RSP^K11 receipt has
+   * already gone back on the sender channel; here we look the barcode up in the
+   * LIS, map the ordered tests to the assay NUMBERS learned for this analyzer,
+   * and send the OML^O33 order download — or the negative query response when
+   * there is nothing to run — on the order channel. The analyzer's ORL^O34
+   * (per-test accept/reject) is handled by handleAlinityOrderChannelMessage.
+   */
+  private async handleAlinityHostQuery(
+    def: InstrumentDefinition,
+    driverId: string,
+    query: AlinityQuery,
+    raw: string
+  ): Promise<void> {
+    const baseEvent = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: query.sid,
+      analyteCode: 'QUERY',
+      analyteName: 'Host query',
+      value: '',
+      raw: raw.length > 600 ? `${raw.slice(0, 600)}...` : raw,
+      timestamp: new Date().toISOString()
+    }
+    this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'received', message: `Host query for ${query.sid}` })
+
+    if (!def.connection.hostQuery) {
+      logger.info('host-query', `${def.name}: query for ${query.sid} acknowledged; host query is off, so no order is sent`)
+      return
+    }
+    const conn = this.connections.get(def.id)
+    if (!conn?.orderChannel) {
+      const why = 'No order channel configured — set the analyzer\'s receiver host/port under Edit instrument'
+      logger.warn('host-query', `${def.name}: ${query.sid} — ${why}`)
+      this.pushMonitor({ ...baseEvent, id: randomUUID(), stage: 'error', message: why })
+      return
+    }
+
+    let order: Awaited<ReturnType<ILisRepository['getOrder']>> = null
+    try {
+      order = await this.lis.getOrder(query.sid)
+    } catch (err) {
+      logger.warn('host-query', `${def.name}: order lookup failed for ${query.sid}: ${(err as Error).message}`)
+    }
+    order = await this.dropFilledFromOrder(def, order)
+
+    const codes = order
+      ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
+      : []
+    // The analyzer orders by Abbott assay NUMBER (OBR-4.1). A mapping that has a
+    // learned/set analyzer code yields it directly; a bare instrument name whose
+    // number has not been seen yet cannot be ordered — say which, so the
+    // operator can enter it under Mapping or wait for the analyzer's assay list.
+    const tests: AlinityOrderTest[] = []
+    const unnumbered: string[] = []
+    for (const code of codes) {
+      const no = /^\d+$/.test(code) ? code : this.mapping.analyzerCodeFor(driverId, code)
+      if (no && /^\d+$/.test(no)) {
+        // The reverse mapping already emits the analyzer code when a rule has one,
+        // so recover the assay NAME from the rule for OBR-4.2 and the logs.
+        const name = /^\d+$/.test(code)
+          ? (this.mapping.instrumentCodeForAnalyzerCode(driverId, code) ?? code)
+          : code.replace(/\.I$/i, '')
+        tests.push({ assayNo: no, name })
+      } else unnumbered.push(code)
+    }
+    if (unnumbered.length > 0) {
+      logger.warn(
+        'host-query',
+        `${def.name}: ${query.sid} — no Abbott assay number known yet for [${unnumbered.join(', ')}]; ` +
+          `left out of the order. Numbers are learned from results / the assay list (TCU^U10), or set the analyzer code under Mapping.`
+      )
+    }
+
+    const oml = buildAlinityOrderDownload({
+      sid: query.sid,
+      tests,
+      patient: order?.patientName ? { id: order.patientId != null ? String(order.patientId) : undefined, name: order.patientName } : undefined,
+      peer: query.peer
+    })
+    const frame = frameAlinityHl7(oml)
+    this.pushRawSent(def.id, def.name, frame)
+    conn.orderChannel.write(frame)
+
+    if (tests.length === 0) {
+      logger.info('host-query', `${def.name}: no mappable orders for ${query.sid} — sent the negative query response`)
+      this.pushMonitor({
+        ...baseEvent,
+        id: randomUUID(),
+        stage: 'skipped',
+        value: order ? `${order.testCodes.length} ordered, 0 on analyzer` : 'not registered',
+        message: order
+          ? `Ordered tests [${order.testCodes.join(', ')}] — none run on this analyzer (negative query response sent)`
+          : `Barcode ${query.sid} not registered in LIS — negative query response sent`
+      })
+      return
+    }
+    const summary = tests.map((t) => `${t.name} (${t.assayNo})`).join(', ')
+    logger.info('host-query', `${def.name}: ordered ${query.sid} with ${tests.length} assay(s): [${summary}]`)
+    this.pushMonitor({
+      ...baseEvent,
+      id: randomUUID(),
+      stage: 'ordered',
+      value: tests.map((t) => t.assayNo).join(', '),
+      mappedTo: summary,
+      message: `Ordered to analyzer: ${summary}`
+    })
+  }
+
+  /**
+   * Traffic on the Alinity order channel: the ORL^O34 answering our OML^O33
+   * (MSA-1 AA + one ORC per test with OK/SC accepted or UA rejected), or a
+   * connection test the operator fires from the analyzer, which needs ACK^N02.
+   */
+  private handleAlinityOrderChannelMessage(def: InstrumentDefinition, msg: ProtocolMessage): void {
+    const conn = this.connections.get(def.id)
+    const orl = parseAlinityOrderResponse(msg)
+    if (orl) {
+      const accepted = orl.orders.filter((o) => o.control === 'OK' || o.control === 'CR')
+      const rejected = orl.orders.filter((o) => o.control === 'UA' || o.control === 'UC')
+      const detail =
+        orl.ack === 'AA'
+          ? `${accepted.length} accepted${rejected.length ? `, ${rejected.length} rejected [${rejected.map((o) => o.awosId).join(', ')}]` : ''}`
+          : `rejected (${orl.ack})${orl.error ? `: ${orl.error}` : ''}`
+      const sid = orl.orders[0]?.awosId.split('-')[0] || '-'
+      const line = `${def.name}: order response for ${sid} — ${detail}`
+      if (orl.ack === 'AA' && rejected.length === 0) logger.info('host-query', line)
+      else logger.warn('host-query', line)
+      this.pushMonitor({
+        id: randomUUID(),
+        instrumentId: def.id,
+        instrumentName: def.name,
+        sampleId: sid,
+        analyteCode: 'ORDER',
+        analyteName: 'Order response',
+        value: orl.ack,
+        stage: orl.ack === 'AA' && rejected.length === 0 ? 'mapped' : 'error',
+        message: `Analyzer order response: ${detail}`,
+        raw: msg.raw.length > 600 ? `${msg.raw.slice(0, 600)}...` : msg.raw,
+        timestamp: new Date().toISOString()
+      })
+      return
+    }
+    if (alinityNeedsAck(msg) && conn?.orderChannel) {
+      const frame = frameAlinityHl7(buildAlinityAck(msg))
+      this.pushRawSent(def.id, def.name, frame)
+      conn.orderChannel.write(frame)
+      return
+    }
+    logger.debug('host-query', `${def.name}: unhandled message on the order channel: ${alinityMessageType(msg)}`)
   }
 
   /**

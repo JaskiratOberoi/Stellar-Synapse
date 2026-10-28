@@ -61,6 +61,14 @@ export interface InstrumentDriverInfo {
    * trait). One driverId across both types, so switching never loses mappings.
    */
   commTypes?: CommType[]
+  /**
+   * Analyzers whose order download runs on a SECOND MLLP connection, separate
+   * from the one that carries their queries and results (IHE LAW "server
+   * channel": Abbott Alinity ci-series). The onboarding/edit UI then collects
+   * the order-channel endpoint (`connection.orderChannel`) and the engine opens
+   * it alongside the main transport.
+   */
+  separateOrderChannel?: boolean
 }
 
 /** One selectable host communication type for a multi-protocol driver. */
@@ -105,6 +113,15 @@ export interface InstrumentConnectionConfig {
    * (undefined/false = send the full ordered set). Only applies when hostQuery is on.
    */
   hostQuerySkipFilled?: boolean
+  /**
+   * Second MLLP channel for order download, for drivers flagged
+   * `separateOrderChannel` (Abbott Alinity: the LIS sends OML^O33 orders on its
+   * own connection and the analyzer answers ORL^O34 there). 'tcp-client' dials
+   * the analyzer's receiver port (its "passive"/listening setting); 'tcp-server'
+   * listens for the analyzer when its receiver channel is configured to call out.
+   * Only used when hostQuery is on.
+   */
+  orderChannel?: { transport: 'tcp-client' | 'tcp-server'; host?: string; port?: number }
   /**
    * Auto-calculate Estimated Average Glucose (eAG) from HbA1c and write it to
    * the LIS alongside the HbA1c. Only meaningful for `derivesEag` drivers

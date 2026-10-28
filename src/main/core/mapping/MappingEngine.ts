@@ -123,6 +123,98 @@ export class MappingEngine {
     return added
   }
 
+  /**
+   * Record analyzer-side order codes learned from live traffic. The Abbott
+   * Alinity identifies every assay by a NUMBER that is not fixed across assay
+   * versions, so it cannot be seeded from the catalog: each results upload and
+   * each periodic TCU^U10 assay list carries (number, name) pairs, and the
+   * number is what an order download must send back. For every pair: the rule
+   * whose instrumentCode is that name (case-insensitive) gets the number as its
+   * analyzerCode (an operator's manual choice is never overwritten, only
+   * reported); a name with no rule yet gets a new row, auto-suggested against the
+   * LIS catalog like a seeded analyte. Returns how many rules changed.
+   */
+  async learnAnalyzerCodes(
+    driverId: string,
+    pairs: readonly { code: string; name: string }[]
+  ): Promise<number> {
+    let changed = 0
+    let tests: LisTest[] | null = null
+    let params: LisParameter[] = []
+    for (const { code, name } of pairs) {
+      const key = name.trim().toUpperCase()
+      if (!key || !code) continue
+      const rule =
+        this.rules.find((r) => r.driverId === driverId && r.instrumentCode.toUpperCase() === key) ??
+        this.rules.find((r) => r.driverId === driverId && (r.analyzerCode ?? '').trim() === code)
+      if (rule) {
+        const cur = (rule.analyzerCode ?? '').trim()
+        if (cur === code) continue
+        if (cur && rule.status === 'manual') {
+          logger.warn(
+            'mapping',
+            `${driverId}: analyzer reports "${name}" as assay ${code} but the manual rule carries ${cur} — left as set; update it under Mapping if the analyzer is right`
+          )
+          continue
+        }
+        if (cur) logger.info('mapping', `${driverId}: "${name}" assay number ${cur} -> ${code} (learned from the analyzer)`)
+        rule.analyzerCode = code
+        rule.updatedAt = new Date().toISOString()
+        changed++
+        continue
+      }
+      if (tests === null) {
+        try {
+          tests = await this.lis.getTests()
+          params = await this.lis.getParameters()
+        } catch {
+          tests = []
+        }
+      }
+      const target = this.suggest(name, name, tests, params)
+      this.rules.push({
+        id: randomUUID(),
+        driverId,
+        instrumentCode: name,
+        instrumentName: name,
+        analyzerCode: code,
+        status: target ? 'auto' : 'unmapped',
+        confidence: target?.confidence,
+        lisTestId: target?.lisTestId,
+        lisTestCode: target?.lisTestCode,
+        lisTestName: target?.lisTestName,
+        lisParamId: target?.lisParamId,
+        lisParamName: target?.lisParamName,
+        updatedAt: new Date().toISOString()
+      })
+      logger.info('mapping', `${driverId}: learned analyte "${name}" (assay ${code}) from the analyzer`)
+      changed++
+    }
+    if (changed > 0) this.save()
+    return changed
+  }
+
+  /**
+   * The analyzer-side order code for an instrument analyte: the rule's
+   * analyzerCode when one is known (learned or set by the operator), else
+   * undefined. A "<name>.I" interpretation analyte resolves through its base
+   * name, since the analyzer orders the assay, not the interpretation.
+   */
+  analyzerCodeFor(driverId: string, instrumentCode: string): string | undefined {
+    const base = instrumentCode.replace(/\.I$/i, '').trim().toUpperCase()
+    const direct = this.rules.find(
+      (r) => r.driverId === driverId && r.instrumentCode.toUpperCase() === instrumentCode.trim().toUpperCase()
+    )
+    const viaBase = this.rules.find((r) => r.driverId === driverId && r.instrumentCode.toUpperCase() === base)
+    return direct?.analyzerCode?.trim() || viaBase?.analyzerCode?.trim() || undefined
+  }
+
+  /** The instrument analyte (name) behind an analyzer-side order code, if any rule carries it. */
+  instrumentCodeForAnalyzerCode(driverId: string, analyzerCode: string): string | undefined {
+    const code = analyzerCode.trim()
+    return this.rules.find((r) => r.driverId === driverId && (r.analyzerCode ?? '').trim() === code)?.instrumentCode
+  }
+
   /** Suggest a LIS target for an instrument analyte (code first, then name). */
   private suggest(
     code: string,

@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
+import { OrderChannelFields } from '@/components/OrderChannelFields'
 import { useAppStore } from '@/store/useAppStore'
 import type {
   InstrumentRuntime,
@@ -61,6 +62,12 @@ export function EditInstrumentModal({
   const [passive, setPassive] = useState(!!c.passive)
   const [enabled, setEnabled] = useState(instrument.enabled)
   const [saving, setSaving] = useState(false)
+  // Second (order-download) channel for drivers flagged separateOrderChannel.
+  const [orderTransport, setOrderTransport] = useState<'tcp-client' | 'tcp-server'>(
+    c.orderChannel?.transport ?? 'tcp-client'
+  )
+  const [orderHost, setOrderHost] = useState(c.orderChannel?.host ?? '')
+  const [orderPort, setOrderPort] = useState(c.orderChannel?.port ? String(c.orderChannel.port) : '')
 
   // Re-seed every field from the instrument whenever the modal (re)opens or a
   // different instrument is passed in, so it always reflects the current config.
@@ -81,6 +88,9 @@ export function EditInstrumentModal({
     setHostQuery(!!cur.hostQuery)
     setPassive(!!cur.passive)
     setEnabled(instrument.enabled)
+    setOrderTransport(cur.orderChannel?.transport ?? 'tcp-client')
+    setOrderHost(cur.orderChannel?.host ?? '')
+    setOrderPort(cur.orderChannel?.port ? String(cur.orderChannel.port) : '')
     setPortsScanned(false)
   }, [open, instrument])
 
@@ -151,7 +161,15 @@ export function EditInstrumentModal({
           parity: transport === 'serial' ? (parity as 'none' | 'even' | 'odd') : undefined,
           stopBits: transport === 'serial' ? (Number(stopBits) as 1 | 2) : undefined,
           hostQuery: passive ? false : hostQuery,
-          passive
+          passive,
+          orderChannel:
+            driver?.separateOrderChannel && orderPort
+              ? {
+                  transport: orderTransport,
+                  host: orderTransport === 'tcp-client' ? orderHost.trim() : undefined,
+                  port: Number(orderPort)
+                }
+              : undefined
         }
       })
       onClose()
@@ -394,6 +412,17 @@ export function EditInstrumentModal({
             disabled={passive || driver?.mode === 'unidirectional'}
           />
         </div>
+
+        {driver?.separateOrderChannel && hostQuery && !passive && (
+          <OrderChannelFields
+            transport={orderTransport}
+            host={orderHost}
+            port={orderPort}
+            onTransport={setOrderTransport}
+            onHost={setOrderHost}
+            onPort={setOrderPort}
+          />
+        )}
 
         <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
           <div>

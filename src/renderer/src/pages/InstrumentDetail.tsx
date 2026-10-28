@@ -444,6 +444,19 @@ export function InstrumentDetail() {
               mono
             />
             <Row label="Protocol" value={inst.protocol.toUpperCase()} />
+            {driver?.separateOrderChannel && (
+              <Row
+                label="Order channel"
+                value={
+                  inst.connection.orderChannel
+                    ? inst.connection.orderChannel.transport === 'tcp-server'
+                      ? `listen :${inst.connection.orderChannel.port}`
+                      : `${inst.connection.orderChannel.host}:${inst.connection.orderChannel.port}`
+                    : 'not set'
+                }
+                mono
+              />
+            )}
             <Row label="Peer" value={inst.peer ?? '-'} />
             <Row label="Last message" value={timeAgo(inst.lastMessageAt)} />
           </CardContent>

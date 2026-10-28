@@ -45,8 +45,11 @@ export interface IInstrumentDriver {
    * Undefined = standard ASTM.
    */
   readonly astmDialect?: 'mindray' | 'beckman-dxi' | 'agappe-cx4'
-  /** HL7 parsing/host-query dialect for hl7 drivers ('getein'|'edan'|'boule'), else undefined. */
-  readonly hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba'
+  /**
+   * HL7 parsing/host-query dialect for hl7 drivers ('getein'|'edan'|'boule'|
+   * 'horiba'|'abbott-law' = IHE LAW OUL^R22 / QBP^Q11 / OML^O33), else undefined.
+   */
+  readonly hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba' | 'abbott-law'
   /** Getein result-ACK shape: 'spec' = CM-series protocol document; undefined = MAGICL run-on ACK. */
   readonly geteinAck?: 'spec'
   /** When true, the analyzer reconnects per result batch; keep the UI status 'online' between batches. */

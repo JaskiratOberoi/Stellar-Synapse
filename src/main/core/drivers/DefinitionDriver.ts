@@ -10,6 +10,7 @@ import { buildGeteinHl7Sample, parseGeteinHl7 } from './getein'
 import { buildHoribaHl7Sample, parseHoribaHl7 } from './horiba'
 import { buildMindrayAstmSample, parseMindrayAstm } from './mindray'
 import { buildAgappeCx4AstmSample, parseAgappeCx4Astm } from './agappeCx4'
+import { buildAlinityHl7Sample, parseAlinityHl7 } from './abbottAlinity'
 import { parseAstm, parseHl7, parseSimple } from './parsing'
 import { buildAstmSample, buildHl7Sample, buildSimpleSample } from './sampleBuilders'
 
@@ -80,6 +81,9 @@ export class DefinitionDriver implements IInstrumentDriver {
       // HORIBA Yumizen H550/H550E OUL^R22: barcode in SPM-2, analyte mnemonic in
       // OBX-3 component 2 (LOINC^mnemonic^LN), numeric rows only.
       if (this.def.hl7Dialect === 'horiba') return parseHoribaHl7(message, instrumentId)
+      // Abbott Alinity (IHE LAW) OUL^R22: barcode in SAC-3, assay number^name in
+      // OBX-3, patient specimens (SPM-11 P) with final primary results only.
+      if (this.def.hl7Dialect === 'abbott-law') return parseAlinityHl7(message, instrumentId)
       return parseHl7(message, instrumentId)
     }
     if (message.protocol === 'simple') return parseSimple(message, instrumentId)
@@ -108,6 +112,7 @@ export class DefinitionDriver implements IInstrumentDriver {
       if (this.def.hl7Dialect === 'edan') return buildEdanHl7Sample(sampleId, this.def.name, analytes)
       if (this.def.hl7Dialect === 'boule') return buildBouleHl7Sample(sampleId, this.def.name, analytes)
       if (this.def.hl7Dialect === 'horiba') return buildHoribaHl7Sample(sampleId, this.def.name, analytes)
+      if (this.def.hl7Dialect === 'abbott-law') return buildAlinityHl7Sample(sampleId, this.def.name, analytes)
       return buildHl7Sample(sampleId, this.def.name, analytes)
     }
     if (this.def.protocol === 'simple') return buildSimpleSample(sampleId, analytes)

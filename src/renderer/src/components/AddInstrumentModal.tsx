@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Switch } from '@/components/ui/Switch'
+import { OrderChannelFields } from '@/components/OrderChannelFields'
 import { useAppStore } from '@/store/useAppStore'
 import type {
   AuOnlineTestNo,
@@ -59,6 +60,11 @@ export function AddInstrumentModal({
   const [passive, setPassive] = useState(false)
   const [enabled, setEnabled] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Second (order-download) channel for drivers flagged separateOrderChannel
+  // (Abbott Alinity): the analyzer's receiver endpoint.
+  const [orderTransport, setOrderTransport] = useState<'tcp-client' | 'tcp-server'>('tcp-client')
+  const [orderHost, setOrderHost] = useState('')
+  const [orderPort, setOrderPort] = useState('')
   const [query, setQuery] = useState('')
   const [vendor, setVendor] = useState('all')
 
@@ -223,7 +229,15 @@ export function AddInstrumentModal({
           stopBits: transport === 'serial' ? (Number(stopBits) as 1 | 2) : undefined,
           hostQuery: passive ? false : hostQuery,
           passive,
-          autoIdentify: passive
+          autoIdentify: passive,
+          orderChannel:
+            driver.separateOrderChannel && orderPort
+              ? {
+                  transport: orderTransport,
+                  host: orderTransport === 'tcp-client' ? orderHost.trim() : undefined,
+                  port: Number(orderPort)
+                }
+              : undefined
         },
         auOnline: auOnlineTestNos
           ? { testNos: auOnlineTestNos, format: auFormat }
@@ -575,6 +589,17 @@ export function AddInstrumentModal({
               disabled={passive || driver?.mode === 'unidirectional'}
             />
           </div>
+
+          {driver?.separateOrderChannel && hostQuery && !passive && (
+            <OrderChannelFields
+              transport={orderTransport}
+              host={orderHost}
+              port={orderPort}
+              onTransport={setOrderTransport}
+              onHost={setOrderHost}
+              onPort={setOrderPort}
+            />
+          )}
 
           <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
             <div>

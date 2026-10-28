@@ -79,6 +79,10 @@ const RULES: { re: RegExp; id: string; strong: boolean }[] = [
   { re: /DXC\s*500\s*I/i, id: 'beckman-dxc-500i', strong: true },
   { re: /DXC\s*500/i, id: 'beckman-dxc-500-au', strong: true },
   { re: /BECKMAN|COULTER/i, id: 'beckman-coulter', strong: false },
+  // Abbott - Alinity (HL7 MSH-3 is operator-configured, but OBX-18 / EQU-1 carry
+  // "Alinity ci-series^Abbott" and every assay id is coded 99ABT)
+  { re: /ALINITY/i, id: 'abbott-alinity-ci', strong: true },
+  { re: /\bABBOTT\b|\^99ABT/i, id: 'abbott-alinity-ci', strong: false },
   // Boule - Swelab Lumi / Medonic M51 (HL7 MSH self-identifies as BM500 / Boule)
   { re: /SWELAB\s*LUMI/i, id: 'swelab-lumi', strong: true },
   { re: /MEDONIC\s*M\s*51/i, id: 'medonic-m51', strong: true },

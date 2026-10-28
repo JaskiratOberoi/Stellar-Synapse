@@ -31,9 +31,12 @@ export type ModelDefinition = InstrumentDriverInfo & {
    * 'getein' selects the Metis OBR-2 (barcode) / OBX-3 (item id) layout;
    * 'edan' selects the H60 OBR-2 (sample id) / OBX-4 (analyte mnemonic) layout;
    * 'boule' selects the BM500 OBR-3 (barcode) / OBX-3 component-2 (mnemonic)
-   * layout (Swelab Lumi / Medonic M51).
+   * layout (Swelab Lumi / Medonic M51); 'abbott-law' the IHE LAW profile of the
+   * Abbott Alinity ci-series (OUL^R22 results keyed by SAC-3 / OBX-3 assay
+   * number^name, QBP^Q11 queries answered by RSP^K11 + an OML^O33 on a second
+   * channel).
    */
-  hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba'
+  hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba' | 'abbott-law'
   /**
    * ASTM record-layout / host-query dialect for `protocol: 'astm'` models
    * (default standard). 'mindray' selects the Mindray BS-series layout and "SA"
@@ -91,6 +94,7 @@ interface MkOpts {
   geteinAck?: ModelDefinition['geteinAck']
   geteinResultKey?: ModelDefinition['geteinResultKey']
   commTypes?: InstrumentDriverInfo['commTypes']
+  separateOrderChannel?: boolean
 }
 
 function mk(
@@ -122,7 +126,8 @@ function mk(
     ...(opts.transientConnection ? { transientConnection: true } : {}),
     ...(opts.geteinAck ? { geteinAck: opts.geteinAck } : {}),
     ...(opts.geteinResultKey ? { geteinResultKey: opts.geteinResultKey } : {}),
-    ...(opts.commTypes ? { commTypes: opts.commTypes } : {})
+    ...(opts.commTypes ? { commTypes: opts.commTypes } : {}),
+    ...(opts.separateOrderChannel ? { separateOrderChannel: true } : {})
   }
 }
 
@@ -760,6 +765,83 @@ const mindray = [
 ]
 
 // ---------------------------------------------------------------------------
+// Abbott - Alinity ci-series (HL7 v2.5.1 / IHE LAW over MLLP)
+// ---------------------------------------------------------------------------
+const ALINITY_HL7 =
+  'HL7 v2.5.1 over MLLP per the IHE Laboratory Analytical Workflow (LAW) profile — Abbott ' +
+  '"Alinity ci-series LIS Interface Manual (HL7)" 80000455-106. The analyzer uses TWO network ' +
+  'channels. On its sender channel it dials this host and uploads results as OUL^R22 (patient ' +
+  'specimen SPM-11 P, barcode in SAC-3, each assay as <assay no.>^<name>^99ABT in OBX-3 with the ' +
+  'value in OBX-5, units OBX-6, range OBX-7, flags OBX-8, analysis time OBX-19); Synapse ' +
+  'acknowledges every message (ACK^R22/R24/U03/N02/U10) and files results by assay NAME, ' +
+  'surfacing qualitative interpretations as "<name>.I". Controls, calibrators, status updates ' +
+  'and exceptions are recognised and not posted. Host query (LAW LAB-27/28): when a barcode has ' +
+  'no orders on board the analyzer sends QBP^Q11; Synapse answers RSP^K11 on the same connection, ' +
+  'looks the barcode up in Noble and sends an OML^O33 order download (one ORC/TQ1/OBR per test, ' +
+  'OBR-4 = assay number) on the SEPARATE order channel — the analyzer\'s receiver port, which ' +
+  'Synapse dials as a TCP client (or listens on, if the receiver channel is set to connect out) — ' +
+  'and reads the per-test ORL^O34 accept/reject. A barcode with nothing to run gets the negative ' +
+  'query response (ORC DC). Abbott assay NUMBERS are not fixed across assay versions, so Synapse ' +
+  'learns them from the results and the periodic TCU^U10 assay-availability list into each ' +
+  "mapping's analyzer code; an assay whose number has not been seen yet is left out of the order " +
+  'and logged. On the analyzer: LIS = HL7, sender channel -> this host\'s IP and the port below, ' +
+  'receiver channel listening on a port of its own (enter it as the order channel here). Built ' +
+  'from the interface manual; not yet verified against a live unit.'
+const abbott = [
+  mk(
+    'abbott-alinity-ci',
+    'Abbott Alinity ci-series',
+    'Abbott',
+    'Integrated (Chemistry + Immunoassay)',
+    'Alinity c (clinical chemistry) + Alinity i (CMIA immunoassay) integrated system. ' + ALINITY_HL7,
+    INTEGRATED,
+    {
+      port: 9160,
+      protocol: 'hl7',
+      hl7Dialect: 'abbott-law',
+      mode: 'bidirectional',
+      transports: ['tcp-server'],
+      separateOrderChannel: true,
+      maturity: 'beta'
+    }
+  ),
+  mk(
+    'abbott-alinity-c',
+    'Abbott Alinity c',
+    'Abbott',
+    'Clinical Chemistry',
+    'Alinity c clinical chemistry module (photometric, ICT electrolytes). ' + ALINITY_HL7,
+    combine(CHEMISTRY, ELECTROLYTES),
+    {
+      port: 9160,
+      protocol: 'hl7',
+      hl7Dialect: 'abbott-law',
+      mode: 'bidirectional',
+      transports: ['tcp-server'],
+      separateOrderChannel: true,
+      maturity: 'beta'
+    }
+  ),
+  mk(
+    'abbott-alinity-i',
+    'Abbott Alinity i',
+    'Abbott',
+    'Immunoassay (CMIA)',
+    'Alinity i chemiluminescent microparticle immunoassay module. ' + ALINITY_HL7,
+    IMMUNOASSAY_FULL,
+    {
+      port: 9160,
+      protocol: 'hl7',
+      hl7Dialect: 'abbott-law',
+      mode: 'bidirectional',
+      transports: ['tcp-server'],
+      separateOrderChannel: true,
+      maturity: 'beta'
+    }
+  )
+]
+
+// ---------------------------------------------------------------------------
 // Generic fallback (keeps id 'generic-astm')
 // ---------------------------------------------------------------------------
 const generic = [
@@ -787,5 +869,6 @@ export const CATALOG: ModelDefinition[] = [
   ...agappe,
   ...horiba,
   ...mindray,
+  ...abbott,
   ...generic
 ]
