@@ -80,6 +80,8 @@ interface PersistShape {
   migratedCx4AlignPresetRetired?: boolean
   /** One-time migration: backfill Karnal 6000i preset rows (β-HCG 26, Testosterone 34, PRL 102) missing from older installs. */
   migratedKarnalMagiclBackfill?: boolean
+  /** One-time migration: turn Auto eAG back on for a Zeus D-20 where it was switched off (Lucknow 2026-10-28 posted the analyzer's mmol/L eAG). */
+  migratedLd560AutoEagOn?: boolean
 }
 
 type MigrationFlagKey =
@@ -93,6 +95,7 @@ type MigrationFlagKey =
   | 'migratedCx4RetireUnknownItems'
   | 'migratedCx4AlignPresetRetired'
   | 'migratedKarnalMagiclBackfill'
+  | 'migratedLd560AutoEagOn'
 
 const MAX_MONITOR_HISTORY = 2000
 

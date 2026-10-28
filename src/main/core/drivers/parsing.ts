@@ -150,10 +150,15 @@ export function applyHba1cDerivations(
     const code = r.analyteCode.toLowerCase()
     return code === 'hba1c' || code === 'eag' ? { ...r, value: toOneDecimal(r.value) } : r
   })
-  if (!opts.autoEag) return rounded
-
-  // Our computed eAG wins: drop any reported eAG, then derive one per HbA1c.
+  // The analyzer's own eAG never reaches the LIS. The LD-560 reports it in
+  // mmol/L while Noble's eAG parameter is mg/dL everywhere; with auto-eAG off,
+  // Lucknow 2026-10-28 posted 5.8 where 105.4 was due, sixteen times in a day.
+  // So "off" means NO eAG is written, not the wrong one. (The Monitor's
+  // "eAG (Instrument)" row is re-parsed from the raw frame and is unaffected.)
   const out = rounded.filter((r) => r.analyteCode.toLowerCase() !== 'eag')
+  if (!opts.autoEag) return out
+
+  // Our computed eAG wins: derive one per HbA1c.
   for (const r of rounded) {
     if (r.analyteCode.toLowerCase() !== 'hba1c') continue
     const eag = eagFromHba1c(parseFloat(r.value))

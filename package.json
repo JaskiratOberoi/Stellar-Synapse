@@ -1,6 +1,6 @@
 {
   "name": "stellar-synapse",
-  "version": "0.6.22",
+  "version": "0.6.23",
   "description": "Stellar Synapse - modular LIS instrument integration middleware for laboratory analyzers (Maglumi X3, MAGICL 6000, Beckman Coulter) interfacing with the Noble LISTEC LIS.",
   "main": "./out/main/index.js",
   "author": "Stellar Synapse",
@@ -34,7 +34,8 @@
     "verify:srinagar-x6": "esbuild scripts/verify-srinagar-x6.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-srinagar-x6.mjs && node scripts/.verify-srinagar-x6.mjs",
     "verify:getein-cm430": "esbuild scripts/verify-getein-cm430.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-getein-cm430.mjs && node scripts/.verify-getein-cm430.mjs",
     "verify:alinity": "esbuild scripts/verify-alinity.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-alinity.mjs && node scripts/.verify-alinity.mjs",
-    "verify:alinity-e2e": "esbuild scripts/verify-alinity-e2e.ts --bundle --platform=node --format=esm --alias:electron-store=./scripts/stubs/electron-store.ts --alias:electron=./scripts/stubs/electron.ts --external:mssql --external:serialport --outfile=scripts/.verify-alinity-e2e.mjs && node scripts/.verify-alinity-e2e.mjs"
+    "verify:alinity-e2e": "esbuild scripts/verify-alinity-e2e.ts --bundle --platform=node --format=esm --alias:electron-store=./scripts/stubs/electron-store.ts --alias:electron=./scripts/stubs/electron.ts --external:mssql --external:serialport --outfile=scripts/.verify-alinity-e2e.mjs && node scripts/.verify-alinity-e2e.mjs",
+    "verify:eag": "esbuild scripts/verify-eag.ts --bundle --platform=node --format=esm --outfile=scripts/.verify-eag.mjs && node scripts/.verify-eag.mjs"
   },
   "dependencies": {
     "electron-store": "^8.2.0",

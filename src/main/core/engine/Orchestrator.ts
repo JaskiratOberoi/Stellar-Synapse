@@ -199,6 +199,12 @@ export class Orchestrator extends EventEmitter {
     // Testosterone 34, PRL 102). Guarded to a store carrying the Karnal DxI rows.
     this.mapping.migrateKarnalMagiclBackfill()
 
+    // One-time: a Zeus D-20 whose Auto eAG switch was turned off (Lucknow) was
+    // posting the analyzer's mmol/L eAG into Noble's mg/dL row. The driver no
+    // longer passes that value through at all, so "off" now means no eAG; put
+    // the switch back to its default so the site keeps getting the calculated one.
+    this.migrateLd560AutoEagOn()
+
     // One-time: an already-onboarded Rohtak DxC 700 AU carries a copy of the
     // preset's wire format from before the analyzer's 20-char Patient
     // Information row was known. Add it in place so the site does not have to
@@ -738,6 +744,28 @@ export class Orchestrator extends EventEmitter {
         'engine',
         `Rohtak DxC 700 AU: added the 20-char Patient Information field to the order response (${changed} instrument)`
       )
+    }
+  }
+
+  /**
+   * One-time: turn Auto eAG back on for every Zeus D-20 (LD-560) where it is
+   * off. The switch defaults to on; off has only ever produced the wrong unit
+   * in Noble. Guarded by a persisted flag, so an operator who turns it off
+   * again afterwards is respected.
+   */
+  private migrateLd560AutoEagOn(): void {
+    if (persist.getMigrationFlag('migratedLd560AutoEagOn')) return
+    const all = persist.getInstruments()
+    let changed = 0
+    for (const inst of all) {
+      if (inst.driverId !== 'landwind-ld-560' || inst.connection.autoEag !== false) continue
+      delete inst.connection.autoEag
+      changed++
+    }
+    persist.setMigrationFlag('migratedLd560AutoEagOn', true)
+    if (changed > 0) {
+      persist.setInstruments(all)
+      logger.info('engine', `Zeus D-20: Auto eAG (calculated, mg/dL) turned back on (${changed} instrument)`)
     }
   }
 
