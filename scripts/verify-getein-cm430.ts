@@ -138,6 +138,41 @@ console.log('\n[2] §2.4.1.1 result upload decodes: barcode OBR-2, channel No. O
 }
 
 // =============================================================================
+console.log('\n[2b] Live Rohtak CM-430 upload (2026-10-28): barcode rides in PID-5, OBR-2/3 blank')
+{
+  // Captured verbatim from the Rohtak unit's Activity log (Raw view). Unlike the
+  // document's example, OBR-2 and OBR-3 are empty and the accession 9879250
+  // sits in PID-5; OBX-3 numbers are the 0-based list No. (ALT=0, AST=1, …).
+  const LIVE = [
+    'MSH|^~\\&||CM-430|||20261028201002||ORU^R01|1|P|2.3.1|||P|0||UTF8|||',
+    'PID|1||||9879250||20261028|||||||||||||||||||||||||',
+    'OBR|1|||^|N|2026/10/28 14:20:43|2026/10/28 14:48:52|||1 / 1||||2026/10/28 14:20:43|Serum||||||||||||||||||||||||',
+    'OBX|1|ST|0|ALT|14.8|U/L|0-40|N|||F||14.8|20261028144852|||0|',
+    'OBX|2|ST|1|AST|17.9|U/L|0-40|N|||F||17.9|20261028144901|||0|',
+    'OBX|3|ST|2|ALP|122.7|U/L|15-150|N|||F||122.7|20261028144910|||0|',
+    'OBX|4|ST|3|GGT|15.9|U/L|0-450|N|||F||15.9|20261028144919|||0|',
+    'OBX|5|ST|5|TP|6.2|g/dL|70.1-93.5|L|||F||6.2|20261028144928|||0|',
+    'OBX|6|ST|6|ALB|3.0|g/dL|40-53|L|||F||3|20261028144937|||0|'
+  ]
+  const msg = decode(LIVE)
+  eq('MSH-4 "CM-430" fingerprints the CM-430 driver', fingerprintInstrument(LIVE[0] + CR)?.driverId, 'getein-cm-430')
+  eq('patient class (MSH-16 = 0)', geteinResultClass(msg), '0')
+  const res = getDriver('getein-cm-430')?.parse(msg, 'cm') ?? []
+  eq('six results', res.length, 6)
+  ok('every result keyed to barcode 9879250 from PID-5', res.every((r) => r.sampleId === '9879250'), res.map((r) => r.sampleId).join(','))
+  eq('filed by item name, not the 0-based list No.', res.map((r) => r.analyteCode).join(','), 'ALT,AST,ALP,GGT,TP,ALB')
+  eq('  TP flagged L with its range', `${res[4]?.value} ${res[4]?.unit} ${res[4]?.referenceRange} ${res[4]?.flag}`, '6.2 g/dL 70.1-93.5 L')
+  // Document shape still wins: OBR-2 beats PID-2 (patient id) and PID-5 (name).
+  const docRes = parseGeteinHl7(decode(ORU), 'cm')
+  ok('spec example keeps OBR-2 over PID-2/PID-5', docRes.every((r) => r.sampleId === '12345678'))
+  // PID-5 holding a real NAME must never become the sample id.
+  const named = decode([LIVE[0], 'PID|1||||Mike||19851001|||', LIVE[2], LIVE[3]])
+  eq('a name in PID-5 with blank OBR-2/3 leaves the sample id empty', parseGeteinHl7(named, 'cm')[0]?.sampleId, '')
+  const pid3 = decode([LIVE[0], 'PID|1||A123^^^LAB||Mike||19851001|||', LIVE[2], LIVE[3]])
+  eq('PID-3 patient id is preferred over PID-5', parseGeteinHl7(pid3, 'cm')[0]?.sampleId, 'A123')
+}
+
+// =============================================================================
 console.log('\n[3] §2.4.1.2 QC upload is recognised and not posted')
 {
   const msg = decode(QC)

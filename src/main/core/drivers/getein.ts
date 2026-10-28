@@ -56,6 +56,7 @@ export function parseGeteinHl7(
   const results: CanonicalResult[] = []
   const now = new Date().toISOString()
   let currentSample = ''
+  let pidSample = ''
   let resultClass = '0' // MSH-16: 0=patient, 1=cal, 2=QC
 
   for (const seg of message.records) {
@@ -69,9 +70,25 @@ export function parseGeteinHl7(
         .map((s) => (s || '').trim())
         .find((s) => s === '1' || s === '2')
       resultClass = cls ?? '0'
+    } else if (type === 'PID') {
+      // The live CM-430 at Rohtak (2026-10-28) uploads with OBR-2 AND OBR-3
+      // blank and the accession number in PID-5 — the field the spec reserves
+      // for the patient NAME ("PID|1||||9879250||20261028|…"). Keep the PID ids
+      // as a fallback for that shape: PID-3 / PID-2 / PID-4 (the id fields)
+      // first, then PID-5 only when it looks like a barcode rather than a name
+      // (one token of id characters that contains a digit), so a frame that
+      // really carries "Mike" in PID-5 never files under a patient's name.
+      const idOf = (f: string | undefined): string => (f || '').split('^')[0].trim()
+      const name = idOf(seg[5])
+      pidSample =
+        idOf(seg[3]) ||
+        idOf(seg[2]) ||
+        idOf(seg[4]) ||
+        (/^[A-Za-z0-9._/-]+$/.test(name) && /\d/.test(name) ? name : '')
     } else if (type === 'OBR') {
-      // OBR-2 (placer) = sample barcode; fall back to OBR-3 (filler/sample no).
-      currentSample = (seg[2] || seg[3] || '').split('^')[0].trim()
+      // OBR-2 (placer) = sample barcode; fall back to OBR-3 (filler/sample no),
+      // then to the PID-borne id when the analyzer left both OBR slots empty.
+      currentSample = (seg[2] || seg[3] || '').split('^')[0].trim() || pidSample
     } else if (type === 'OBX') {
       if (resultClass === '1' || resultClass === '2') continue // cal/QC, not a patient result
       const itemNo = (seg[3] || '').split('^')[0].trim()

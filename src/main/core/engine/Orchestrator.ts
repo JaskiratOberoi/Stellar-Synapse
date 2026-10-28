@@ -1684,6 +1684,20 @@ export class Orchestrator extends EventEmitter {
     // tally (resultParamsProcessed) should reflect everything the analyzer sent.
     this.countResult(def.id, result.sampleId, countedSids)
 
+    // A result with no sample id can never be filed. Fail closed here rather
+    // than let the LIS look up vailid = '' — SQL Server matches that against
+    // Noble's blank/whitespace rows, which is how a CM-430 upload with empty
+    // OBR-2/OBR-3 (Rohtak, 2026-10-28) was tried against an unrelated COVID
+    // sample's rows and logged as "test not ordered" instead of the real cause.
+    if (!(result.sampleId ?? '').trim()) {
+      const why =
+        'No sample id in the frame — the analyzer sent this result without a barcode ' +
+        '(OBR-2/OBR-3 and PID blank), so Synapse cannot tell which sample it belongs to.'
+      logger.warn('engine', `${def.name}: not written — ${result.analyteCode}=${result.value} — ${why}`)
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: why })
+      return 'skipped'
+    }
+
     let rule = this.mapping.resolve(result, driverId)
     if (
       (!rule || rule.status === 'unmapped' || !rule.lisTestId) &&
