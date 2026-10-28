@@ -70,7 +70,12 @@ export function EditInstrumentModal({
   const [orderPort, setOrderPort] = useState(c.orderChannel?.port ? String(c.orderChannel.port) : '')
 
   // Re-seed every field from the instrument whenever the modal (re)opens or a
-  // different instrument is passed in, so it always reflects the current config.
+  // DIFFERENT instrument is passed in. Keyed on the id, not the object: the
+  // engine re-emits the runtime on every status flap and message count, and an
+  // analyzer that reconnects per message (Alinity on Active Transient) pushed a
+  // fresh object every few seconds — which re-ran this effect and wiped whatever
+  // the operator had typed before they could press Save.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return
     const cur = instrument.connection
@@ -92,7 +97,7 @@ export function EditInstrumentModal({
     setOrderHost(cur.orderChannel?.host ?? '')
     setOrderPort(cur.orderChannel?.port ? String(cur.orderChannel.port) : '')
     setPortsScanned(false)
-  }, [open, instrument])
+  }, [open, instrument.id])
 
   // Serial TX self-test: proves whether this PC can drive the line at all, which
   // is the question left when an analyzer acts as though it never hears us.
