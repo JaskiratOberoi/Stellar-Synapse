@@ -485,6 +485,12 @@ export interface LisHplcRunWrite {
   receivedAt: string
   /** SHA-256 of the normalised frame text: a retransmission is the same run. */
   frameSha256: string
+  /**
+   * The frame as received (an LD-560 picture body collapsed to its
+   * placeholder), so what the analyzer did and did not send can be read
+   * back from the ledger rather than guessed from the parsed table.
+   */
+  frameText: string
   /** code -> value as the analyzer sent them, canonical casing where known. */
   fractions: Record<string, string>
 }

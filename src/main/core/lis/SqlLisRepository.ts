@@ -181,7 +181,10 @@ BEGIN
   );
   CREATE INDEX IX_syn_hplc_run_vailid ON dbo.syn_hplc_run (vailid);
   CREATE INDEX IX_syn_hplc_run_received ON dbo.syn_hplc_run (received_at);
-END`
+END
+-- 0.7.3: the frame itself, so a missing fraction can be told from a dropped one.
+IF COL_LENGTH('dbo.syn_hplc_run', 'frame_text') IS NULL
+  ALTER TABLE dbo.syn_hplc_run ADD frame_text nvarchar(max) NULL;`
 
 const RUN_WRITE_SQL = `
 DECLARE @id int = (SELECT TOP 1 id FROM dbo.syn_hplc_run
@@ -190,10 +193,10 @@ IF @id IS NULL
 BEGIN
   INSERT INTO dbo.syn_hplc_run
     (vailid, instrument_id, driver_id, machine_name, internal_seq, received_at, frame_sha256,
-     hba1a, hba1b, hbf, la1c, sa1c, hba1c, hba0, eag_instrument, p3, v_win, hba2, hbe, hbd, hbs, hbc, fractions)
+     hba1a, hba1b, hbf, la1c, sa1c, hba1c, hba0, eag_instrument, p3, v_win, hba2, hbe, hbd, hbs, hbc, fractions, frame_text)
   VALUES
     (@vailid, @instrument, @driver, @machine, @seq, @received, @sha,
-     @hba1a, @hba1b, @hbf, @la1c, @sa1c, @hba1c, @hba0, @eag, @p3, @vwin, @hba2, @hbe, @hbd, @hbs, @hbc, @fractions);
+     @hba1a, @hba1b, @hbf, @la1c, @sa1c, @hba1c, @hba0, @eag, @p3, @vwin, @hba2, @hbe, @hbd, @hbs, @hbc, @fractions, @frameText);
   SET @id = SCOPE_IDENTITY();
   SELECT 'written' AS status, @id AS id;
 END
@@ -1038,6 +1041,7 @@ export class SqlLisRepository implements ILisRepository {
     req.input('received', mssql.DateTime2, new Date(write.receivedAt))
     req.input('sha', mssql.Char(64), write.frameSha256)
     req.input('fractions', mssql.NVarChar(mssql.MAX), JSON.stringify(write.fractions))
+    req.input('frameText', mssql.NVarChar(mssql.MAX), write.frameText.slice(0, 20000))
     // Every column gets a parameter, NULL where the frame did not carry it.
     const num = (code: string): number | null => {
       const v = parseFloat(write.fractions[code] ?? '')

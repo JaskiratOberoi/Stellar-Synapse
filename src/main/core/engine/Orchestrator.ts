@@ -68,7 +68,7 @@ import { convertForLis, roundResultValue } from './units'
 import { findSavedImage, saveInstrumentImage } from './imageStore'
 import { persist, MAX_DAILY_STAT_DAYS, type InstrumentDayStats } from '../../store'
 import { logger } from '../logger'
-import { ld560Fractions, normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
+import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
 
 /**
  * Render a byte buffer with control characters spelled out (<STX>/<ETX>/<ACK>/
@@ -631,9 +631,6 @@ export class Orchestrator extends EventEmitter {
           continue
         }
         if (msg.image) this.storeFrameImage(id, def, msg)
-        // The whole fraction table, to Synapse's run ledger — beside the
-        // value pipeline, never in it (see submitHplcRun).
-        if (def.driverId === 'landwind-ld-560') void this.recordHplcRun(def, msg.raw)
         void this.processMessage(id, msg)
         if (def.driverId === 'landwind-ld-560') ld560Ack = true
       }
@@ -1006,6 +1003,11 @@ export class Orchestrator extends EventEmitter {
     }
 
     let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })
+    // HPLC analyzers (Zeus D-20 / LD-560, Agappe Mispa Maestro): the whole
+    // fraction table and the frame text, to Synapse's run ledger — beside the
+    // value pipeline, never in it (see submitHplcRun). Taken here, before the
+    // eAG derivation, so the ledger holds what the ANALYZER said.
+    if (driver.info.derivesEag && results.length > 0) void this.recordHplcRun(def, message, results)
     // Getein CM series (results filed by OBX-4 name): every upload also carries
     // the analyzer's numeric Item No. in OBX-3 — the only id its host query
     // accepts at DSP-29+. Learn it into rule.analyzerCode (a name without a rule
@@ -2301,22 +2303,36 @@ export class Orchestrator extends EventEmitter {
    * rows see only HbA1c and the calculated eAG, exactly as before. A frame
    * the LIS cannot take right now is queued and retried with the results.
    */
-  private async recordHplcRun(def: InstrumentDefinition, raw: string): Promise<void> {
+  private async recordHplcRun(
+    def: InstrumentDefinition,
+    message: ProtocolMessage,
+    results: CanonicalResult[]
+  ): Promise<void> {
     try {
-      const normalized = normalizeLd560Raw(raw)
-      if (!normalized) return
-      const sample = parseLd560SampleFromRaw(normalized)
-      if (!sample) return
-      const fractions = ld560Fractions(sample)
+      // Every analyte the frame carried, first value wins on a repeat. An
+      // LD-560 frame's codes are already canonical (parseLd560ResultPairs);
+      // the Maestro's ASTM R records name theirs as the analyzer does.
+      const fractions: Record<string, string> = {}
+      for (const r of results) {
+        if (!(r.analyteCode in fractions)) fractions[r.analyteCode] = r.value
+      }
       if (Object.keys(fractions).length === 0) return
+      const sampleId = results.find((r) => r.sampleId)?.sampleId
+      if (!sampleId) return
+      const frameText = message.raw.trim()
+      const internalSeq =
+        def.driverId === 'landwind-ld-560'
+          ? parseLd560SampleFromRaw(normalizeLd560Raw(frameText) ?? '')?.internalSeq
+          : undefined
       const write: LisHplcRunWrite = {
-        vailid: sample.barcode,
+        vailid: sampleId,
         instrumentId: def.id,
         driverId: def.driverId,
         machineName: def.name,
-        internalSeq: sample.internalSeq,
+        internalSeq,
         receivedAt: new Date().toISOString(),
-        frameSha256: createHash('sha256').update(sample.raw).digest('hex'),
+        frameSha256: createHash('sha256').update(frameText).digest('hex'),
+        frameText,
         fractions
       }
       await this.submitHplcRun(def, write)
