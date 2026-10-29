@@ -389,6 +389,7 @@ export function registerIpc(win: BrowserWindow, services: Services): void {
   ipcMain.handle(IPC.cloudTest, (_e, baseUrl: string, siteCode: string, siteKey: string) =>
     reporter.testConnection(baseUrl, siteCode, siteKey)
   )
+  ipcMain.handle(IPC.cloudEnrol, () => reporter.reenrol())
 
   // Simulator
   ipcMain.handle(IPC.simulatorStart, () => simulator.start(persist.getSettings().simulatorRate))

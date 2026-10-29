@@ -66,8 +66,20 @@ function cloudStateLabel(s: CloudSyncStatus): {
   text: string
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'muted'
 } {
-  if (!s.enabled) return { text: 'Cloud sync off', tone: 'muted' }
-  if (!s.configured) return { text: 'Not configured', tone: 'warning' }
+  switch (s.phase) {
+    case 'needs-lab-name':
+      return { text: 'Name this lab to connect', tone: 'warning' }
+    case 'unconfigured':
+      return { text: 'No Infinity platform in this build', tone: 'muted' }
+    case 'enrolling':
+      return s.enrolError
+        ? { text: `Enrolment retrying: ${s.enrolError}`, tone: 'danger' }
+        : { text: 'Enrolling with Infinity…', tone: 'primary' }
+    case 'refused':
+      return { text: s.enrolError ?? 'Enrolment refused by Infinity', tone: 'danger' }
+    default:
+      break
+  }
   if (s.lastError) return { text: `Sync error: ${s.lastError}`, tone: 'danger' }
   if (s.lastSuccessAt) {
     return { text: `Last sync ${new Date(s.lastSuccessAt).toLocaleString()}`, tone: 'success' }
@@ -218,53 +230,13 @@ export function Settings() {
                   <Cloud className="h-4 w-4" strokeWidth={1.75} /> Stellar Infinity Cloud
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Push live instrument status and daily statistics to the Stellar Infinity platform so
-                  every lab site can be monitored centrally. Interfacing is never affected by cloud
+                  Live instrument status and daily statistics go to the Stellar Infinity platform so
+                  every lab can be monitored centrally. This install enrols itself under the lab name
+                  below; nothing else needs configuring. Interfacing is never affected by cloud
                   connectivity.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">Enable cloud sync</p>
-                    <p className="text-xs text-muted-foreground">
-                      Report instrument status and stats to Stellar Infinity in near-realtime
-                    </p>
-                  </div>
-                  <Switch
-                    checked={form.infinityEnabled}
-                    onChange={(v) => apply({ infinityEnabled: v })}
-                  />
-                </div>
-    
-                <div className="space-y-1.5">
-                  <Label>Base URL</Label>
-                  <Input
-                    value={form.infinityBaseUrl}
-                    placeholder="https://infinity.example.com"
-                    onChange={(e) => editField({ infinityBaseUrl: e.target.value })}
-                    onBlur={() => commitField('infinityBaseUrl')}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Site code</Label>
-                    <Input
-                      value={form.infinitySiteCode}
-                      onChange={(e) => editField({ infinitySiteCode: e.target.value })}
-                      onBlur={() => commitField('infinitySiteCode')}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Site key</Label>
-                    <Input
-                      type="password"
-                      value={form.infinitySiteKey}
-                      onChange={(e) => editField({ infinitySiteKey: e.target.value })}
-                      onBlur={() => commitField('infinitySiteKey')}
-                    />
-                  </div>
-                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Lab name</Label>
@@ -283,16 +255,45 @@ export function Settings() {
                     />
                   </div>
                 </div>
-    
-                <Button variant="secondary" onClick={testCloud} disabled={cloudTesting}>
-                  {cloudTesting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
-                  ) : (
-                    <Cloud className="h-4 w-4" strokeWidth={1.75} />
-                  )}
-                  Test connection
-                </Button>
-    
+
+                {cloudStatus && (
+                  <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
+                    <div className="space-y-1">
+                      <Badge tone={cloudStateLabel(cloudStatus).tone}>
+                        {cloudStateLabel(cloudStatus).text}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">
+                        {cloudStatus.siteCode
+                          ? `Reporting as site ${cloudStatus.siteCode}`
+                          : 'Not yet enrolled'}
+                        {cloudStatus.lastAttemptAt
+                          ? ` · last attempt ${new Date(cloudStatus.lastAttemptAt).toLocaleString()}`
+                          : ''}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={testCloud} disabled={cloudTesting}>
+                    {cloudTesting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                    ) : (
+                      <Cloud className="h-4 w-4" strokeWidth={1.75} />
+                    )}
+                    Test connection
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void window.api.cloud.enrol().then(setCloudStatus)}
+                    disabled={!form.labName.trim()}
+                    title="Drop this install's credential and ask Infinity for a fresh one"
+                  >
+                    <RotateCw className="h-4 w-4" strokeWidth={1.75} />
+                    Re-enrol
+                  </Button>
+                </div>
+
                 {cloudTest && (
                   <div
                     className={`flex items-start gap-2 rounded-2xl p-3 text-sm ${
@@ -311,21 +312,46 @@ export function Settings() {
                     </p>
                   </div>
                 )}
-    
-                {cloudStatus && (
-                  <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
-                    <div className="space-y-1">
-                      <Badge tone={cloudStateLabel(cloudStatus).tone}>
-                        {cloudStateLabel(cloudStatus).text}
-                      </Badge>
-                      {cloudStatus.lastAttemptAt && (
-                        <p className="text-xs text-muted-foreground">
-                          Last attempt {new Date(cloudStatus.lastAttemptAt).toLocaleString()}
-                        </p>
-                      )}
+
+                <details className="rounded-2xl bg-secondary/30 px-4 py-3">
+                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                    Advanced — manual credential and platform override
+                  </summary>
+                  <div className="mt-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <Label>Base URL override</Label>
+                      <Input
+                        value={form.infinityBaseUrl}
+                        placeholder="Blank = the platform built into this release"
+                        onChange={(e) => editField({ infinityBaseUrl: e.target.value })}
+                        onBlur={() => commitField('infinityBaseUrl')}
+                      />
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Site code</Label>
+                        <Input
+                          value={form.infinitySiteCode}
+                          onChange={(e) => editField({ infinitySiteCode: e.target.value })}
+                          onBlur={() => commitField('infinitySiteCode')}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Site key</Label>
+                        <Input
+                          type="password"
+                          value={form.infinitySiteKey}
+                          onChange={(e) => editField({ infinitySiteKey: e.target.value })}
+                          onBlur={() => commitField('infinitySiteKey')}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Filled in automatically by enrolment. Clear both fields and the install enrols
+                      again on its own.
+                    </p>
                   </div>
-                )}
+                </details>
               </CardContent>
             </Card>
           </motion.div>

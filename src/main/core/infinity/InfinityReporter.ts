@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { hostname } from 'node:os'
 import { app, Notification } from 'electron'
 import type {
   AppSettings,
@@ -10,6 +11,7 @@ import type {
 import type { Orchestrator } from '../engine/Orchestrator'
 import { persist } from '../../store'
 import { logger } from '../logger'
+import { infinityCloud, isCloudConfigured } from './config'
 
 /** Quiet window after an instrument change before a report is pushed. */
 const DEBOUNCE_MS = 2000
@@ -24,6 +26,11 @@ const BACKOFF_MAX_MS = 5 * 60_000
 const STUCK_CONNECTING_MS = 10 * 60_000
 /** Cadence of the stuck-connecting check. */
 const ALERT_CHECK_MS = 60_000
+/** Enrolment retry: first delay after a failure, doubling up to the max. */
+const ENROL_BACKOFF_MIN_MS = 30_000
+const ENROL_BACKOFF_MAX_MS = 10 * 60_000
+/** A refused enrolment (site deactivated in Infinity) is retried this often. */
+const ENROL_REFUSED_RETRY_MS = 60 * 60_000
 
 /** One per-local-date rollup entry in the report body. */
 interface ReportDay {
@@ -72,16 +79,28 @@ interface ReportBody {
  * The alert watcher runs unconditionally — disconnect notifications work even
  * when cloud sync is disabled or unconfigured.
  *
+ * Self-enrolment (0.7.0): an install with a lab name but no site credential
+ * asks Infinity for one — POST /api/interfacing/enrol with the fleet key
+ * baked into the build — stores what comes back, and starts reporting. No
+ * operator ever mints or pastes a key; the first-launch dialog that asks for
+ * the lab name is the whole setup.
+ *
  * Emits 'status' (CloudSyncStatus) on every state change for the Settings UI.
  */
 export class InfinityReporter extends EventEmitter {
   private status: CloudSyncStatus = {
     configured: false,
-    enabled: false,
+    enabled: true,
+    phase: 'unconfigured',
+    siteCode: null,
+    enrolError: null,
     lastAttemptAt: null,
     lastSuccessAt: null,
     lastError: null
   }
+  private enrolTimer: ReturnType<typeof setTimeout> | null = null
+  private enrolling = false
+  private enrolBackoffMs = 0
   private running = false
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -137,9 +156,21 @@ export class InfinityReporter extends EventEmitter {
     return { ...this.status }
   }
 
-  /** Probe the Infinity ping endpoint with the given (possibly unsaved) creds. */
+  /** Drop the site credential and enrol again (Settings › Re-enrol). */
+  reenrol(): CloudSyncStatus {
+    const s = persist.getSettings()
+    persist.setSettings({ ...s, infinitySiteCode: '', infinitySiteKey: '' })
+    this.enrolBackoffMs = 0
+    this.applySettings()
+    return this.getStatus()
+  }
+
+  /**
+   * Probe the Infinity ping endpoint with the given (possibly unsaved) creds.
+   * A blank base URL means the platform baked into the build.
+   */
   async testConnection(baseUrl: string, siteCode: string, siteKey: string): Promise<CloudTestResult> {
-    const base = normalizeBaseUrl(baseUrl)
+    const base = normalizeBaseUrl(baseUrl) || infinityCloud.baseUrl
     if (!base || !siteCode || !siteKey) {
       return { ok: false, error: 'Base URL, site code and site key are all required' }
     }
@@ -161,14 +192,15 @@ export class InfinityReporter extends EventEmitter {
 
   private applySettings(): void {
     const s = persist.getSettings()
-    const configured =
-      !!normalizeBaseUrl(s.infinityBaseUrl) && !!s.infinitySiteCode && !!s.infinitySiteKey
-    const shouldRun = s.infinityEnabled && configured
+    const base = resolveBaseUrl(s)
+    const configured = !!base && !!s.infinitySiteCode && !!s.infinitySiteKey
 
     // Restart cleanly on any settings change so a new URL/key takes effect and a
     // fresh start re-sends every retained day (empty dedupe map).
     if (this.running) this.stopSync()
-    if (shouldRun) {
+    this.cancelEnrol()
+
+    if (configured) {
       this.running = true
       this.backoffMs = 0
       this.backoffUntil = 0
@@ -177,10 +209,113 @@ export class InfinityReporter extends EventEmitter {
         if (Date.now() >= this.backoffUntil) void this.push()
       }, HEARTBEAT_MS)
       this.schedulePush()
-      logger.info('infinity', `Cloud sync armed (${normalizeBaseUrl(s.infinityBaseUrl)})`)
+      logger.info('infinity', `Cloud sync armed as ${s.infinitySiteCode} (${base})`)
+      this.patchStatus({ configured, enabled: true, phase: 'syncing', siteCode: s.infinitySiteCode, enrolError: null })
+      return
     }
 
-    this.patchStatus({ configured, enabled: s.infinityEnabled })
+    // No credential yet: enrol, once the lab has a name and a platform exists.
+    if (!s.labName.trim()) {
+      this.patchStatus({ configured, enabled: true, phase: 'needs-lab-name', siteCode: null })
+      return
+    }
+    if (!isCloudConfigured()) {
+      this.patchStatus({ configured, enabled: true, phase: 'unconfigured', siteCode: null })
+      logger.info('infinity', 'No Infinity platform baked into this build; cloud sync dormant')
+      return
+    }
+    this.patchStatus({ configured, enabled: true, phase: 'enrolling', siteCode: null })
+    this.scheduleEnrol(0)
+  }
+
+  // ----- self-enrolment -------------------------------------------------------
+
+  private cancelEnrol(): void {
+    if (this.enrolTimer) {
+      clearTimeout(this.enrolTimer)
+      this.enrolTimer = null
+    }
+  }
+
+  private scheduleEnrol(delayMs: number): void {
+    this.cancelEnrol()
+    this.enrolTimer = setTimeout(() => void this.enrol(), delayMs)
+  }
+
+  /**
+   * Ask Infinity for this install's site credential and store it. Never
+   * throws: a failure logs, backs off (30 s doubling to 10 min) and retries;
+   * a refusal (the site was deactivated in Infinity) is retried hourly.
+   */
+  private async enrol(): Promise<void> {
+    if (this.enrolling) return
+    this.enrolling = true
+    try {
+      const s = persist.getSettings()
+      if (s.infinitySiteCode && s.infinitySiteKey) return
+      const labName = s.labName.trim()
+      if (!labName || !isCloudConfigured()) return
+
+      const body = {
+        installId: s.installId,
+        labName,
+        labLocation: s.labLocation.trim(),
+        machineName: hostname(),
+        agentVersion: app.getVersion()
+      }
+      this.patchStatus({ lastAttemptAt: new Date().toISOString() })
+      const res = await this.fetchWithTimeout(`${infinityCloud.baseUrl}/api/interfacing/enrol`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Update-Key': infinityCloud.fleetKey },
+        body: JSON.stringify(body)
+      })
+
+      if (res.status === 409) {
+        const detail = (await res.json().catch(() => ({}))) as { error?: string }
+        const message = detail.error ?? 'Infinity declined this enrolment'
+        this.patchStatus({ phase: 'refused', enrolError: message })
+        logger.warn('infinity', `Enrolment refused: ${message}; retrying in an hour`)
+        this.scheduleEnrol(ENROL_REFUSED_RETRY_MS)
+        return
+      }
+      if (res.status === 401) throw new Error('Infinity does not recognise this build\'s fleet key')
+      if (res.status === 404) throw new Error('Infinity has no enrolment endpoint at this address')
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(detail.error ?? `Infinity responded with HTTP ${res.status}`)
+      }
+
+      const data = (await res.json()) as {
+        ok?: boolean
+        siteCode?: string
+        siteKey?: string
+        site?: { name?: string }
+      }
+      if (!data.ok || !data.siteCode || !data.siteKey) throw new Error('Unexpected response from Infinity')
+
+      persist.setSettings({
+        ...persist.getSettings(),
+        infinitySiteCode: data.siteCode,
+        infinitySiteKey: data.siteKey,
+        infinityEnabled: true
+      })
+      this.enrolBackoffMs = 0
+      logger.info('infinity', `Enrolled with Infinity as ${data.siteCode} (${data.site?.name ?? labName})`)
+      this.applySettings()
+    } catch (err) {
+      const message = describeFetchError(err)
+      this.enrolBackoffMs = this.enrolBackoffMs
+        ? Math.min(this.enrolBackoffMs * 2, ENROL_BACKOFF_MAX_MS)
+        : ENROL_BACKOFF_MIN_MS
+      this.patchStatus({ phase: 'enrolling', enrolError: message })
+      logger.warn(
+        'infinity',
+        `Enrolment failed (retrying in ${Math.round(this.enrolBackoffMs / 1000)}s): ${message}`
+      )
+      this.scheduleEnrol(this.enrolBackoffMs)
+    } finally {
+      this.enrolling = false
+    }
   }
 
   private stopSync(): void {
@@ -207,7 +342,7 @@ export class InfinityReporter extends EventEmitter {
     this.pushing = true
     try {
       const s = persist.getSettings()
-      const base = normalizeBaseUrl(s.infinityBaseUrl)
+      const base = resolveBaseUrl(s)
       if (!base || !s.infinitySiteCode || !s.infinitySiteKey) return
       const { body, sentDays } = this.buildReport(s)
       this.patchStatus({ lastAttemptAt: new Date().toISOString() })
@@ -382,6 +517,11 @@ export class InfinityReporter extends EventEmitter {
 /** Trimmed base URL without a trailing slash; empty string when unset. */
 function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '')
+}
+
+/** The platform this install reports to: a manual override, else the baked one. */
+function resolveBaseUrl(s: AppSettings): string {
+  return normalizeBaseUrl(s.infinityBaseUrl) || infinityCloud.baseUrl
 }
 
 /** Human-readable address for the report: host:port, listen :port, or COM path. */

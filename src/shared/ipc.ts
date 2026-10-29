@@ -100,6 +100,7 @@ export const IPC = {
   // Stellar Infinity cloud sync
   cloudStatus: 'cloud:status',
   cloudTest: 'cloud:test',
+  cloudEnrol: 'cloud:enrol',
 
   // Simulator
   simulatorStart: 'simulator:start',
@@ -248,6 +249,8 @@ export interface StellarApi {
     status(): Promise<CloudSyncStatus>
     /** Probe the Infinity ping endpoint with the given (possibly unsaved) creds. */
     test(baseUrl: string, siteCode: string, siteKey: string): Promise<CloudTestResult>
+    /** Drop this install's site credential and enrol with Infinity again. */
+    enrol(): Promise<CloudSyncStatus>
     /** Subscribe to cloud-sync status changes pushed from the main process. */
     onStatus(cb: (status: CloudSyncStatus) => void): () => void
   }

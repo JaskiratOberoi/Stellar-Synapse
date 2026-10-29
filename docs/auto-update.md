@@ -86,3 +86,34 @@ updated manually once — rotate only if the key is believed leaked.
 - Clients on 0.2.x (built against the never-configured GitHub feed) cannot
   self-update; each lab needs one manual install of 0.3.0+, after which OTA is
   automatic.
+
+## Self-enrolment with Infinity (0.7.0)
+
+Every install reports its instruments to Infinity's Interfacing tab, and no
+operator mints or pastes a site key any more:
+
+1. On first launch (and on the first launch after updating to 0.7.0 on an
+   install that never named itself) Synapse asks **"Which lab is this?"** —
+   lab name and location. The dialog cannot be dismissed without a name.
+2. The main process then calls `POST /api/interfacing/enrol` on the platform
+   baked in as `SYNAPSE_INFINITY_URL` (default: the update feed's origin),
+   authenticated with the same fleet key as the feed (`X-Update-Key`), sending
+   its own `installId` (minted once, kept in the store), the lab name and
+   location, the PC's hostname and the agent version.
+3. Infinity creates the site (code slugged from the lab name, e.g.
+   `NOBLEDIAGNOSTICS`, `-2` when taken), mints the per-site key exactly as the
+   manual "Register lab site" path does, and returns it once. Synapse stores
+   it as `infinitySiteCode` / `infinitySiteKey` and starts reporting with the
+   usual `X-Site-Code` / `X-Site-Key` headers. The fleet key never carries a
+   report.
+4. Failures back off (30 s doubling to 10 min) and retry forever; a site an
+   operator deactivated in Infinity is refused (409) and retried hourly.
+   Settings › Stellar Infinity Cloud shows the phase, the site code, and a
+   **Re-enrol** button that drops the credential and enrols again (same
+   `installId` → the same site row is re-keyed, history kept). The manual
+   fields live under "Advanced" for an agent that must be pointed elsewhere.
+
+Infinity side: script 216 (`inf_lab_site.install_id / machine_name /
+enrolled_at`, `usp_inf_lab_site_enrol`), `InterfacingEndpoints.Enrol`. The
+endpoint answers 404 when `Updates__SynapseKey` is not configured on that
+deployment, 401 for a wrong key.

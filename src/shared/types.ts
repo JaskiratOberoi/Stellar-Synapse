@@ -721,17 +721,28 @@ export interface AppSettings {
    * mid-shift; the install itself takes only seconds.
    */
   updateInstallHour: number
+  /**
+   * This install's own id, generated once and kept beside the site credential.
+   * Enrolling again with the same id re-keys the same site in Infinity.
+   */
+  installId: string
   /** Lab display name reported to the Stellar Infinity cloud platform. */
   labName: string
   /** Lab location (city/site) reported to the Stellar Infinity cloud platform. */
   labLocation: string
-  /** Push instrument status/stats to the Stellar Infinity cloud platform. */
+  /**
+   * Push instrument status/stats to the Stellar Infinity cloud platform.
+   * Always on since 0.7.0 (every install reports); kept for older stores.
+   */
   infinityEnabled: boolean
-  /** Stellar Infinity base URL, e.g. "https://infinity.example.com". */
+  /**
+   * Stellar Infinity base URL override. Blank = the platform baked into the
+   * build, which is what every enrolled install uses.
+   */
   infinityBaseUrl: string
-  /** Site code issued by Stellar Infinity (sent as X-Site-Code). */
+  /** Site code issued by Stellar Infinity (sent as X-Site-Code); filled in by enrolment. */
   infinitySiteCode: string
-  /** Site key issued by Stellar Infinity (sent as X-Site-Key). */
+  /** Site key issued by Stellar Infinity (sent as X-Site-Key); filled in by enrolment. */
   infinitySiteKey: string
 }
 
@@ -739,12 +750,27 @@ export interface AppSettings {
 // Stellar Infinity cloud sync (main -> renderer)
 // ---------------------------------------------------------------------------
 
+/**
+ * Where the install stands with Infinity:
+ *   needs-lab-name  no lab name saved yet — the first-launch dialog is up
+ *   unconfigured    no platform baked into this build and no manual credential
+ *   enrolling       asking Infinity for this site's credential (retries on failure)
+ *   refused         Infinity declined the enrolment (site deactivated there)
+ *   syncing         credential in hand, reports flowing
+ */
+export type CloudPhase = 'needs-lab-name' | 'unconfigured' | 'enrolling' | 'refused' | 'syncing'
+
 /** State of the Stellar Infinity cloud reporter, surfaced in Settings. */
 export interface CloudSyncStatus {
   /** Base URL + site code + site key are all set. */
   configured: boolean
   /** Cloud sync toggle in Settings. */
   enabled: boolean
+  phase: CloudPhase
+  /** The site code this install reports as, once enrolled or configured. */
+  siteCode: string | null
+  /** Message from the last failed enrolment attempt; null once it succeeds. */
+  enrolError: string | null
   /** ISO time of the last push attempt (success or failure). */
   lastAttemptAt: string | null
   /** ISO time of the last successful push. */

@@ -1,4 +1,5 @@
 import Store from 'electron-store'
+import { randomUUID } from 'node:crypto'
 import type {
   AppSettings,
   InstrumentDefinition,
@@ -82,6 +83,7 @@ interface PersistShape {
   migratedKarnalMagiclBackfill?: boolean
   /** One-time migration: turn Auto eAG back on for a Zeus D-20 where it was switched off (Lucknow 2026-10-28 posted the analyzer's mmol/L eAG). */
   migratedLd560AutoEagOn?: boolean
+  migratedCloudAlwaysOn?: boolean
 }
 
 type MigrationFlagKey =
@@ -96,6 +98,7 @@ type MigrationFlagKey =
   | 'migratedCx4AlignPresetRetired'
   | 'migratedKarnalMagiclBackfill'
   | 'migratedLd560AutoEagOn'
+  | 'migratedCloudAlwaysOn'
 
 const MAX_MONITOR_HISTORY = 2000
 
@@ -113,10 +116,12 @@ const defaults: PersistShape = {
     // Over-the-air updates on by default; install downloaded updates at 03:00 local.
     autoUpdateEnabled: true,
     updateInstallHour: 3,
-    // Stellar Infinity cloud sync — opt-in, configured per site in Settings.
+    // Stellar Infinity cloud sync — every install reports; the credential
+    // arrives by self-enrolment once the lab is named on first launch.
+    installId: '',
     labName: '',
     labLocation: '',
-    infinityEnabled: false,
+    infinityEnabled: true,
     infinityBaseUrl: '',
     infinitySiteCode: '',
     infinitySiteKey: ''
@@ -177,6 +182,7 @@ export const persist = {
       s.launchAtStartup === undefined ||
       s.autoUpdateEnabled === undefined ||
       s.updateInstallHour === undefined ||
+      s.installId === undefined ||
       s.labName === undefined ||
       s.labLocation === undefined ||
       s.infinityEnabled === undefined ||
@@ -190,15 +196,25 @@ export const persist = {
         launchAtStartup: s.launchAtStartup ?? false,
         autoUpdateEnabled: s.autoUpdateEnabled ?? true,
         updateInstallHour: s.updateInstallHour ?? 3,
+        installId: s.installId ?? '',
         labName: s.labName ?? '',
         labLocation: s.labLocation ?? '',
-        infinityEnabled: s.infinityEnabled ?? false,
+        infinityEnabled: s.infinityEnabled ?? true,
         infinityBaseUrl: s.infinityBaseUrl ?? '',
         infinitySiteCode: s.infinitySiteCode ?? '',
         infinitySiteKey: s.infinitySiteKey ?? ''
       }
       store().set('settings', next)
-      return next
+      s = next
+    }
+    // 0.7.0: every install reports to Infinity and enrols itself. The id is
+    // minted once here; installs that had cloud sync switched off (the old
+    // opt-in default) are switched on, since the credential now arrives on
+    // its own and there is nothing left for an operator to configure.
+    if (!s.installId || !store().get('migratedCloudAlwaysOn')) {
+      s = { ...s, installId: s.installId || randomUUID(), infinityEnabled: true }
+      store().set('settings', s)
+      store().set('migratedCloudAlwaysOn', true)
     }
     return s
   },

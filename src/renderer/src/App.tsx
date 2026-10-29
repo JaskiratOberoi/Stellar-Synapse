@@ -14,6 +14,7 @@ import { LisConnection } from '@/pages/LisConnection'
 import { Logs } from '@/pages/Logs'
 import { Settings } from '@/pages/Settings'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { LabIdentityDialog } from '@/components/LabIdentityDialog'
 import { Waypoints } from 'lucide-react'
 
 function Loading() {
@@ -110,6 +111,8 @@ export default function App() {
             <AnimatedRoutes />
           </div>
         </main>
+        {/* First launch: name the lab, and the install enrols itself with Infinity. */}
+        <LabIdentityDialog />
       </div>
     </HashRouter>
   )

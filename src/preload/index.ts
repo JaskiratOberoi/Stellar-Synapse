@@ -91,6 +91,7 @@ const api: StellarApi = {
   cloud: {
     status: () => ipcRenderer.invoke(IPC.cloudStatus),
     test: (baseUrl, siteCode, siteKey) => ipcRenderer.invoke(IPC.cloudTest, baseUrl, siteCode, siteKey),
+    enrol: () => ipcRenderer.invoke(IPC.cloudEnrol),
     onStatus: (cb) => on<CloudSyncStatus>(IPC_EVENT.cloudStatus, cb)
   },
   simulator: {

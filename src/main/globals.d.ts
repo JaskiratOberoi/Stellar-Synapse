@@ -10,3 +10,5 @@
 declare const __APP_VERSION__: string
 declare const __UPDATE_URL__: string
 declare const __UPDATE_KEY__: string
+/** Stellar Infinity base URL the install reports to and enrols with (SYNAPSE_INFINITY_URL). */
+declare const __INFINITY_URL__: string
