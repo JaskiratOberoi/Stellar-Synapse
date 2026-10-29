@@ -112,6 +112,13 @@ export function Settings() {
     void window.api.cloud.status().then(setCloudStatus)
     return window.api.cloud.onStatus(setCloudStatus)
   }, [])
+  // Enrolment writes the site credential from the main process; the copy of
+  // the settings this page was opened with predates it. Re-read whenever the
+  // site this install reports as changes, so Test connection and the
+  // Advanced fields show what is actually in use.
+  useEffect(() => {
+    void window.api.settings.get().then(setSettings)
+  }, [cloudStatus?.siteCode, setSettings])
   useEffect(() => {
     void window.api.system.lanIp().then(setLanIp).catch(() => undefined)
   }, [])

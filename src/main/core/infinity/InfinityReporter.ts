@@ -170,7 +170,8 @@ export class InfinityReporter extends EventEmitter {
    * A blank base URL means the platform baked into the build.
    */
   async testConnection(baseUrl: string, siteCode: string, siteKey: string): Promise<CloudTestResult> {
-    const base = normalizeBaseUrl(baseUrl) || infinityCloud.baseUrl
+    const override = normalizeBaseUrl(baseUrl)
+    const base = isHttpUrl(override) ? override : infinityCloud.baseUrl
     if (!base || !siteCode || !siteKey) {
       return { ok: false, error: 'Base URL, site code and site key are all required' }
     }
@@ -293,10 +294,15 @@ export class InfinityReporter extends EventEmitter {
       }
       if (!data.ok || !data.siteCode || !data.siteKey) throw new Error('Unexpected response from Infinity')
 
+      // The credential was issued by the baked platform, so reports must go
+      // there: a base URL override left behind from an earlier manual setup
+      // (one lab had "api", which resolves nowhere) would send every report
+      // to the wrong host with a key that host has never heard of.
       persist.setSettings({
         ...persist.getSettings(),
         infinitySiteCode: data.siteCode,
         infinitySiteKey: data.siteKey,
+        infinityBaseUrl: '',
         infinityEnabled: true
       })
       this.enrolBackoffMs = 0
@@ -519,9 +525,23 @@ function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '')
 }
 
-/** The platform this install reports to: a manual override, else the baked one. */
+/**
+ * The platform this install reports to: a manual override when it is a real
+ * http(s) URL, else the baked one. A bare word like "api" is not a platform.
+ */
 function resolveBaseUrl(s: AppSettings): string {
-  return normalizeBaseUrl(s.infinityBaseUrl) || infinityCloud.baseUrl
+  const override = normalizeBaseUrl(s.infinityBaseUrl)
+  return isHttpUrl(override) ? override : infinityCloud.baseUrl
+}
+
+function isHttpUrl(url: string): boolean {
+  if (!url) return false
+  try {
+    const u = new URL(url)
+    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes('.')
+  } catch {
+    return false
+  }
 }
 
 /** Human-readable address for the report: host:port, listen :port, or COM path. */
