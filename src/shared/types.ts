@@ -372,6 +372,13 @@ export interface CanonicalResult {
   altSampleId?: string
   /** Instrument analyte code, e.g. "TSH", "FT4". */
   analyteCode: string
+  /**
+   * The analyzer's own numeric id for this analyte when `analyteCode` is a name
+   * (Getein CM series: OBX-3 Item No. beside the OBX-4 name). The Orchestrator
+   * learns it into the mapping rule's analyzerCode so host-query orders carry
+   * the number the analyzer matches on.
+   */
+  analyzerCode?: string
   analyteName?: string
   value: string
   unit?: string

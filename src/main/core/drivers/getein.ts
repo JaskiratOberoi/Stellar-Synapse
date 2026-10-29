@@ -101,6 +101,9 @@ export function parseGeteinHl7(
         instrumentId,
         sampleId: currentSample,
         analyteCode: code,
+        // Name-keyed drivers keep the OBX-3 number beside the name: it is the
+        // Item No. the host query must order by (DSP-29+), learned per analyzer.
+        analyzerCode: opts?.keyByName && name && itemNo ? itemNo : undefined,
         analyteName: name,
         value: (seg[5] || '').trim(),
         unit: (seg[6] || '').trim() || undefined,

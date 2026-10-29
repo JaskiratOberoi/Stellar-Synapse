@@ -52,6 +52,8 @@ export interface IInstrumentDriver {
   readonly hl7Dialect?: 'generic' | 'getein' | 'edan' | 'boule' | 'horiba' | 'abbott-law'
   /** Getein result-ACK shape: 'spec' = CM-series protocol document; undefined = MAGICL run-on ACK. */
   readonly geteinAck?: 'spec'
+  /** Getein result key: 'name' = file by OBX-4 item name and order by the learned numeric Item No.; undefined = OBX-3 id. */
+  readonly geteinResultKey?: 'name'
   /** When true, the analyzer reconnects per result batch; keep the UI status 'online' between batches. */
   readonly transientConnection?: boolean
   /** Analytes this instrument can report. */

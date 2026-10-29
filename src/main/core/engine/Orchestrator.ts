@@ -35,6 +35,7 @@ import {
   geteinResultControlId,
   buildGeteinQck,
   buildGeteinDsr,
+  orderableGeteinCodes,
   buildGeteinAck,
   buildGeteinSpecAck,
   geteinResultClass,
@@ -997,6 +998,27 @@ export class Orchestrator extends EventEmitter {
     }
 
     let results = driver.parse(message, instrumentId, { auOnline: def.auOnline })
+    // Getein CM series (results filed by OBX-4 name): every upload also carries
+    // the analyzer's numeric Item No. in OBX-3 — the only id its host query
+    // accepts at DSP-29+. Learn it into rule.analyzerCode (a name without a rule
+    // gets one, unmapped or auto) so orders never go out as text and the
+    // operator never types the numbers by hand.
+    if (driver.hl7Dialect === 'getein') {
+      const pairs = results
+        .filter((r) => r.analyzerCode)
+        .map((r) => ({ code: r.analyzerCode as string, name: r.analyteCode }))
+      if (pairs.length > 0) {
+        const changed = await this.mapping.learnAnalyzerCodes(driver.info.id, pairs)
+        if (changed > 0) {
+          logger.info(
+            'mapping',
+            `${def.name}: learned ${changed} Item No.(s) from the upload: ` +
+              pairs.map((p) => `${p.name}=${p.code}`).join(', ')
+          )
+          this.emit('mappings', this.mapping.list())
+        }
+      }
+    }
     // HbA1c HPLC analyzers (Agappe Mispa Maestro): round to a single decimal and,
     // when enabled, derive Estimated Average Glucose to write alongside HbA1c.
     if (driver.info.derivesEag) {
@@ -1360,9 +1382,23 @@ export class Orchestrator extends EventEmitter {
     }
     order = await this.dropFilledFromOrder(def, order)
 
-    const codes = order
+    const hqDriver = getDriver(driverId)
+    // CM-series drivers (spec ACK) also get the document's QCK/DSR control ids
+    // and may only be ordered by numeric Item No.; see orderableGeteinCodes.
+    const spec = hqDriver?.geteinAck === 'spec'
+    const mapped = order
       ? this.mapping.instrumentCodesForLisTests(driverId, order.testCodes, order.testNames)
       : []
+    const { codes, dropped } = orderableGeteinCodes(mapped, hqDriver?.geteinResultKey === 'name')
+    if (dropped.length > 0) {
+      logger.warn(
+        'host-query',
+        `${def.name}: ${query.sid} — ${dropped.length} mapped analyte(s) have no Item No. yet and were ` +
+          `not ordered: [${dropped.join(', ')}]. Synapse learns each number from the analyzer's own ` +
+          `result upload (OBX-3) — run the sample once from the analyzer's menu, or enter the Item No. ` +
+          `as the Analyzer code under Mapping.`
+      )
+    }
 
     // Answer with the QCK acknowledgment and the DSR data as TWO SEPARATE MLLP
     // frames (each its own <VT>…<FS>), back to back — byte-verified against the
@@ -1371,8 +1407,8 @@ export class Orchestrator extends EventEmitter {
     // frame (QCK<CR>DSR); the analyzer then parsed only the QCK, saw no tasks, and
     // reported "failed to retrieve task" even though the DSR carried the order.
     // (An empty code set still sends a valid DSR = "run nothing".)
-    this.writeHl7Response(def, frameGeteinHl7(buildGeteinQck(query.controlId)))
-    this.writeHl7Response(def, frameGeteinHl7(buildGeteinDsr(query, codes)))
+    this.writeHl7Response(def, frameGeteinHl7(buildGeteinQck(query.controlId, { spec })))
+    this.writeHl7Response(def, frameGeteinHl7(buildGeteinDsr(query, codes, { spec })))
 
     if (codes.length === 0) {
       logger.info('host-query', `${def.name}: no mappable orders for ${query.sid} — replied with empty order set`)
@@ -1721,7 +1757,13 @@ export class Orchestrator extends EventEmitter {
       const why =
         'No sample id in the frame — the analyzer sent this result without a barcode ' +
         '(OBR-2/OBR-3 and PID blank), so Synapse cannot tell which sample it belongs to.'
-      logger.warn('engine', `${def.name}: not written — ${result.analyteCode}=${result.value} — ${why}`)
+      // Log the frame itself (segments on one line) so the field the analyzer
+      // actually used can be read from the log alone, without a Raw-view capture.
+      const frame = raw.replace(/[\r\n]+/g, ' / ').replace(/\s+\/\s*$/, '').slice(0, 500)
+      logger.warn(
+        'engine',
+        `${def.name}: not written — ${result.analyteCode}=${result.value} — ${why} Frame: ${frame}`
+      )
       this.pushMonitor({ ...base, id: randomUUID(), stage: 'skipped', message: why })
       return 'skipped'
     }

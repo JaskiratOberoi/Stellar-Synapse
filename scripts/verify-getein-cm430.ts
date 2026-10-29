@@ -19,6 +19,7 @@ import {
   frameGeteinHl7,
   geteinResultClass,
   geteinResultControlId,
+  orderableGeteinCodes,
   parseGeteinQuery
 } from '../src/main/core/drivers/geteinHostQuery'
 import { getDriver } from '../src/main/core/drivers/registry'
@@ -161,6 +162,8 @@ console.log('\n[2b] Live Rohtak CM-430 upload (2026-10-28): barcode rides in PID
   eq('six results', res.length, 6)
   ok('every result keyed to barcode 9879250 from PID-5', res.every((r) => r.sampleId === '9879250'), res.map((r) => r.sampleId).join(','))
   eq('filed by item name, not the 0-based list No.', res.map((r) => r.analyteCode).join(','), 'ALT,AST,ALP,GGT,TP,ALB')
+  eq('each result keeps its OBX-3 Item No. for learning', res.map((r) => r.analyzerCode).join(','), '0,1,2,3,5,6')
+  eq('MAGICL (id-keyed) results carry no separate analyzer code', getDriver('magicl-6000i')?.parse(msg, 'm').every((r) => r.analyzerCode === undefined), true)
   eq('  TP flagged L with its range', `${res[4]?.value} ${res[4]?.unit} ${res[4]?.referenceRange} ${res[4]?.flag}`, '6.2 g/dL 70.1-93.5 L')
   // Document shape still wins: OBR-2 beats PID-2 (patient id) and PID-5 (name).
   const docRes = parseGeteinHl7(decode(ORU), 'cm')
@@ -220,6 +223,20 @@ console.log('\n[5] §2.4.2.1 barcode query -> QCK^Q02 + DSR^Q03 as the document 
       ok(`  carries ${line}`, dsr.includes(line))
     ok('  no DSP beyond the last ordered channel', !dsr.some((s) => s.startsWith('DSP|32|')))
     eq('  ends DSC|| (last sample)', dsr[dsr.length - 1], 'DSC||')
+    // CM-series shape: both replies echo the query's control id in MSH-10, as
+    // the document prints them (QRY 4 -> QCK^Q02|4 and DSR^Q03|4).
+    const qckSpec = buildGeteinQck(q.controlId, { spec: true }).split(CR)
+    eq('spec QCK MSH as printed', noTs(qckSpec[0]), 'MSH|^~\\&|||||TS||QCK^Q02|4|P|2.3.1||||||UTF8|||')
+    const dsrSpec = buildGeteinDsr(q, ['1', '2', '5'], { spec: true }).split(CR)
+    eq('spec DSR MSH as printed', noTs(dsrSpec[0]), 'MSH|^~\\&|||||TS||DSR^Q03|4|P|2.3.1||||||UTF8|||')
+    eq('spec DSR MSA still echoes the query id', dsrSpec[1], 'MSA|AA|4|Message accepted|||0|')
+    ok('MAGICL (eLab) shape keeps 1001/1002', qck[0].includes('|QCK^Q02|1001|') && dsr[0].includes('|DSR^Q03|1002|'))
+    // Name-keyed drivers order by numeric Item No. only; a rule that has not
+    // learned its number yet resolves to text and must be held back, never sent.
+    const split = orderableGeteinCodes(['UREA', '0', 'ALT', '1', ' 5 ', 'K'], true)
+    eq('numeric Item No.s pass', split.codes.join(','), '0,1,5')
+    eq('text codes are dropped and reported', split.dropped.join(','), 'UREA,ALT,K')
+    eq('MAGICL passes everything through', orderableGeteinCodes(['18', 'TSH'], false).codes.join(','), '18,TSH')
     eq('  DSP segments are 1..31 in order', dsr.filter((s) => s.startsWith('DSP|')).map((s) => s.split('|')[1]).join(','), Array.from({ length: 31 }, (_, i) => String(i + 1)).join(','))
   }
 }

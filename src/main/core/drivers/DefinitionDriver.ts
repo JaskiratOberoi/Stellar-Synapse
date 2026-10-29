@@ -42,6 +42,10 @@ export class DefinitionDriver implements IInstrumentDriver {
     return this.def.geteinAck
   }
 
+  get geteinResultKey(): ModelDefinition['geteinResultKey'] {
+    return this.def.geteinResultKey
+  }
+
   get lisValueOnly(): boolean | undefined {
     return this.def.lisValueOnly
   }

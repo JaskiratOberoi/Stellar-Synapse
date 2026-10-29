@@ -94,11 +94,43 @@ function preambleSegments(msgType: string, msgCtrl: string, queryCtrl: string): 
   ]
 }
 
+/**
+ * Message-shape switch for the two Getein families. eLab (the MAGICL capture)
+ * numbers the QCK/DSR MSH-10 itself (1001 / 1002); Getein's CM-series protocol
+ * document instead echoes the query's own control id in both replies
+ * ("QRY^Q02|4" -> "QCK^Q02|4" and "DSR^Q03|4"). `spec` selects the document's
+ * shape — use it for the drivers that also take the spec ACK (geteinAck 'spec').
+ */
+export interface GeteinReplyOpts {
+  spec?: boolean
+}
+
 /** Query acknowledgment (`QCK^Q02`) referencing the query's control id. */
-export function buildGeteinQck(queryControlId: string): string {
+export function buildGeteinQck(queryControlId: string, opts?: GeteinReplyOpts): string {
   // Trailing CR after the last segment: frameGeteinHl7 then appends <FS><CR>, so
   // the wire form is <VT>…QAK|SR|OK|<CR><FS><CR>, exactly as eLab sends it.
-  return preambleSegments('QCK^Q02', '1001', queryControlId).join(CR) + CR
+  const msgCtrl = opts?.spec ? queryControlId : '1001'
+  return preambleSegments('QCK^Q02', msgCtrl, queryControlId).join(CR) + CR
+}
+
+/**
+ * Split the reverse-mapped order codes into what a Getein will accept at
+ * DSP-29+ and what it will not. For a name-keyed driver (CM series) the
+ * analyzer matches orders on its numeric Item No. only: a rule that has not
+ * learned its number yet resolves to the text name (e.g. "UREA"), and a single
+ * unknown id makes the CM-430 reject the WHOLE task and re-query. Those are
+ * dropped here and reported, never sent. MAGICL rules carry numeric item-ids
+ * as their instrument code already, so nothing is filtered there.
+ */
+export function orderableGeteinCodes(
+  codes: readonly string[],
+  keyByName: boolean
+): { codes: string[]; dropped: string[] } {
+  if (!keyByName) return { codes: [...codes], dropped: [] }
+  const ok: string[] = []
+  const dropped: string[] = []
+  for (const c of codes) (/^\d+$/.test(c.trim()) ? ok : dropped).push(c.trim())
+  return { codes: ok, dropped }
 }
 
 /**
@@ -111,10 +143,11 @@ export function buildGeteinQck(queryControlId: string): string {
 export function buildGeteinDsr(
   query: GeteinQuery,
   codes: readonly string[],
-  opts?: { sampleType?: string }
+  opts?: GeteinReplyOpts & { sampleType?: string }
 ): string {
   const sampleType = opts?.sampleType ?? 'serum'
-  const segs = preambleSegments('DSR^Q03', '1002', query.controlId)
+  const msgCtrl = opts?.spec ? query.controlId : '1002'
+  const segs = preambleSegments('DSR^Q03', msgCtrl, query.controlId)
   segs.push(`QRD|${query.qrdDateTime}|R|D|${query.queryId}|||RD|${query.sid}|OTH|||T|`)
   segs.push('QRF||||||RCT|COR|ALL||')
   const total = 28 + codes.length
