@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisHplcRunWrite,
+  LisHplcRunWriteResult,
   LisImageWrite,
   LisImageWriteResult,
   LisParameter,
@@ -48,6 +50,12 @@ export interface ILisRepository {
    * or the sample is not registered yet (caller queues and retries).
    */
   writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult>
+  /**
+   * Record one HPLC run's whole fraction table in Synapse's own ledger on
+   * Noble (dbo.syn_hplc_run). Never touches a result row. Idempotent per
+   * (sample, instrument, frame hash); throws when the LIS is down.
+   */
+  writeHplcRun(write: LisHplcRunWrite): Promise<LisHplcRunWriteResult>
   /** Recently written results (for the UI). */
   recentWrites(): Promise<LisResultWrite[]>
   /** Validate connectivity for the given settings. */

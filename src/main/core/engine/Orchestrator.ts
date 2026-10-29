@@ -6,6 +6,7 @@ import type {
   CanonicalResult,
   InstrumentDefinition,
   InstrumentRuntime,
+  LisHplcRunWrite,
   LisImageWrite,
   LisResultWrite,
   MappingRule,
@@ -67,7 +68,7 @@ import { convertForLis, roundResultValue } from './units'
 import { findSavedImage, saveInstrumentImage } from './imageStore'
 import { persist, MAX_DAILY_STAT_DAYS, type InstrumentDayStats } from '../../store'
 import { logger } from '../logger'
-import { normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
+import { ld560Fractions, normalizeLd560Raw, parseLd560SampleFromRaw, LD560_LIS_ANALYTES } from '../../../shared/ld560Transmit'
 
 /**
  * Render a byte buffer with control characters spelled out (<STX>/<ETX>/<ACK>/
@@ -113,6 +114,9 @@ export class Orchestrator extends EventEmitter {
   // Analyzer pictures waiting for the LIS (down, or the sample not registered
   // yet). Only the record is queued; the PNG stays on disk and is re-read.
   private pendingImages: LisImageWrite[] = []
+  /** HPLC run records (whole fraction table) waiting for the LIS. */
+  private pendingHplcRuns: LisHplcRunWrite[] = []
+  private readonly maxPendingHplcRuns = 2000
   private readonly maxPendingImages = 500
   private readonly pendingImageMaxAgeMs = 7 * 24 * 60 * 60 * 1000
   private flushing = false
@@ -148,6 +152,7 @@ export class Orchestrator extends EventEmitter {
     this.monitorBuffer = persist.getMonitorHistory()
     this.pendingWrites = persist.getPendingWrites()
     this.pendingImages = persist.getPendingImages()
+    this.pendingHplcRuns = persist.getPendingHplcRuns()
     this.dailyStats = persist.getDailyStats()
 
     // Show the configured instruments to the UI IMMEDIATELY (as offline), BEFORE
@@ -626,6 +631,9 @@ export class Orchestrator extends EventEmitter {
           continue
         }
         if (msg.image) this.storeFrameImage(id, def, msg)
+        // The whole fraction table, to Synapse's run ledger — beside the
+        // value pipeline, never in it (see submitHplcRun).
+        if (def.driverId === 'landwind-ld-560') void this.recordHplcRun(def, msg.raw)
         void this.processMessage(id, msg)
         if (def.driverId === 'landwind-ld-560') ld560Ack = true
       }
@@ -1768,6 +1776,23 @@ export class Orchestrator extends EventEmitter {
       return 'skipped'
     }
 
+    // An LD-560 fraction outside the two the LIS takes (HbA1c, eAG) stops
+    // here, before mapping can even look at it: auto-map-on-receive would
+    // otherwise match "HbA2" or "HbS" to a Noble test by name and post a
+    // value the lab never ordered. Those fractions live in the run ledger.
+    if (
+      driverId === 'landwind-ld-560' &&
+      !(LD560_LIS_ANALYTES as readonly string[]).some((c) => c.toUpperCase() === result.analyteCode.toUpperCase())
+    ) {
+      this.pushMonitor({
+        ...base,
+        id: randomUUID(),
+        stage: 'skipped',
+        message: 'HPLC fraction kept in the Synapse run ledger — not posted to the LIS'
+      })
+      return 'skipped'
+    }
+
     let rule = this.mapping.resolve(result, driverId)
     if (
       (!rule || rule.status === 'unmapped' || !rule.lisTestId) &&
@@ -2058,7 +2083,8 @@ export class Orchestrator extends EventEmitter {
 
   /** Try to drain the offline queue to the LIS. Safe to call repeatedly. */
   async flushPendingWrites(): Promise<{ wrote: number; remaining: number }> {
-    const nothingQueued = this.pendingWrites.length === 0 && this.pendingImages.length === 0
+    const nothingQueued =
+      this.pendingWrites.length === 0 && this.pendingImages.length === 0 && this.pendingHplcRuns.length === 0
     if (this.flushing || nothingQueued || this.lis.mode !== 'sql') {
       return { wrote: 0, remaining: this.pendingWrites.length }
     }
@@ -2096,6 +2122,7 @@ export class Orchestrator extends EventEmitter {
       }
       // Pictures ride behind the values so a sample's result rows exist first.
       await this.flushPendingImages()
+      await this.flushPendingHplcRuns()
     } finally {
       if (wrote > 0) {
         persist.setPendingWrites(this.pendingWrites)
@@ -2264,6 +2291,112 @@ export class Orchestrator extends EventEmitter {
 
   /** Set by submitImage on each attempt: false right after a LIS-down failure. */
   private lisReachableForImages = true
+
+  // ----- HPLC run ledger -------------------------------------------------------
+
+  /**
+   * One LD-560 frame -> one run record: every fraction the analyzer reported
+   * (HbA1a … v_win, HbA2, HbE, HbD, HbS, HbC), to Synapse's own ledger on
+   * Noble. Beside the value pipeline, not in it: the report and the result
+   * rows see only HbA1c and the calculated eAG, exactly as before. A frame
+   * the LIS cannot take right now is queued and retried with the results.
+   */
+  private async recordHplcRun(def: InstrumentDefinition, raw: string): Promise<void> {
+    try {
+      const normalized = normalizeLd560Raw(raw)
+      if (!normalized) return
+      const sample = parseLd560SampleFromRaw(normalized)
+      if (!sample) return
+      const fractions = ld560Fractions(sample)
+      if (Object.keys(fractions).length === 0) return
+      const write: LisHplcRunWrite = {
+        vailid: sample.barcode,
+        instrumentId: def.id,
+        driverId: def.driverId,
+        machineName: def.name,
+        internalSeq: sample.internalSeq,
+        receivedAt: new Date().toISOString(),
+        frameSha256: createHash('sha256').update(sample.raw).digest('hex'),
+        fractions
+      }
+      await this.submitHplcRun(def, write)
+    } catch (err) {
+      logger.warn('lis', `${def.name}: HPLC run not recorded — ${(err as Error).message}`)
+    }
+  }
+
+  private async submitHplcRun(
+    def: InstrumentDefinition,
+    write: LisHplcRunWrite
+  ): Promise<'written' | 'skipped' | 'suppressed' | 'queued' | 'error'> {
+    if (this.lis.mode !== 'sql') return 'skipped'
+    const summary = ['v_win', 'HbA2', 'HbS', 'HbD', 'HbE', 'HbC', 'p3']
+      .filter((c) => write.fractions[c] !== undefined)
+      .map((c) => `${c} ${write.fractions[c]}`)
+      .join(' · ')
+    const base = {
+      instrumentId: def.id,
+      instrumentName: def.name,
+      sampleId: write.vailid,
+      analyteCode: 'HPLC',
+      analyteName: 'HPLC fractions',
+      value: summary || `${Object.keys(write.fractions).length} fractions`
+    }
+    try {
+      const { outcome, reason } = await this.lis.writeHplcRun(write)
+      this.pushMonitor({
+        ...base,
+        id: randomUUID(),
+        stage: outcome,
+        message: reason ?? 'Recorded',
+        timestamp: new Date().toISOString()
+      })
+      return outcome
+    } catch (err) {
+      const message = (err as Error).message
+      if (isLisDownError(err)) {
+        this.enqueuePendingHplcRun(write)
+        this.pushMonitor({
+          ...base,
+          id: randomUUID(),
+          stage: 'queued',
+          message: 'LIS unavailable — run record queued for retry',
+          timestamp: new Date().toISOString()
+        })
+        return 'queued'
+      }
+      logger.warn('lis', `${def.name}: HPLC run for ${write.vailid} not recorded — ${message}`)
+      this.pushMonitor({ ...base, id: randomUUID(), stage: 'error', message, timestamp: new Date().toISOString() })
+      return 'error'
+    }
+  }
+
+  private enqueuePendingHplcRun(write: LisHplcRunWrite): void {
+    const key = (w: LisHplcRunWrite): string => `${w.vailid}|${w.machineName}|${w.frameSha256}`
+    this.pendingHplcRuns = this.pendingHplcRuns.filter((w) => key(w) !== key(write))
+    this.pendingHplcRuns.push(write)
+    if (this.pendingHplcRuns.length > this.maxPendingHplcRuns) {
+      this.pendingHplcRuns = this.pendingHplcRuns.slice(-this.maxPendingHplcRuns)
+    }
+    persist.setPendingHplcRuns(this.pendingHplcRuns)
+  }
+
+  private async flushPendingHplcRuns(): Promise<void> {
+    if (this.pendingHplcRuns.length === 0 || this.lis.mode !== 'sql') return
+    const before = this.pendingHplcRuns.length
+    for (const write of [...this.pendingHplcRuns]) {
+      const def = persist.getInstruments().find((i) => i.id === write.instrumentId)
+      if (!def) {
+        this.pendingHplcRuns = this.pendingHplcRuns.filter((w) => w !== write)
+        continue
+      }
+      const outcome = await this.submitHplcRun(def, write)
+      // Still down: the entry was re-queued; stop and try again next flush.
+      if (outcome === 'queued') break
+      this.pendingHplcRuns = this.pendingHplcRuns.filter((w) => w !== write)
+    }
+    if (this.pendingHplcRuns.length !== before) persist.setPendingHplcRuns(this.pendingHplcRuns)
+  }
 
   /** Number of results currently waiting for the LIS. */
   pendingWriteCount(): number {

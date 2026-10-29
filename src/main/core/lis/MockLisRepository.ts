@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisHplcRunWrite,
+  LisHplcRunWriteResult,
   LisImageWrite,
   LisImageWriteResult,
   LisParameter,
@@ -51,6 +53,11 @@ export class MockLisRepository implements ILisRepository {
 
   async writeImage(write: LisImageWrite, data: Buffer): Promise<LisImageWriteResult> {
     logger.debug('lis-mock', `(mock image) ${write.vailid} ${write.fileName} (${data.length} B)`)
+    return { outcome: 'written' }
+  }
+
+  async writeHplcRun(write: LisHplcRunWrite): Promise<LisHplcRunWriteResult> {
+    logger.debug('lis-mock', `(mock hplc run) ${write.vailid} ${Object.keys(write.fractions).length} fractions`)
     return { outcome: 'written' }
   }
 

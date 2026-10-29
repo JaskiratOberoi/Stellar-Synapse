@@ -182,33 +182,58 @@ function unitForAnalyte(code: string): string {
   return '%'
 }
 
-const LD560_ANALYTE_CODES = [
+/**
+ * Every fraction the LD-560 reports, in the order its own printout lists
+ * them, with the casing Synapse uses. The first eight are what the parser
+ * always knew; p3, the variant window and the HbA2/E/D/S/C fractions were
+ * cut off at the first unknown code until 0.7.2 - a frame that put p3 before
+ * HbA1c lost everything after it. None of the new ones is ever posted to
+ * the LIS (see LD560_LIS_ANALYTES); they are kept in Synapse's own run
+ * ledger on Noble (syn_hplc_run) so a variant can be found later.
+ */
+export const LD560_FRACTION_CODES = [
   'HbA1a',
   'HbA1b',
+  'HbF',
+  'L-A1c',
+  'eAG',
+  'p3',
   'HbA1c',
   'S-A1c',
-  'L-A1c',
   'HbA0',
-  'HbF',
-  'eAG'
-]
+  'v_win',
+  'HbA2',
+  'HbE',
+  'HbD',
+  'HbS',
+  'HbC'
+] as const
 
+const CANONICAL_CODE = new Map(LD560_FRACTION_CODES.map((c) => [c.toUpperCase(), c] as const))
+
+/**
+ * The `<R>` payload is `code|value` pairs run together with no separator:
+ * `HbA1a|0.3HbA1b|0.4HbF|2.4LA1c|0.4eAG|4.4p3|3HbA1c|4.4HbA0|83.3v_win|0HbA2|2.7…`.
+ * A code is the run of letters, digits, underscores and hyphens before the
+ * bar; a value is the digits (and dot) after it, ending where the next code's
+ * letter begins. Known codes come back in Synapse's casing; a code this list
+ * does not know is kept as the analyzer spelt it rather than dropped - the
+ * ledger wants the whole table, whatever the firmware adds next.
+ */
 function parseLd560ResultPairs(payload: string): [string, string][] {
   const pairs: [string, string][] = []
-  let rest = payload.trim()
-  while (rest.length > 0) {
-    // Match case-insensitively: the analyzer emits some codes with different
-    // casing than our canonical list (e.g. "Hbf" vs "HbF"). A case-sensitive
-    // match used to break the loop there, dropping every analyte that followed
-    // (HbA1c, HbA0, eAG). Always return the canonical code.
-    const code = LD560_ANALYTE_CODES.find((c) => rest.toUpperCase().startsWith(c.toUpperCase()))
-    if (!code) break
-    rest = rest.slice(code.length)
-    if (rest.startsWith('|')) rest = rest.slice(1)
-    const vm = rest.match(/^([\d.]+)/)
-    if (!vm?.[1]) break
-    pairs.push([code, vm[1]])
-    rest = rest.slice(vm[1].length)
+  const re = /([A-Za-z][A-Za-z0-9_-]*?)\|(\d+(?:\.\d+)?)/g
+  for (const m of payload.trim().matchAll(re)) {
+    const spelt = m[1]!
+    const code = CANONICAL_CODE.get(spelt.toUpperCase().replace(/^LA1C$/, 'L-A1C').replace(/^SA1C$/, 'S-A1C')) ?? spelt
+    pairs.push([code, m[2]!])
   }
   return pairs
+}
+
+/** The frame's whole fraction table as code -> value, for the run ledger. */
+export function ld560Fractions(sample: Ld560SampleResult): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const a of sample.analytes) out[a.code] = a.value
+  return out
 }

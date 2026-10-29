@@ -4,6 +4,7 @@ import type {
   AppSettings,
   InstrumentDefinition,
   LisConnectionSettings,
+  LisHplcRunWrite,
   LisImageWrite,
   LisParameter,
   LisResultWrite,
@@ -53,6 +54,8 @@ interface PersistShape {
   pendingWrites: LisResultWrite[]
   /** Analyzer pictures awaiting the LIS (down, or sample not registered yet); the bytes stay on disk. */
   pendingImages?: LisImageWrite[]
+  /** HPLC run records (the whole fraction table) awaiting the LIS. */
+  pendingHplcRuns?: LisHplcRunWrite[]
   /** Last live Noble catalog; served when the DB cannot be reached (absent until the first good fetch). */
   lisCatalog?: LisCatalogCache
   /** One-time migration: enable live Noble LIS writes. */
@@ -250,6 +253,9 @@ export const persist = {
 
   getPendingImages: (): LisImageWrite[] => store().get('pendingImages') ?? [],
   setPendingImages: (v: LisImageWrite[]): void => store().set('pendingImages', v),
+
+  getPendingHplcRuns: (): LisHplcRunWrite[] => store().get('pendingHplcRuns') ?? [],
+  setPendingHplcRuns: (v: LisHplcRunWrite[]): void => store().set('pendingHplcRuns', v),
 
   getLisCatalog: (): LisCatalogCache | undefined => store().get('lisCatalog'),
   setLisCatalog: (v: LisCatalogCache): void => store().set('lisCatalog', v),

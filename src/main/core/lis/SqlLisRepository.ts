@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisHplcRunWrite,
+  LisHplcRunWriteResult,
   LisImageWrite,
   LisImageWriteResult,
   LisParameter,
@@ -135,6 +137,87 @@ BEGIN
 END
 COMMIT;
 SELECT @status AS status, @ledgerId AS ledgerId, @attId AS attachmentId, @targetId AS resultId;`
+
+/**
+ * Synapse's own ledger of HPLC runs: the WHOLE fraction table the LD-560
+ * reports for a sample (HbA1a … HbA1c … v_win, HbA2, HbE, HbD, HbS, HbC), one
+ * row per run, created on first use like the picture ledger. Nothing in Noble
+ * references it and nothing here is reported: HbA1c and the calculated eAG
+ * reach the result rows by the usual path, and the report prints only those.
+ * The columns exist so a variant can be asked for directly
+ * (`WHERE v_win > 0`); `fractions` keeps the table verbatim, whatever the
+ * firmware adds. A retransmitted frame has the same hash and is not re-added.
+ */
+const RUN_LEDGER_DDL = `
+IF OBJECT_ID('dbo.syn_hplc_run', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.syn_hplc_run (
+    id             int IDENTITY(1,1) NOT NULL CONSTRAINT PK_syn_hplc_run PRIMARY KEY,
+    vailid         nvarchar(100) NOT NULL,
+    instrument_id  varchar(64) NULL,
+    driver_id      varchar(64) NULL,
+    machine_name   nvarchar(100) NOT NULL,
+    internal_seq   nvarchar(50) NULL,
+    received_at    datetime2(0) NOT NULL,
+    frame_sha256   char(64) NOT NULL,
+    hba1a          decimal(9,3) NULL,
+    hba1b          decimal(9,3) NULL,
+    hbf            decimal(9,3) NULL,
+    la1c           decimal(9,3) NULL,
+    sa1c           decimal(9,3) NULL,
+    hba1c          decimal(9,3) NULL,
+    hba0           decimal(9,3) NULL,
+    eag_instrument decimal(9,3) NULL,
+    p3             decimal(9,3) NULL,
+    v_win          decimal(9,3) NULL,
+    hba2           decimal(9,3) NULL,
+    hbe            decimal(9,3) NULL,
+    hbd            decimal(9,3) NULL,
+    hbs            decimal(9,3) NULL,
+    hbc            decimal(9,3) NULL,
+    fractions      nvarchar(max) NOT NULL,
+    addeddate      datetime2(0) NOT NULL CONSTRAINT DF_syn_hplc_run_added DEFAULT SYSDATETIME(),
+    CONSTRAINT UQ_syn_hplc_run UNIQUE (vailid, machine_name, frame_sha256)
+  );
+  CREATE INDEX IX_syn_hplc_run_vailid ON dbo.syn_hplc_run (vailid);
+  CREATE INDEX IX_syn_hplc_run_received ON dbo.syn_hplc_run (received_at);
+END`
+
+const RUN_WRITE_SQL = `
+DECLARE @id int = (SELECT TOP 1 id FROM dbo.syn_hplc_run
+                   WHERE vailid = @vailid AND machine_name = @machine AND frame_sha256 = @sha);
+IF @id IS NULL
+BEGIN
+  INSERT INTO dbo.syn_hplc_run
+    (vailid, instrument_id, driver_id, machine_name, internal_seq, received_at, frame_sha256,
+     hba1a, hba1b, hbf, la1c, sa1c, hba1c, hba0, eag_instrument, p3, v_win, hba2, hbe, hbd, hbs, hbc, fractions)
+  VALUES
+    (@vailid, @instrument, @driver, @machine, @seq, @received, @sha,
+     @hba1a, @hba1b, @hbf, @la1c, @sa1c, @hba1c, @hba0, @eag, @p3, @vwin, @hba2, @hbe, @hbd, @hbs, @hbc, @fractions);
+  SET @id = SCOPE_IDENTITY();
+  SELECT 'written' AS status, @id AS id;
+END
+ELSE
+  SELECT 'unchanged' AS status, @id AS id;`
+
+/** Ledger column for each fraction code the analyzer reports. */
+const RUN_COLUMNS: Record<string, string> = {
+  HbA1a: 'hba1a',
+  HbA1b: 'hba1b',
+  HbF: 'hbf',
+  'L-A1c': 'la1c',
+  'S-A1c': 'sa1c',
+  HbA1c: 'hba1c',
+  HbA0: 'hba0',
+  eAG: 'eag',
+  p3: 'p3',
+  v_win: 'vwin',
+  HbA2: 'hba2',
+  HbE: 'hbe',
+  HbD: 'hbd',
+  HbS: 'hbs',
+  HbC: 'hbc'
+}
 
 type MssqlModule = typeof import('mssql')
 type MssqlPool = import('mssql').ConnectionPool
@@ -938,6 +1021,45 @@ export class SqlLisRepository implements ILisRepository {
         return { outcome: 'skipped', reason: `Unexpected picture write status "${status}"` }
     }
   }
+
+  async writeHplcRun(write: LisHplcRunWrite): Promise<LisHplcRunWriteResult> {
+    const pool = await this.getPool()
+    const mssql = await this.getMssql()
+    if (!this.runLedgerReady) {
+      await pool.request().batch(RUN_LEDGER_DDL)
+      this.runLedgerReady = true
+    }
+    const req = pool.request()
+    req.input('vailid', mssql.NVarChar, write.vailid.slice(0, 100))
+    req.input('instrument', mssql.VarChar, write.instrumentId.slice(0, 64))
+    req.input('driver', mssql.VarChar, write.driverId.slice(0, 64))
+    req.input('machine', mssql.NVarChar, write.machineName.slice(0, 100))
+    req.input('seq', mssql.NVarChar, write.internalSeq?.slice(0, 50) ?? null)
+    req.input('received', mssql.DateTime2, new Date(write.receivedAt))
+    req.input('sha', mssql.Char(64), write.frameSha256)
+    req.input('fractions', mssql.NVarChar(mssql.MAX), JSON.stringify(write.fractions))
+    // Every column gets a parameter, NULL where the frame did not carry it.
+    const num = (code: string): number | null => {
+      const v = parseFloat(write.fractions[code] ?? '')
+      return Number.isFinite(v) ? v : null
+    }
+    for (const [code, column] of Object.entries(RUN_COLUMNS)) {
+      req.input(column, mssql.Decimal(9, 3), num(code))
+    }
+    const result = await req.query<{ status: string; id: number | null }>(RUN_WRITE_SQL)
+    const row = result.recordset[0]
+    const known = Object.keys(write.fractions).length
+    logger.info(
+      'lis-sql',
+      `HPLC run for ${write.vailid} (${known} fractions, v_win ${write.fractions['v_win'] ?? '-'}): ${row?.status ?? 'unknown'} — run #${row?.id ?? '?'}`
+    )
+    return row?.status === 'written'
+      ? { outcome: 'written', runId: row.id ?? undefined, reason: 'Fractions recorded in the Synapse run ledger' }
+      : { outcome: 'skipped', runId: row?.id ?? undefined, reason: 'Already in the Synapse run ledger' }
+  }
+
+  /** The run ledger's CREATE has run on this connection (once per process). */
+  private runLedgerReady = false
 
   async recentWrites(): Promise<LisResultWrite[]> {
     return [...this.writes]

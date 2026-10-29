@@ -1,6 +1,8 @@
 import type {
   LisConnectionResult,
   LisConnectionSettings,
+  LisHplcRunWrite,
+  LisHplcRunWriteResult,
   LisImageWrite,
   LisImageWriteResult,
   LisParameter,
@@ -65,6 +67,11 @@ export class ReadOnlyLisRepository implements ILisRepository {
       `IMAGE BLOCKED (read-only mode) — would attach ${write.fileName} (${data.length} B) to ${write.vailid}`
     )
     return { outcome: 'suppressed', reason: 'Read-only safe mode — picture not attached' }
+  }
+
+  async writeHplcRun(write: LisHplcRunWrite): Promise<LisHplcRunWriteResult> {
+    logger.warn('lis-readonly', `HPLC RUN BLOCKED (read-only mode) — would record ${write.vailid}`)
+    return { outcome: 'suppressed', reason: 'Read-only safe mode — run not recorded' }
   }
 
   /** Surface the would-have-written results so the UI's "recent writes" still works. */

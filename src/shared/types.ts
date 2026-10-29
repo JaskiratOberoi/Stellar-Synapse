@@ -468,6 +468,33 @@ export interface LisImageWrite {
   receivedAt: string
 }
 
+/**
+ * One HPLC run's whole fraction table (LD-560 / Zeus D-20), bound for
+ * Synapse's own run ledger on Noble (dbo.syn_hplc_run). Nothing here reaches
+ * a patient's result row or report: HbA1c and the calculated eAG travel the
+ * result path as before; this record exists so a variant window or an HbS /
+ * HbD / HbE / HbC fraction can be found across the fleet afterwards.
+ */
+export interface LisHplcRunWrite {
+  vailid: string
+  instrumentId: string
+  driverId: string
+  machineName: string
+  /** Analyzer run number, when the frame carried one. */
+  internalSeq?: string
+  receivedAt: string
+  /** SHA-256 of the normalised frame text: a retransmission is the same run. */
+  frameSha256: string
+  /** code -> value as the analyzer sent them, canonical casing where known. */
+  fractions: Record<string, string>
+}
+
+export interface LisHplcRunWriteResult {
+  outcome: LisWriteOutcome
+  reason?: string
+  runId?: number
+}
+
 export interface LisImageWriteResult {
   outcome: LisWriteOutcome
   reason?: string
